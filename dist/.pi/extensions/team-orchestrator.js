@@ -15,17 +15,16 @@ export default function (pi) {
                 return;
             }
             // Parse control mode: --team-mode=loop | --team-mode=auto | --team-mode=step
-            // Synonyms supported: --loop, --auto, --step, loop, auto, step
-            let mode = "step-hitl";
+            let mode = "loop-hitl"; // default loop-hitl
             const argStr = args?.toLowerCase() || "";
             if (argStr.includes("team-mode=auto") || argStr.includes("--auto") || argStr.includes("auto")) {
                 mode = "auto";
             }
-            else if (argStr.includes("team-mode=loop") || argStr.includes("--loop") || argStr.includes("loop")) {
-                mode = "loop-hitl";
-            }
             else if (argStr.includes("team-mode=step") || argStr.includes("--step") || argStr.includes("step")) {
                 mode = "step-hitl";
+            }
+            else if (argStr.includes("team-mode=loop") || argStr.includes("--loop") || argStr.includes("loop")) {
+                mode = "loop-hitl";
             }
             ctx.ui.notify(`Initializing Pi Agent Team [--team-mode=${mode}]...`, "info");
             const panes = tmux.setup5PaneLayout();
@@ -34,8 +33,8 @@ export default function (pi) {
             fs.mkdirSync(path.dirname(configPath), { recursive: true });
             const teamConfig = { mode, panes };
             fs.writeFileSync(configPath, JSON.stringify(teamConfig, null, 2), "utf-8");
-            // Trigger initial prompt in Orchestrator Pane 0
-            tmux.sendPromptToPane(panes.orchestrator, `Start multi-agent team in mode '${mode}' (--team-mode=${mode}). Inspect project-context.md, verify Delivery Tracker setting, and instruct BA in Pane 1 to begin PRD grooming.`);
+            // Initial greeting prompt in Orchestrator Pane 0: Wait for human instruction / intent
+            tmux.sendPromptToPane(panes.orchestrator, `Master Orchestrator online [--team-mode=${mode}]! Greet the user, summarize the available BRDs in docs/brd/, and ask what they would like to work on (e.g. 'Proceed with docs/brd/campaigns.md', 'Implement Story #42', or any custom request).`);
             ctx.ui.notify(`Team setup complete in 5-pane tmux session 'pi-team' [--team-mode=${mode}]. Attach with: tmux attach -t pi-team`, "info");
         }
     });
