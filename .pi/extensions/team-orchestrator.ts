@@ -1,9 +1,24 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerBacklogTool } from "./backlog-tool.js";
+import { registerStatusBanner } from "./status-banner.js";
 import { TmuxManager } from "./tmux-manager.js";
+import * as fs from "fs";
+import * as path from "path";
+
+export interface TeamConfig {
+  mode: "step-hitl" | "loop-hitl" | "auto";
+  panes: {
+    orchestrator: string;
+    ba: string;
+    developer: string;
+    qa: string;
+    reviewer: string;
+  };
+}
 
 export default function (pi: ExtensionAPI) {
   registerBacklogTool(pi);
+  registerStatusBanner(pi);
 
   const tmux = new TmuxManager();
 
@@ -16,7 +31,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       // Parse control mode: --mode=step-hitl | --mode=loop-hitl | --mode=auto
-      let mode = "step-hitl";
+      let mode: TeamConfig["mode"] = "step-hitl";
       if (args?.includes("--mode=auto")) {
         mode = "auto";
       } else if (args?.includes("--mode=loop-hitl") || args?.includes("--mode=loop")) {
@@ -26,6 +41,12 @@ export default function (pi: ExtensionAPI) {
       ctx.ui.notify(`Initializing Pi Agent Team [Mode: ${mode}]...`, "info");
 
       const panes = tmux.setup5PaneLayout();
+
+      // Write team-config.json so backlog tool can auto-steer transitions across panes
+      const configPath = path.join(process.cwd(), ".pi", "team-config.json");
+      fs.mkdirSync(path.dirname(configPath), { recursive: true });
+      const teamConfig: TeamConfig = { mode, panes };
+      fs.writeFileSync(configPath, JSON.stringify(teamConfig, null, 2), "utf-8");
 
       // Trigger initial prompt in Orchestrator Pane 0
       tmux.sendPromptToPane(

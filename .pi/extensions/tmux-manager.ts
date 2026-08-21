@@ -1,11 +1,11 @@
 import { execSync } from "child_process";
 
 export interface TmuxPaneMap {
-  orchestrator: string; // Top Pane (Pane 0)
-  ba: string;           // Bottom Left Top (Pane 1)
-  developer: string;    // Bottom Right Top (Pane 2)
-  qa: string;           // Bottom Left Bottom (Pane 3)
-  reviewer: string;     // Bottom Right Bottom (Pane 4)
+  orchestrator: string; // Top Pane
+  ba: string;           // Bottom Left Top
+  developer: string;    // Bottom Right Top
+  qa: string;           // Bottom Left Bottom
+  reviewer: string;     // Bottom Right Bottom
 }
 
 export class TmuxManager {
@@ -53,8 +53,22 @@ export class TmuxManager {
       `tmux split-window -v -t ${devPane} -P -F "#{pane_id}" "pi -a reviewer; exec bash"`
     ).toString().trim();
 
-    // 6. Resize Orchestrator top pane to 25% height
-    execSync(`tmux resize-pane -t ${orchestratorPane} -y 25%`);
+    // Configure Pane Titles & Border Styling
+    try {
+      execSync(`tmux set-option -t ${this.sessionName} pane-border-status top`);
+      execSync(`tmux set-option -t ${this.sessionName} pane-border-format "#[fg=yellow,bold] [ #{pane_title} ] #[default]"`);
+
+      execSync(`tmux select-pane -t ${orchestratorPane} -T "MASTER ORCHESTRATOR"`);
+      execSync(`tmux select-pane -t ${baPane} -T "BUSINESS ANALYST"`);
+      execSync(`tmux select-pane -t ${devPane} -T "FULLSTACK DEVELOPER"`);
+      execSync(`tmux select-pane -t ${qaPane} -T "QUALITY ANALYST"`);
+      execSync(`tmux select-pane -t ${reviewerPane} -T "CODE REVIEWER"`);
+
+      // Resize Orchestrator top pane to 25% height
+      execSync(`tmux resize-pane -t ${orchestratorPane} -y 25%`);
+    } catch {
+      // Non-fatal if styling fails
+    }
 
     return {
       orchestrator: orchestratorPane,

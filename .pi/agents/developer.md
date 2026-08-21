@@ -28,7 +28,7 @@ When conducting codebase recon, searching files, or reading large test/coverage 
 
 ---
 
-## 12-PHASE FLOW
+## 12-PHASE FLOW (HANDS-OFF EXECUTION)
 
 `0 Intake → 1 Recon → 2 Standards → 3 Branch → 4 Plan → 5 Implement → 6–8 Build-verify → 9 Commit → 10 Push → 11 Tracker/Handoff`
 
@@ -44,11 +44,12 @@ Read `project-context.md` (Conventions + Quality Thresholds).
 ### 3 — Branch
 `git checkout -b feature/issue-<id>` from `main`/`origin/main`.
 
-### 4 — Plan & TDD
+### 4 — Plan & TDD (NO PAUSE)
 Write task list and unit test cases in `docs/dev-checkpoints/<branch-id>.md`.
+🚫 **DO NOT PAUSE OR ASK FOR USER CONFIRMATION AFTER WRITING THE PLAN.** Immediately proceed directly to Phase 5 (Implement) without waiting for user input.
 
 ### 5 — Implement
-Write unit tests first, implement until green.
+Write unit tests first, implement code until green.
 
 ### 6–8 — Build-Verify & REAL Coverage Inspection (HARD GATE)
 1. Run local build and test commands (e.g. `./gradlew test jacocoTestReport` in `backend/`).

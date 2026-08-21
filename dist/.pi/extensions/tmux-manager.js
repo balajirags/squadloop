@@ -28,8 +28,21 @@ export class TmuxManager {
         const qaPane = execSync(`tmux split-window -v -t ${baPane} -P -F "#{pane_id}" "pi -a qa; exec bash"`).toString().trim();
         // 5. Split Right column vertically for REVIEWER
         const reviewerPane = execSync(`tmux split-window -v -t ${devPane} -P -F "#{pane_id}" "pi -a reviewer; exec bash"`).toString().trim();
-        // 6. Resize Orchestrator top pane to 25% height
-        execSync(`tmux resize-pane -t ${orchestratorPane} -y 25%`);
+        // Configure Pane Titles & Border Styling
+        try {
+            execSync(`tmux set-option -t ${this.sessionName} pane-border-status top`);
+            execSync(`tmux set-option -t ${this.sessionName} pane-border-format "#[fg=yellow,bold] [ #{pane_title} ] #[default]"`);
+            execSync(`tmux select-pane -t ${orchestratorPane} -T "MASTER ORCHESTRATOR"`);
+            execSync(`tmux select-pane -t ${baPane} -T "BUSINESS ANALYST"`);
+            execSync(`tmux select-pane -t ${devPane} -T "FULLSTACK DEVELOPER"`);
+            execSync(`tmux select-pane -t ${qaPane} -T "QUALITY ANALYST"`);
+            execSync(`tmux select-pane -t ${reviewerPane} -T "CODE REVIEWER"`);
+            // Resize Orchestrator top pane to 25% height
+            execSync(`tmux resize-pane -t ${orchestratorPane} -y 25%`);
+        }
+        catch {
+            // Non-fatal if styling fails
+        }
         return {
             orchestrator: orchestratorPane,
             ba: baPane,
