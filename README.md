@@ -14,11 +14,11 @@ Based on [AI-Native Development Specifications](https://aishippingblog.com/p/ai-
 
 ## 🎛 3 Control Modes
 
-- **`--mode=step-hitl` (Step Human-in-the-Loop - Default)**:
+- **`step` / `step-hitl` (Step Human-in-the-Loop - Default)**:
   Pauses for human approval at EVERY agent transition (BA → HITL → Dev → HITL → QA → HITL → Reviewer → HITL).
-- **`--mode=loop-hitl` (Loop Human-in-the-Loop)**:
+- **`loop` / `loop-hitl` (Loop Human-in-the-Loop)**:
   Runs a single story automatically through BA → Dev → QA → Reviewer → Done, then pauses for human approval before picking up the next story in the backlog.
-- **`--mode=auto` (Full Autonomous)**:
+- **`auto` (Full Autonomous)**:
   Processes all stories sequentially in the backlog without any HITL pause points.
 
 ---
@@ -69,17 +69,18 @@ cp docs/templates/project-context.template.md project-context.md
 Place your requirement document in `prd.md` or `docs/brd/my-feature.md`.
 
 ### Step 4: Launch the Agent Team
-Run `/team-dev` with your desired control mode:
+Launch Pi and run `/team-dev` with your desired mode (`step`, `loop`, or `auto`):
 
 ```bash
-# Step HITL mode (Pause after every step)
-pi /team-dev --mode=step-hitl
+# In Interactive Pi Mode:
+/team-dev step   # Step HITL (Pause after every step)
+/team-dev loop   # Loop HITL (Pause after each full story loop)
+/team-dev auto   # Full Autonomous mode
 
-# Loop HITL mode (Pause after each full story loop)
-pi /team-dev --mode=loop-hitl
-
-# Full Autonomous mode
-pi /team-dev --mode=auto
+# Or directly from bash:
+pi "/team-dev loop"
+pi "/team-dev auto"
+pi "/team-dev step"
 ```
 
 ### Step 5: Attach to the 5-Pane Tmux Workspace

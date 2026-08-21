@@ -30,12 +30,15 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      // Parse control mode: --mode=step-hitl | --mode=loop-hitl | --mode=auto
+      // Parse control mode: auto | loop | step | --auto | --loop | --step | --team-mode=...
       let mode: TeamConfig["mode"] = "step-hitl";
-      if (args?.includes("--mode=auto")) {
+      const argStr = args?.toLowerCase() || "";
+      if (argStr.includes("auto")) {
         mode = "auto";
-      } else if (args?.includes("--mode=loop-hitl") || args?.includes("--mode=loop")) {
+      } else if (argStr.includes("loop")) {
         mode = "loop-hitl";
+      } else if (argStr.includes("step")) {
+        mode = "step-hitl";
       }
 
       ctx.ui.notify(`Initializing Pi Agent Team [Mode: ${mode}]...`, "info");

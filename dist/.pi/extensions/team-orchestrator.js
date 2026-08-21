@@ -14,13 +14,17 @@ export default function (pi) {
                 ctx.ui.notify("Error: tmux is required to run multi-agent team mode.", "error");
                 return;
             }
-            // Parse control mode: --mode=step-hitl | --mode=loop-hitl | --mode=auto
+            // Parse control mode: auto | loop | step | --auto | --loop | --step | --team-mode=...
             let mode = "step-hitl";
-            if (args?.includes("--mode=auto")) {
+            const argStr = args?.toLowerCase() || "";
+            if (argStr.includes("auto")) {
                 mode = "auto";
             }
-            else if (args?.includes("--mode=loop-hitl") || args?.includes("--mode=loop")) {
+            else if (argStr.includes("loop")) {
                 mode = "loop-hitl";
+            }
+            else if (argStr.includes("step")) {
+                mode = "step-hitl";
             }
             ctx.ui.notify(`Initializing Pi Agent Team [Mode: ${mode}]...`, "info");
             const panes = tmux.setup5PaneLayout();
