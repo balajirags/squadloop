@@ -2,13 +2,24 @@
 
 `pi-agent-team` turns Pi Agent into an AI-native 5-agent software development team that operates concurrently in a 5-pane tmux window:
 
-1. **Master Orchestrator**: Coordinates workflow transitions and HITL (Human-In-The-Loop) checkpoints.
-2. **BA (Business Analyst)**: Auto re-slices PRDs into atomic stories with Gherkin Acceptance Criteria (AC).
-3. **Developer (Fullstack)**: Implements code and unit tests following a 12-phase flow with a mandatory Build-Verify gate.
-4. **QA (Quality Analyst)**: Verifies ACs on a running application in an isolated context.
+1. **Master Orchestrator**: Pi Agent session running in Pane 0 that manages state transitions, tracks backlog progress, and provides interactive control.
+2. **BA (Business Analyst)**: Auto re-slices PRDs into atomic stories with Gherkin Acceptance Criteria (AC), respecting GitHub Issues / Jira / Local tracker settings.
+3. **Developer (Fullstack)**: Implements code and unit tests following a 12-phase flow with strict directory boundary enforcement (`backend/`, `frontend/`), mandatory JaCoCo/HTML coverage report verification, and required git commit & push before handoff.
+4. **QA (Quality Analyst)**: Verifies ACs on a running application in an isolated context with noise-free subagent execution.
 5. **Code Reviewer**: Performs cold-read P1/P2 security & architecture audits with a 2-cycle circuit breaker.
 
 Based on [AI-Native Development Specifications](https://aishippingblog.com/p/ai-native-development-specifications).
+
+---
+
+## 🎛 3 Control Modes
+
+- **`--mode=step-hitl` (Step Human-in-the-Loop - Default)**:
+  Pauses for human approval at EVERY agent transition (BA → HITL → Dev → HITL → QA → HITL → Reviewer → HITL).
+- **`--mode=loop-hitl` (Loop Human-in-the-Loop)**:
+  Runs a single story automatically through BA → Dev → QA → Reviewer → Done, then pauses for human approval before picking up the next story in the backlog.
+- **`--mode=auto` (Full Autonomous)**:
+  Processes all stories sequentially in the backlog without any HITL pause points.
 
 ---
 
@@ -29,7 +40,7 @@ Before running the team, ensure you have the following installed:
   # Ubuntu/Debian
   sudo apt install tmux
   ```
-- **GitHub CLI (`gh`)** *(Optional, if using GitHub Issues as Delivery Tracker)*:
+- **GitHub CLI (`gh`)** *(Required if using GitHub Issues as Delivery Tracker)*:
   ```bash
   brew install gh
   gh auth login
@@ -37,63 +48,51 @@ Before running the team, ensure you have the following installed:
 
 ---
 
-## 🚀 How to Run in a New Repo
+## 🚀 How to Run in a Repo
 
-Follow these steps to equip any new or existing code repository with the Pi Agent Multi-Agent Development Team:
-
-### Step 1: Copy the `.pi` Directory & Templates to Your Repo
-Copy the `.pi/` folder and `docs/templates/` from this repo into your new project's root:
+### Step 1: Copy `.pi` Directory & Templates
+Copy `.pi/` and `docs/templates/` into your project root:
 
 ```bash
-# From inside your new project repository root:
 cp -r /path/to/pi-team/.pi .
 cp -r /path/to/pi-team/docs/templates docs/templates
 ```
 
-### Step 2: Create `project-context.md`
-Copy the template and configure your tech stack, test commands, and delivery tracker:
+### Step 2: Configure `project-context.md`
+Copy template and set your repository boundaries, build/test commands, and delivery tracker:
 
 ```bash
 cp docs/templates/project-context.template.md project-context.md
 ```
 
-Edit `project-context.md` to fill in:
-- **Repository**: GitHub URL and commit message format.
-- **Tech Stack**: Frontend & backend frameworks, databases, test frameworks.
-- **Delivery Tracker**: Set to `Local docs` (default), `GitHub Issues`, or `Jira`.
-- **Commands**: Standard commands for setup, compilation, linting, unit tests, and full build.
-- **Quality Thresholds**: Minimum line/branch test coverage percentages.
-
 ### Step 3: Add Your PRD or BRD
-Create a `prd.md` file in the project root (or place a BRD in `docs/brd/my-feature.md`):
-
-```bash
-cp docs/templates/prd.template.md prd.md
-# Edit prd.md with your feature requirements
-```
+Place your requirement document in `prd.md` or `docs/brd/my-feature.md`.
 
 ### Step 4: Launch the Agent Team
-Run Pi in interactive mode and issue the `/team-dev` command:
+Run `/team-dev` with your desired control mode:
 
 ```bash
-# Launch in Human-in-the-Loop mode (default - requires approval at stage boundaries)
-pi /team-dev --mode=hitl
+# Step HITL mode (Pause after every step)
+pi /team-dev --mode=step-hitl
 
-# Or launch in fully Autonomous mode
+# Loop HITL mode (Pause after each full story loop)
+pi /team-dev --mode=loop-hitl
+
+# Full Autonomous mode
 pi /team-dev --mode=auto
 ```
 
 ### Step 5: Attach to the 5-Pane Tmux Workspace
-The orchestrator creates a 5-pane tmux session named `pi-team`. Open a separate terminal window or pane and attach to watch all 5 agents work live:
+Open a separate terminal window and attach to the tmux session:
 
 ```bash
 tmux attach -t pi-team
 ```
 
-#### Tmux 5-Pane Layout:
+#### Tmux 5-Pane Workspace Layout:
 ```
 +------------------------------------------------------------------------+
-| Pane 0: [MASTER ORCHESTRATOR] Status Panel & Event Bus                 |
+| Pane 0: [MASTER ORCHESTRATOR] Pi Agent Session (Interactive Control)   |
 +------------------------------------+-----------------------------------+
 | Pane 1: [BA - Business Analyst]    | Pane 2: [DEV - Fullstack Dev]     |
 | pi -a ba                           | pi -a developer                   |
@@ -101,34 +100,4 @@ tmux attach -t pi-team
 | Pane 3: [QA - Quality Analyst]     | Pane 4: [REVIEWER - Code Review]  |
 | pi -a qa                           | pi -a reviewer                    |
 +------------------------------------+-----------------------------------+
-```
-
----
-
-## 📦 Option 2: Share via Pi Package Install
-
-You can also share this entire agent team package with other teams via Git:
-
-```bash
-# In any target repository:
-pi install git:github.com/your-org/pi-team
-```
-
-Once installed, simply run `pi /team-dev` in any repo containing a `project-context.md` and `prd.md`!
-
----
-
-## 🛠 Directory Structure Reference
-
-```
-project-root/
-├── project-context.md         # Stack, build/test commands, quality thresholds
-├── prd.md                     # Product Requirements Document
-├── .pi/
-│   ├── active-task.json       # Live task lifecycle state
-│   ├── agents/                # Persona prompts (ba.md, developer.md, qa.md, reviewer.md)
-│   ├── skills/                # 14 engineering skills (clean-code, unit-testing, etc.)
-│   ├── extensions/            # Tmux manager, backlog tool, and team orchestrator
-│   └── templates/             # Templates for stories, BRDs, specs, and project context
-└── README.md
 ```

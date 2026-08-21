@@ -15,18 +15,25 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      const isHitl = !args?.includes("--mode=auto");
-      ctx.ui.notify(`Initializing Pi Agent Team (${isHitl ? "HITL Mode" : "Autonomous Mode"})...`, "info");
+      // Parse control mode: --mode=step-hitl | --mode=loop-hitl | --mode=auto
+      let mode = "step-hitl";
+      if (args?.includes("--mode=auto")) {
+        mode = "auto";
+      } else if (args?.includes("--mode=loop-hitl") || args?.includes("--mode=loop")) {
+        mode = "loop-hitl";
+      }
+
+      ctx.ui.notify(`Initializing Pi Agent Team [Mode: ${mode}]...`, "info");
 
       const panes = tmux.setup5PaneLayout();
 
-      // Trigger initial BA prompt in Pane 1
+      // Trigger initial prompt in Orchestrator Pane 0
       tmux.sendPromptToPane(
-        panes.ba,
-        "Read prd.md (or docs/brd/) and project-context.md. Run Auto Re-slice and break down requirements into atomic stories/issues with Gherkin ACs."
+        panes.orchestrator,
+        `Start multi-agent team in mode '${mode}'. Inspect project-context.md, verify Delivery Tracker setting, and instruct BA in Pane 1 to begin PRD grooming.`
       );
 
-      ctx.ui.notify("Team setup complete in 5-pane tmux session 'pi-team'. Attach with: tmux attach -t pi-team", "info");
+      ctx.ui.notify(`Team setup complete in 5-pane tmux session 'pi-team' [Mode: ${mode}]. Attach with: tmux attach -t pi-team`, "info");
     }
   });
 }

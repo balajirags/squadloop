@@ -1,11 +1,11 @@
 import { execSync } from "child_process";
 
 export interface TmuxPaneMap {
-  orchestrator: string; // Top Pane
-  ba: string;           // Bottom Left Top
-  developer: string;    // Bottom Right Top
-  qa: string;           // Bottom Left Bottom
-  reviewer: string;     // Bottom Right Bottom
+  orchestrator: string; // Top Pane (Pane 0)
+  ba: string;           // Bottom Left Top (Pane 1)
+  developer: string;    // Bottom Right Top (Pane 2)
+  qa: string;           // Bottom Left Bottom (Pane 3)
+  reviewer: string;     // Bottom Right Bottom (Pane 4)
 }
 
 export class TmuxManager {
@@ -28,9 +28,9 @@ export class TmuxManager {
       // Ignore if session didn't exist
     }
 
-    // 1. Create session with Pane 0: Master Orchestrator Dashboard
+    // 1. Create session with Pane 0: Master Orchestrator Pi Agent
     const orchestratorPane = execSync(
-      `tmux new-session -d -s ${this.sessionName} -n team -P -F "#{pane_id}" "echo '=== MASTER ORCHESTRATOR DASHBOARD ==='; tail -f /dev/null"`
+      `tmux new-session -d -s ${this.sessionName} -n team -P -F "#{pane_id}" "pi -a orchestrator; exec bash"`
     ).toString().trim();
 
     // 2. Split bottom area for BA
@@ -53,8 +53,8 @@ export class TmuxManager {
       `tmux split-window -v -t ${devPane} -P -F "#{pane_id}" "pi -a reviewer; exec bash"`
     ).toString().trim();
 
-    // 6. Resize Orchestrator top pane to 20% height
-    execSync(`tmux resize-pane -t ${orchestratorPane} -y 20%`);
+    // 6. Resize Orchestrator top pane to 25% height
+    execSync(`tmux resize-pane -t ${orchestratorPane} -y 25%`);
 
     return {
       orchestrator: orchestratorPane,
