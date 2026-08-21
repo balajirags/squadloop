@@ -9,5 +9,7 @@ export declare class TmuxManager {
     private sessionName;
     isTmuxAvailable(): boolean;
     setup5PaneLayout(): TmuxPaneMap;
+    startAppServerWindow(startCommand?: string): string;
+    recoverMissingPanes(currentPanes: TmuxPaneMap): TmuxPaneMap;
     sendPromptToPane(paneTarget: string, promptText: string): void;
 }

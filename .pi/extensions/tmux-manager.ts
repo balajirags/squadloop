@@ -1,11 +1,11 @@
 import { execSync } from "child_process";
 
 export interface TmuxPaneMap {
-  orchestrator: string; // Top Pane
-  ba: string;           // Bottom Left Top
-  developer: string;    // Bottom Right Top
-  qa: string;           // Bottom Left Bottom
-  reviewer: string;     // Bottom Right Bottom
+  orchestrator: string; // Pane 0
+  ba: string;           // Pane 1
+  developer: string;    // Pane 2
+  qa: string;           // Pane 3
+  reviewer: string;     // Pane 4
 }
 
 export class TmuxManager {
@@ -28,7 +28,7 @@ export class TmuxManager {
       // Ignore if session didn't exist
     }
 
-    // 1. Create session with Pane 0: Master Orchestrator Pi Agent
+    // 1. Create Window 0 (team) with Pane 0: Master Orchestrator Pi Agent
     const orchestratorPane = execSync(
       `tmux new-session -d -s ${this.sessionName} -n team -P -F "#{pane_id}" "pi -a orchestrator; exec bash"`
     ).toString().trim();
@@ -56,13 +56,14 @@ export class TmuxManager {
     // Configure Pane Titles & Border Styling
     try {
       execSync(`tmux set-option -t ${this.sessionName} pane-border-status top`);
-      execSync(`tmux set-option -t ${this.sessionName} pane-border-format "#[fg=yellow,bold] [ #{pane_title} ] #[default]"`);
+      execSync(`tmux set-option -t ${this.sessionName} pane-border-style "fg=cyan"`);
+      execSync(`tmux set-option -t ${this.sessionName} pane-border-format "#[fg=black,bg=cyan,bold] [ #{pane_title} ] #[default]"`);
 
-      execSync(`tmux select-pane -t ${orchestratorPane} -T "MASTER ORCHESTRATOR"`);
-      execSync(`tmux select-pane -t ${baPane} -T "BUSINESS ANALYST"`);
-      execSync(`tmux select-pane -t ${devPane} -T "FULLSTACK DEVELOPER"`);
-      execSync(`tmux select-pane -t ${qaPane} -T "QUALITY ANALYST"`);
-      execSync(`tmux select-pane -t ${reviewerPane} -T "CODE REVIEWER"`);
+      execSync(`tmux select-pane -t ${orchestratorPane} -T "ORCHESTRATOR"`);
+      execSync(`tmux select-pane -t ${baPane} -T "BUSINESS ANALYST (BA)"`);
+      execSync(`tmux select-pane -t ${devPane} -T "DEVELOPER (DEV)"`);
+      execSync(`tmux select-pane -t ${qaPane} -T "QUALITY ANALYST (QA)"`);
+      execSync(`tmux select-pane -t ${reviewerPane} -T "CODE REVIEWER (REVIEWER)"`);
 
       // Resize Orchestrator top pane to 25% height
       execSync(`tmux resize-pane -t ${orchestratorPane} -y 25%`);
@@ -77,6 +78,53 @@ export class TmuxManager {
       qa: qaPane,
       reviewer: reviewerPane
     };
+  }
+
+  // Create Window 1 for running the Application Server isolated
+  public startAppServerWindow(startCommand?: string): string {
+    const windowName = "app-server";
+    try {
+      // Check if window already exists
+      const windows = execSync(`tmux list-windows -t ${this.sessionName} -F "#{window_name}"`).toString();
+      if (windows.includes(windowName)) {
+        return `${this.sessionName}:app-server`;
+      }
+
+      const cmd = startCommand || "echo '=== APP SERVER WINDOW ==='; exec bash";
+      execSync(`tmux new-window -t ${this.sessionName} -n ${windowName} "${cmd.replace(/"/g, '\\"')}"`);
+      return `${this.sessionName}:${windowName}`;
+    } catch {
+      return `${this.sessionName}:0`;
+    }
+  }
+
+  // Verify and recover any closed pane
+  public recoverMissingPanes(currentPanes: TmuxPaneMap): TmuxPaneMap {
+    try {
+      const livePanes = execSync(`tmux list-panes -t ${this.sessionName}:0 -F "#{pane_id}"`).toString();
+      const updated = { ...currentPanes };
+
+      if (!livePanes.includes(currentPanes.ba)) {
+        updated.ba = execSync(`tmux split-window -v -t ${currentPanes.orchestrator} -P -F "#{pane_id}" "pi -a ba; exec bash"`).toString().trim();
+        execSync(`tmux select-pane -t ${updated.ba} -T "BUSINESS ANALYST (BA)"`);
+      }
+      if (!livePanes.includes(currentPanes.developer)) {
+        updated.developer = execSync(`tmux split-window -h -t ${updated.ba} -P -F "#{pane_id}" "pi -a developer; exec bash"`).toString().trim();
+        execSync(`tmux select-pane -t ${updated.developer} -T "DEVELOPER (DEV)"`);
+      }
+      if (!livePanes.includes(currentPanes.qa)) {
+        updated.qa = execSync(`tmux split-window -v -t ${updated.ba} -P -F "#{pane_id}" "pi -a qa; exec bash"`).toString().trim();
+        execSync(`tmux select-pane -t ${updated.qa} -T "QUALITY ANALYST (QA)"`);
+      }
+      if (!livePanes.includes(currentPanes.reviewer)) {
+        updated.reviewer = execSync(`tmux split-window -v -t ${updated.developer} -P -F "#{pane_id}" "pi -a reviewer; exec bash"`).toString().trim();
+        execSync(`tmux select-pane -t ${updated.reviewer} -T "CODE REVIEWER (REVIEWER)"`);
+      }
+
+      return updated;
+    } catch {
+      return currentPanes;
+    }
   }
 
   public sendPromptToPane(paneTarget: string, promptText: string): void {

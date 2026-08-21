@@ -46,33 +46,34 @@ export function registerBacklogTool(pi) {
                         catch {
                             // Ignore if tmux session not attached
                         }
-                        // Auto-steer next subagent pane if in loop-hitl or auto mode
-                        if (mode === "loop-hitl" || mode === "auto") {
-                            if (params.newStatus === "ready-for-dev") {
-                                const prompt = `Issue #${params.issueId} is ready for development. Read project-context.md, checkout branch feature/issue-${params.issueId}, implement code inside backend/ or frontend/, run tests & verify coverage, commit, push, and update status to 'qa-verifying'.`;
-                                execSync(`tmux send-keys -t ${panes.developer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+                        // Auto-steer transitions according to mode
+                        if (params.newStatus === "ready-for-dev" && (mode === "loop-hitl" || mode === "auto")) {
+                            const prompt = `Issue #${params.issueId} is ready for development. Read project-context.md, checkout branch feature/issue-${params.issueId}, implement code inside backend/ or frontend/, run tests & verify coverage, commit, push, and update status to 'qa-verifying'.`;
+                            execSync(`tmux send-keys -t ${panes.developer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+                        }
+                        else if (params.newStatus === "qa-verifying" && (mode === "loop-hitl" || mode === "auto")) {
+                            const prompt = `Issue #${params.issueId} is ready for QA verification. Checkout feature branch, verify app server is running on localhost port, execute live HTTP/UI AC checks, and update status.`;
+                            execSync(`tmux send-keys -t ${panes.qa} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+                        }
+                        else if (params.newStatus === "code-review" && (mode === "loop-hitl" || mode === "auto")) {
+                            const prompt = `Issue #${params.issueId} is ready for Code Review. Inspect git diff vs main, verify P1/P2 standards, merge PR to main, and update status to 'done'.`;
+                            execSync(`tmux send-keys -t ${panes.reviewer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+                        }
+                        else if (params.newStatus === "dev-rework" && (mode === "loop-hitl" || mode === "auto")) {
+                            const prompt = `Issue #${params.issueId} requires rework. Read feedback notes: '${params.notes || "Check review/QA comments"}', fix issues in backend/ or frontend/, re-run build-verify, commit, push, and update status to 'qa-verifying'.`;
+                            execSync(`tmux send-keys -t ${panes.developer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+                        }
+                        else if (params.newStatus === "done") {
+                            if (mode === "loop-hitl") {
+                                // STRICT LOOP-HITL HALT: Stop and wait for human input at story completion
+                                state.status = "loop-halted";
+                                fs.writeFileSync(activeTaskPath, JSON.stringify(state, null, 2), "utf-8");
+                                const prompt = `STORY #${params.issueId} COMPLETE & MERGED! [LOOP-HITL HALT] The 1-story loop has completed end-to-end. Workflow is HALTED. Type 'next' or press Enter to pick up and develop the next story in the backlog.`;
+                                execSync(`tmux send-keys -t ${panes.orchestrator} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
                             }
-                            else if (params.newStatus === "qa-verifying") {
-                                const prompt = `Issue #${params.issueId} is ready for QA verification. Checkout feature branch, start running the backend/frontend app locally on its port, execute live HTTP/UI AC checks, and update status.`;
-                                execSync(`tmux send-keys -t ${panes.qa} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
-                            }
-                            else if (params.newStatus === "code-review") {
-                                const prompt = `Issue #${params.issueId} is ready for Code Review. Inspect git diff vs main, verify P1/P2 standards, and update status.`;
-                                execSync(`tmux send-keys -t ${panes.reviewer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
-                            }
-                            else if (params.newStatus === "dev-rework") {
-                                const prompt = `Issue #${params.issueId} requires rework. Read feedback notes: '${params.notes || "Check review/QA comments"}', fix issues in backend/ or frontend/, re-run build-verify, commit, push, and update status to 'qa-verifying'.`;
-                                execSync(`tmux send-keys -t ${panes.developer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
-                            }
-                            else if (params.newStatus === "done") {
-                                if (mode === "loop-hitl") {
-                                    const prompt = `Story #${params.issueId} is COMPLETE! [LOOP-HITL Checkpoint] Press Enter or type 'next' to start grooming/developing the next story in the backlog.`;
-                                    execSync(`tmux send-keys -t ${panes.orchestrator} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
-                                }
-                                else if (mode === "auto") {
-                                    const prompt = `Story #${params.issueId} is COMPLETE! Auto-picking next story from backlog for BA grooming.`;
-                                    execSync(`tmux send-keys -t ${panes.ba} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
-                                }
+                            else if (mode === "auto") {
+                                const prompt = `Story #${params.issueId} is COMPLETE & MERGED! [AUTO MODE] Picking up next story from backlog for BA grooming/dev.`;
+                                execSync(`tmux send-keys -t ${panes.ba} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
                             }
                         }
                     }

@@ -22,6 +22,7 @@ export default function (pi: ExtensionAPI) {
 
   const tmux = new TmuxManager();
 
+  // Command 1: /team-dev
   pi.registerCommand("team-dev", {
     description: "Launch multi-agent team workflow in tmux (Master Orchestrator, BA, Dev, QA, Reviewer). Options: --team-mode=loop|auto|step",
     handler: async (args, ctx) => {
@@ -52,6 +53,14 @@ export default function (pi: ExtensionAPI) {
       const teamConfig: TeamConfig = { mode, panes };
       fs.writeFileSync(configPath, JSON.stringify(teamConfig, null, 2), "utf-8");
 
+      // Check if project-context.md defines local app start command and launch Window 1 (app-server)
+      try {
+        const appWindow = tmux.startAppServerWindow("echo '=== APP SERVER WINDOW ==='; exec bash");
+        ctx.ui.notify(`App server window ready at '${appWindow}'`, "info");
+      } catch {
+        // Non-fatal
+      }
+
       // Initial greeting prompt in Orchestrator Pane 0: Wait for human instruction / intent
       tmux.sendPromptToPane(
         panes.orchestrator,
@@ -59,6 +68,28 @@ export default function (pi: ExtensionAPI) {
       );
 
       ctx.ui.notify(`Team setup complete in 5-pane tmux session 'pi-team' [--team-mode=${mode}]. Attach with: tmux attach -t pi-team`, "info");
+    }
+  });
+
+  // Command 2: /team-recover (Recover any accidentally closed pane)
+  pi.registerCommand("team-recover", {
+    description: "Recover any closed agent pane in the active tmux workspace",
+    handler: async (_args, ctx) => {
+      const configPath = path.join(process.cwd(), ".pi", "team-config.json");
+      if (!fs.existsSync(configPath)) {
+        ctx.ui.notify("Error: team-config.json not found. Run /team-dev first.", "error");
+        return;
+      }
+
+      try {
+        const config: TeamConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+        const recoveredPanes = tmux.recoverMissingPanes(config.panes);
+        config.panes = recoveredPanes;
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+        ctx.ui.notify("Pane recovery check complete!", "info");
+      } catch (err: any) {
+        ctx.ui.notify(`Recovery failed: ${err.message}`, "error");
+      }
     }
   });
 }
