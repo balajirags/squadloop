@@ -12,15 +12,15 @@ Based on [AI-Native Development Specifications](https://aishippingblog.com/p/ai-
 
 ---
 
-## 🎛 Supported Flags & Workflow Modes
+## 🎛 Workflow Modes (`--team-mode`)
 
-You can specify the workflow mode using any of these clean flags:
+Specify the workflow control mode using the `--team-mode` flag:
 
-- **Loop HITL (`--loop` / `--workflow=loop` / `--team-mode=loop` / `loop`)**:
+- **`--team-mode=loop` (Loop Human-In-The-Loop)**:
   Runs a single story automatically through BA → Dev → QA → Reviewer → Done, then pauses at the Orchestrator for human approval before picking up the next story.
-- **Full Auto (`--auto` / `--workflow=auto` / `--team-mode=auto` / `auto`)**:
+- **`--team-mode=auto` (Full Autonomous)**:
   Processes all stories sequentially in the backlog without any HITL pause points.
-- **Step HITL (`--step` / `--workflow=step` / `--team-mode=step` / `step`)**:
+- **`--team-mode=step` (Step Human-In-The-Loop - Default)**:
   Pauses for human approval at EVERY agent transition (BA → HITL → Dev → HITL → QA → HITL → Reviewer → HITL).
 
 ---
@@ -71,18 +71,18 @@ cp docs/templates/project-context.template.md project-context.md
 Place your requirement document in `prd.md` or `docs/brd/my-feature.md`.
 
 ### Step 4: Launch the Agent Team
-Launch Pi with your preferred flag:
+Launch Pi with the `--team-mode` flag:
 
 ```bash
 # In Interactive Pi Mode:
-/team-dev --loop
-/team-dev --auto
-/team-dev --step
+/team-dev --team-mode=loop
+/team-dev --team-mode=auto
+/team-dev --team-mode=step
 
 # Or from bash:
-pi "/team-dev --loop"
-pi "/team-dev --auto"
-pi "/team-dev --step"
+pi "/team-dev --team-mode=loop"
+pi "/team-dev --team-mode=auto"
+pi "/team-dev --team-mode=step"
 ```
 
 ### Step 5: Attach to the 5-Pane Tmux Workspace
