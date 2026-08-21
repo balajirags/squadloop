@@ -13,6 +13,7 @@ export interface ActiveTaskState {
 }
 
 export function registerBacklogTool(pi: ExtensionAPI) {
+  // Tool 1: team_update_status
   pi.registerTool({
     name: "team_update_status",
     label: "Team Update Status",
@@ -71,7 +72,7 @@ export function registerBacklogTool(pi: ExtensionAPI) {
                 const prompt = `Issue #${params.issueId} is ready for Code Review. Inspect git diff vs main, verify P1/P2 standards, and update status.`;
                 execSync(`tmux send-keys -t ${panes.reviewer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
               } else if (params.newStatus === "dev-rework") {
-                const prompt = `Issue #${params.issueId} requires rework. Read feedback notes, fix issues in backend/ or frontend/, re-run build-verify, commit, push, and update status to 'qa-verifying'.`;
+                const prompt = `Issue #${params.issueId} requires rework. Read feedback notes: '${params.notes || "Check review/QA comments"}', fix issues in backend/ or frontend/, re-run build-verify, commit, push, and update status to 'qa-verifying'.`;
                 execSync(`tmux send-keys -t ${panes.developer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
               } else if (params.newStatus === "done") {
                 if (mode === "loop-hitl") {
@@ -93,6 +94,56 @@ export function registerBacklogTool(pi: ExtensionAPI) {
         content: [{ type: "text", text: `Updated task #${params.issueId} status to '${params.newStatus}'` }],
         details: state
       };
+    }
+  });
+
+  // Tool 2: send_agent_message (Direct Inter-Agent Messaging)
+  pi.registerTool({
+    name: "send_agent_message",
+    label: "Send Agent Message",
+    description: "Send a direct message or feedback to another agent persona pane in tmux (ba, developer, qa, reviewer, orchestrator)",
+    parameters: Type.Object({
+      targetRole: Type.Union([
+        Type.Literal("ba"),
+        Type.Literal("developer"),
+        Type.Literal("qa"),
+        Type.Literal("reviewer"),
+        Type.Literal("orchestrator")
+      ], { description: "Target agent persona role" }),
+      message: Type.String({ description: "Direct feedback, question, or instruction message to send" })
+    }),
+    async execute(toolCallId, params, signal, onUpdate, ctx) {
+      const configPath = path.join(process.cwd(), ".pi", "team-config.json");
+      if (!fs.existsSync(configPath)) {
+        return {
+          content: [{ type: "text", text: "Error: team-config.json not found. Run /team-dev first." }],
+          details: { success: false }
+        };
+      }
+
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+        const targetPane = config.panes?.[params.targetRole];
+        if (!targetPane) {
+          return {
+            content: [{ type: "text", text: `Error: pane for role '${params.targetRole}' not found.` }],
+            details: { success: false }
+          };
+        }
+
+        const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
+        execSync(`tmux send-keys -t ${targetPane} "${formatted.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+
+        return {
+          content: [{ type: "text", text: `Sent direct message to ${params.targetRole.toUpperCase()} pane (${targetPane}).` }],
+          details: { success: true, targetPane, message: params.message }
+        };
+      } catch (err: any) {
+        return {
+          content: [{ type: "text", text: `Error sending message: ${err.message}` }],
+          details: { success: false, error: err.message }
+        };
+      }
     }
   });
 }
