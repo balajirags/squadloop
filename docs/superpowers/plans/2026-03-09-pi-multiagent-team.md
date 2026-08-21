@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a reusable Pi Package (`pi-agent-team`) that customises Pi Agent into a 4-role multi-agent development team (BA, Developer, QA, Code Reviewer) running in a 2x2 tmux grid layout with HITL and Autonomous modes.
+**Goal:** Build a reusable Pi Package (`pi-agent-team`) that customises Pi Agent into a 4-role multi-agent development team (BA, Developer, QA, Code Reviewer) and Master Orchestrator running in a 5-pane tmux layout with HITL and Autonomous modes, strictly contained inside the `pi-team` project.
 
 **Architecture:** A Pi package bundling extensions (`team-orchestrator.ts`, `tmux-manager.ts`, `backlog-tool.ts`), 4 persona markdown definitions (`ba.md`, `developer.md`, `qa.md`, `reviewer.md`), and custom skills. The orchestrator uses GitHub Issues / Jira as the state machine and `tmux send-keys` for inter-pane IPC.
 
@@ -257,10 +257,11 @@ git commit -m "feat: implement team_update_status extension tool"
 import { execSync } from "child_process";
 
 export interface TmuxPaneMap {
-  ba: string;      // Pane %0
-  developer: string; // Pane %1
-  qa: string;      // Pane %2
-  reviewer: string; // Pane %3
+  orchestrator: string; // Pane 0
+  ba: string;           // Pane 1
+  developer: string;    // Pane 2
+  qa: string;           // Pane 3
+  reviewer: string;     // Pane 4
 }
 
 export class TmuxManager {
@@ -275,27 +276,25 @@ export class TmuxManager {
     }
   }
 
-  public setup2x2Grid(): TmuxPaneMap {
-    // Create new session or attach
-    execSync(`tmux new-session -d -s ${this.sessionName} "pi -a ba"`);
+  public setup5PaneLayout(): TmuxPaneMap {
+    // Top Pane 0: Master Orchestrator
+    execSync(`tmux new-session -d -s ${this.sessionName} -n team "echo '--- MASTER ORCHESTRATOR DASHBOARD ---'"`);
     
-    // Split horizontally (Pane 0 -> Top Left BA, Pane 1 -> Top Right DEV)
-    execSync(`tmux split-window -h -t ${this.sessionName}:0 "pi -a developer"`);
+    // Split bottom area for subagents
+    execSync(`tmux split-window -v -t ${this.sessionName}:0 "pi -a ba"`);
+    execSync(`tmux split-window -h -t ${this.sessionName}:0.1 "pi -a developer"`);
+    execSync(`tmux split-window -v -t ${this.sessionName}:0.1 "pi -a qa"`);
+    execSync(`tmux split-window -v -t ${this.sessionName}:0.2 "pi -a reviewer"`);
     
-    // Split vertically Pane 0 (Pane 2 -> Bottom Left QA)
-    execSync(`tmux split-window -v -t ${this.sessionName}:0.0 "pi -a qa"`);
-    
-    // Split vertically Pane 1 (Pane 3 -> Bottom Right REVIEWER)
-    execSync(`tmux split-window -v -t ${this.sessionName}:0.1 "pi -a reviewer"`);
-    
-    // Equalize layout
-    execSync(`tmux select-layout -t ${this.sessionName}:0 tiled`);
+    // Resize Orchestrator top pane to 20% height
+    execSync(`tmux resize-pane -t ${this.sessionName}:0.0 -y 20%`);
 
     return {
-      ba: `${this.sessionName}:0.0`,
-      developer: `${this.sessionName}:0.1`,
-      qa: `${this.sessionName}:0.2`,
-      reviewer: `${this.sessionName}:0.3`
+      orchestrator: `${this.sessionName}:0.0`,
+      ba: `${this.sessionName}:0.1`,
+      developer: `${this.sessionName}:0.2`,
+      qa: `${this.sessionName}:0.3`,
+      reviewer: `${this.sessionName}:0.4`
     };
   }
 

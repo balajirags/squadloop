@@ -8,8 +8,9 @@
 
 ## 1. Executive Summary
 
-This spec defines the architecture and design for customising Pi Agent into a **multi-agent development team** packaged as a reusable **Pi Package**. The system models a software development lifecycle with 4 specialized AI agent personas operating concurrently in a 2x2 tmux window grid:
+This spec defines the architecture and design for customising Pi Agent into a **multi-agent development team** packaged as a reusable **Pi Package**. The system models a software development lifecycle with 4 specialized AI agent personas and a Master Orchestrator operating concurrently in a 5-pane tmux window layout:
 
+0. **Master Orchestrator**: Manages state transitions, displays workflow dashboard, and signals subagents.
 1. **BA (Business Analyst)**: Decomposes PRDs into atomic task specs with explicit Acceptance Criteria (AC).
 2. **Developer (Fullstack)**: Implements feature code and unit tests based on task specs and project context.
 3. **QA (Quality Analyst)**: Verifies working code and executes test/bash validation suites against ACs.
@@ -57,18 +58,23 @@ project-root/
 
 ## 3. Architecture & Tmux Layout
 
-### 3.1 Tmux Grid Display (Option A)
-When `/team-dev` is executed, the orchestrator constructs a 2x2 tmux window split where each pane runs an interactive `pi` instance with full terminal UI capabilities (tool boxes, live text streaming, color output):
+### 3.1 Tmux 5-Pane Display (Option A)
+When `/team-dev` is executed, the orchestrator constructs a 5-pane tmux window split where Pane 0 acts as the Master Orchestrator status panel, and Panes 1-4 run interactive `pi` subagent instances with full terminal UI capabilities (tool boxes, live text streaming, color output):
 
 ```
-+------------------------------------+------------------------------------+
-| Pane 0: [BA - Business Analyst]   | Pane 1: [DEV - Fullstack Dev]      |
-| pi -a ba                           | pi -a developer                    |
-+------------------------------------+------------------------------------+
-| Pane 2: [QA - Quality Analyst]     | Pane 3: [REVIEWER - Code Review]   |
-| pi -a qa                           | pi -a reviewer                     |
-+------------------------------------+------------------------------------+
++------------------------------------------------------------------------+
+| Pane 0: [MASTER ORCHESTRATOR] Status Panel & Event Bus                 |
++------------------------------------+-----------------------------------+
+| Pane 1: [BA - Business Analyst]    | Pane 2: [DEV - Fullstack Dev]     |
+| pi -a ba                           | pi -a developer                   |
++------------------------------------+-----------------------------------+
+| Pane 3: [QA - Quality Analyst]     | Pane 4: [REVIEWER - Code Review]  |
+| pi -a qa                           | pi -a reviewer                    |
++------------------------------------+-----------------------------------+
 ```
+
+### 3.2 Project Isolation Guarantee
+All skills, extensions, agents, and prompts are isolated strictly within the local `pi-team` project repository (`.pi/` and project settings). No modifications or installations touch global user settings (`~/.pi/agent/`).
 
 ### 3.2 Inter-Agent Signaling & Communication Protocol
 Communication across panes occurs through a hybrid event model:
