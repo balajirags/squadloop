@@ -30,18 +30,22 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      // Parse control mode: auto | loop | step | --auto | --loop | --step | --team-mode=...
+      // Flexible Mode Parsing:
+      // Accepts: --loop, --auto, --step
+      // Accepts: --team-mode=loop|auto|step, --workflow=loop|auto|step, --mode=loop|auto|step
+      // Accepts: loop, auto, step
       let mode: TeamConfig["mode"] = "step-hitl";
       const argStr = args?.toLowerCase() || "";
-      if (argStr.includes("auto")) {
+
+      if (argStr.includes("auto") || argStr.includes("--auto") || argStr.includes("mode=auto")) {
         mode = "auto";
-      } else if (argStr.includes("loop")) {
+      } else if (argStr.includes("loop") || argStr.includes("--loop") || argStr.includes("mode=loop")) {
         mode = "loop-hitl";
-      } else if (argStr.includes("step")) {
+      } else if (argStr.includes("step") || argStr.includes("--step") || argStr.includes("mode=step")) {
         mode = "step-hitl";
       }
 
-      ctx.ui.notify(`Initializing Pi Agent Team [Mode: ${mode}]...`, "info");
+      ctx.ui.notify(`Initializing Pi Agent Team [Workflow Mode: ${mode}]...`, "info");
 
       const panes = tmux.setup5PaneLayout();
 
@@ -54,7 +58,7 @@ export default function (pi: ExtensionAPI) {
       // Trigger initial prompt in Orchestrator Pane 0
       tmux.sendPromptToPane(
         panes.orchestrator,
-        `Start multi-agent team in mode '${mode}'. Inspect project-context.md, verify Delivery Tracker setting, and instruct BA in Pane 1 to begin PRD grooming.`
+        `Start multi-agent team in workflow mode '${mode}'. Inspect project-context.md, verify Delivery Tracker setting, and instruct BA in Pane 1 to begin PRD grooming.`
       );
 
       ctx.ui.notify(`Team setup complete in 5-pane tmux session 'pi-team' [Mode: ${mode}]. Attach with: tmux attach -t pi-team`, "info");
