@@ -55,12 +55,12 @@ Master Orchestrator (Pane 0) is the single entry point for human instructions. U
 - **`step-hitl` (Step Human-in-the-Loop)**:
   Pauses for human approval at every stage transition (BA → HITL → Dev → HITL → QA → HITL → Reviewer → HITL).
 
-### 🧹 Automatic Context Clearing (`/clear`)
-In `loop-hitl` and `auto` modes, **the system automatically issues a `/clear` command** to target subagent panes prior to every stage transition (`team_update_status` / `send_agent_message`):
-- **Developer Pane**: Context cleared before receiving `ready-for-dev` / `dev-rework` prompt.
-- **QA Pane**: Context cleared before receiving `qa-verifying` prompt (guaranteeing cold-read isolation).
-- **Reviewer Pane**: Context cleared before receiving `code-review` prompt (guaranteeing cold-read isolation).
-- **BA Pane**: Context cleared before receiving next story grooming prompt in `auto` mode.
+### 🧹 Universal Automatic Context Clearing (`/clear`)
+In **ALL team modes** (`loop-hitl`, `auto`, and `step-hitl`), the system automatically issues a `/clear` command to target child agent panes whenever a task or message is assigned (`team_update_status` or `send_agent_message`):
+- **Developer Pane**: Context automatically cleared before receiving `ready-for-dev` / `dev-rework` assignment.
+- **QA Pane**: Context automatically cleared before receiving `qa-verifying` assignment (guaranteeing cold-read isolation).
+- **Reviewer Pane**: Context automatically cleared before receiving `code-review` assignment (guaranteeing cold-read isolation).
+- **BA Pane**: Context automatically cleared before receiving new story/BRD grooming assignment.
 
 ---
 
