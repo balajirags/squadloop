@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Multi-agent development team extension for Pi Agent (BA, Dev, QA, Reviewer in tmux)",
   "main": "dist/index.js",
+  "bin": {
+    "devsquad": "./bin/devsquad.js"
+  },
   "keywords": [
     "pi-package"
   ],
