@@ -42,8 +42,8 @@ export default function (pi) {
             catch {
                 // Non-fatal
             }
-            // Initial greeting prompt in Orchestrator Pane 0: Wait for human instruction / intent
-            tmux.sendPromptToPane(panes.orchestrator, `Master Orchestrator online [--team-mode=${mode}]! Greet the user, summarize the available BRDs in docs/brd/, and ask what they would like to work on (e.g. 'Proceed with docs/brd/campaigns.md', 'Implement Story #42', or any custom request).`);
+            // Initial greeting prompt in Orchestrator Pane 0: Display interactive welcome menu and wait for human instruction
+            tmux.sendPromptToPane(panes.orchestrator, `Master Orchestrator online [--team-mode=${mode}]! Scan Agent.md, docs/brd/, docs/stories/, and GitHub/Jira issues. Display the welcome banner with options (1. Implement BRD/PRD, 2. Pick a specific Story/Issue, 3. Random Implementation, 4. Custom Task/Bug Fix) and prompt the user for their choice.`);
             ctx.ui.notify(`Team setup complete in 5-pane tmux session 'pi-team' [--team-mode=${mode}]. Attach with: tmux attach -t pi-team`, "info");
         }
     });
