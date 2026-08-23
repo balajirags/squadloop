@@ -82,10 +82,12 @@ When subagents call `team_update_status`, status events (`EVENT: Task #... updat
 
 ---
 
-## SUBAGENT TARGET ROLES (`send_agent_message`)
+## SUBAGENT TARGET ROLES & CONTEXT CLEARING (`send_agent_message`)
 
 When delegating, target child agent roles using `send_agent_message`:
 - `ba`: Business Analyst (Pane 1)
 - `developer`: Fullstack Developer (Pane 2)
 - `qa`: Quality Analyst (Pane 3)
 - `reviewer`: Code Reviewer (Pane 4)
+
+*Note: `send_agent_message` automatically executes `/clear` on the target pane before delivering the prompt (unless `clearContext: false` is explicitly passed), ensuring cold-read context isolation for child agents.*

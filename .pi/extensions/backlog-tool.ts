@@ -60,19 +60,32 @@ export function registerBacklogTool(pi: ExtensionAPI) {
               // Ignore if tmux session not attached
             }
 
+            // Helper to send keys with optional context clear
+            const sendPrompt = (paneTarget: string, promptText: string, clear = true) => {
+              try {
+                if (clear) {
+                  execSync(`tmux send-keys -t ${paneTarget} "/clear" Enter`, { stdio: "ignore" });
+                }
+                const escaped = promptText.replace(/"/g, '\\"');
+                execSync(`tmux send-keys -t ${paneTarget} "${escaped}" Enter`, { stdio: "ignore" });
+              } catch {
+                // Ignore if tmux session not attached
+              }
+            };
+
             // Auto-steer transitions according to mode
             if (params.newStatus === "ready-for-dev" && (mode === "loop-hitl" || mode === "auto")) {
               const prompt = `Issue #${params.issueId} is ready for development. Read project-context.md, checkout branch feature/issue-${params.issueId}, implement code inside backend/ or frontend/, run tests & verify coverage, commit, push, and update status to 'qa-verifying'.`;
-              execSync(`tmux send-keys -t ${panes.developer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+              sendPrompt(panes.developer, prompt, true);
             } else if (params.newStatus === "qa-verifying" && (mode === "loop-hitl" || mode === "auto")) {
               const prompt = `Issue #${params.issueId} is ready for QA verification. Checkout feature branch, verify app server is running on localhost port, execute live HTTP/UI AC checks, and update status.`;
-              execSync(`tmux send-keys -t ${panes.qa} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+              sendPrompt(panes.qa, prompt, true);
             } else if (params.newStatus === "code-review" && (mode === "loop-hitl" || mode === "auto")) {
               const prompt = `Issue #${params.issueId} is ready for Code Review. Inspect git diff vs main, verify P1/P2 standards, merge PR to main, and update status to 'done'.`;
-              execSync(`tmux send-keys -t ${panes.reviewer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+              sendPrompt(panes.reviewer, prompt, true);
             } else if (params.newStatus === "dev-rework" && (mode === "loop-hitl" || mode === "auto")) {
               const prompt = `Issue #${params.issueId} requires rework. Read feedback notes: '${params.notes || "Check review/QA comments"}', fix issues in backend/ or frontend/, re-run build-verify, commit, push, and update status to 'qa-verifying'.`;
-              execSync(`tmux send-keys -t ${panes.developer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+              sendPrompt(panes.developer, prompt, true);
             } else if (params.newStatus === "done") {
               if (mode === "loop-hitl") {
                 // STRICT LOOP-HITL HALT: Stop and wait for human input at story completion
@@ -80,10 +93,10 @@ export function registerBacklogTool(pi: ExtensionAPI) {
                 fs.writeFileSync(activeTaskPath, JSON.stringify(state, null, 2), "utf-8");
 
                 const prompt = `STORY #${params.issueId} COMPLETE & MERGED! [LOOP-HITL HALT] The 1-story loop has completed end-to-end. Workflow is HALTED. Type 'next' or press Enter to pick up and develop the next story in the backlog.`;
-                execSync(`tmux send-keys -t ${panes.orchestrator} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+                sendPrompt(panes.orchestrator, prompt, false);
               } else if (mode === "auto") {
                 const prompt = `Story #${params.issueId} is COMPLETE & MERGED! [AUTO MODE] Picking up next story from backlog for BA grooming/dev.`;
-                execSync(`tmux send-keys -t ${panes.ba} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+                sendPrompt(panes.ba, prompt, true);
               }
             }
           }
@@ -112,7 +125,8 @@ export function registerBacklogTool(pi: ExtensionAPI) {
         Type.Literal("reviewer"),
         Type.Literal("orchestrator")
       ], { description: "Target agent persona role" }),
-      message: Type.String({ description: "Direct feedback, question, or instruction message to send" })
+      message: Type.String({ description: "Direct feedback, question, or instruction message to send" }),
+      clearContext: Type.Optional(Type.Boolean({ description: "Whether to clear target agent conversation context before sending message (default: true)" }))
     }),
     async execute(toolCallId, params, signal, onUpdate, ctx) {
       const configPath = path.join(process.cwd(), ".pi", "team-config.json");
@@ -133,12 +147,21 @@ export function registerBacklogTool(pi: ExtensionAPI) {
           };
         }
 
+        const shouldClear = params.clearContext !== false;
+        if (shouldClear) {
+          try {
+            execSync(`tmux send-keys -t ${targetPane} "/clear" Enter`, { stdio: "ignore" });
+          } catch {
+            // Ignore if tmux send-keys fails
+          }
+        }
+
         const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
         execSync(`tmux send-keys -t ${targetPane} "${formatted.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
 
         return {
-          content: [{ type: "text", text: `Sent direct message to ${params.targetRole.toUpperCase()} pane (${targetPane}).` }],
-          details: { success: true, targetPane, message: params.message }
+          content: [{ type: "text", text: `Sent direct message to ${params.targetRole.toUpperCase()} pane (${targetPane})${shouldClear ? " [context cleared]" : ""}.` }],
+          details: { success: true, targetPane, message: params.message, clearedContext: shouldClear }
         };
       } catch (err: any) {
         return {

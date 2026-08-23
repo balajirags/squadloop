@@ -46,7 +46,7 @@ Master Orchestrator (Pane 0) is the single entry point for human instructions. U
 
 ---
 
-## 🎛️ Workflow Modes (`--team-mode`)
+## 🎛️ Workflow Modes (`--team-mode`) & Automated Context Clearing
 
 - **`loop-hitl` (Default - Single Story Loop)**:
   Runs a single story end-to-end (BA → Dev → QA → Reviewer → Done). Upon story completion, workflow halts at Orchestrator Pane 0 for human approval before picking up the next story.
@@ -54,6 +54,13 @@ Master Orchestrator (Pane 0) is the single entry point for human instructions. U
   Processes all backlog stories sequentially end-to-end without stopping until no uncompleted stories remain.
 - **`step-hitl` (Step Human-in-the-Loop)**:
   Pauses for human approval at every stage transition (BA → HITL → Dev → HITL → QA → HITL → Reviewer → HITL).
+
+### 🧹 Automatic Context Clearing (`/clear`)
+In `loop-hitl` and `auto` modes, **the system automatically issues a `/clear` command** to target subagent panes prior to every stage transition (`team_update_status` / `send_agent_message`):
+- **Developer Pane**: Context cleared before receiving `ready-for-dev` / `dev-rework` prompt.
+- **QA Pane**: Context cleared before receiving `qa-verifying` prompt (guaranteeing cold-read isolation).
+- **Reviewer Pane**: Context cleared before receiving `code-review` prompt (guaranteeing cold-read isolation).
+- **BA Pane**: Context cleared before receiving next story grooming prompt in `auto` mode.
 
 ---
 
