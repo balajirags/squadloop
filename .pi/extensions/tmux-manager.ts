@@ -9,7 +9,7 @@ export interface TmuxPaneMap {
 }
 
 export class TmuxManager {
-  private sessionName = "pi-team";
+  private sessionName = "devsquad-workspace";
 
   public isTmuxAvailable(): boolean {
     try {
@@ -72,11 +72,11 @@ export class TmuxManager {
       execSync(`tmux set-window-option -g pane-border-status top`);
       execSync(`tmux set-window-option -g pane-border-format "#[fg=black,bg=cyan,bold] #{@persona} #[default]"`);
 
-      execSync(`tmux set-option -p -t ${orchestratorPane} @persona "🤖 MASTER ORCHESTRATOR (Pane 0)"`);
-      execSync(`tmux set-option -p -t ${baPane} @persona "📋 BUSINESS ANALYST - BA (Pane 1)"`);
-      execSync(`tmux set-option -p -t ${devPane} @persona "💻 FULLSTACK DEVELOPER - DEV (Pane 2)"`);
-      execSync(`tmux set-option -p -t ${qaPane} @persona "🧪 QUALITY ANALYST - QA (Pane 3)"`);
-      execSync(`tmux set-option -p -t ${reviewerPane} @persona "🔍 CODE REVIEWER - REVIEWER (Pane 4)"`);
+      execSync(`tmux set-option -p -t ${orchestratorPane} @persona "[ DEVSQUAD :: MASTER ORCHESTRATOR ]"`);
+      execSync(`tmux set-option -p -t ${baPane} @persona "[ DEVSQUAD :: BUSINESS ANALYST (BA) ]"`);
+      execSync(`tmux set-option -p -t ${devPane} @persona "[ DEVSQUAD :: DEVELOPER (DEV) ]"`);
+      execSync(`tmux set-option -p -t ${qaPane} @persona "[ DEVSQUAD :: QUALITY ANALYST (QA) ]"`);
+      execSync(`tmux set-option -p -t ${reviewerPane} @persona "[ DEVSQUAD :: CODE REVIEWER (REVIEWER) ]"`);
 
       // Resize Orchestrator top pane to 25% height
       execSync(`tmux resize-pane -t ${orchestratorPane} -y 25%`);
