@@ -195,7 +195,11 @@ export function registerBacklogTool(pi: ExtensionAPI) {
                 state.status = "loop-halted";
                 fs.writeFileSync(activeTaskPath, JSON.stringify(state, null, 2), "utf-8");
 
-                const prompt = `[LOOP-HITL HALT] The 1-story loop for #${params.issueId} has completed end-to-end. Workflow is HALTED. Type 'next' or press Enter to pick up and develop the next story in the backlog.`;
+                const prompt = `🛑 [LOOP-HITL CYCLE COMPLETE & WORKFLOW HALTED]\n` +
+                  `The 1-cycle task for Issue #${params.issueId} has completed end-to-end (BA -> Dev -> QA -> Reviewer -> Merged).\n\n` +
+                  `Master Orchestrator MUST STOP IMMEDIATELY and wait for human operator input.\n` +
+                  `DO NOT call send_agent_message or pick up new work automatically.\n` +
+                  `Display the completion message to the human operator in Pane 0 and WAIT for their next command.`;
                 await sendPromptAsync(panes.orchestrator, prompt, false);
               } else if (mode === "auto") {
                 const prompt = `Story #${params.issueId} is COMPLETE & MERGED! [AUTO MODE] Picking up next story from backlog for BA grooming/dev.`;

@@ -101,7 +101,11 @@ When subagents call `team_update_status`, status events (`EVENT: Task #... updat
 
 1. **`loop-hitl` (Loop Human-in-the-Loop - Default)**:
    - Single story flows automatically: BA → Dev → QA → Reviewer → Done.
-   - Upon story completion (`done`), **HALT** workflow in Pane 0 and prompt the human operator before picking up the next story.
+   - 🛑 **CYCLE HALT MANDATE**: Upon story completion (`done`), print the completion summary card and **STOP IMMEDIATELY**.
+     - Do NOT call `send_agent_message`.
+     - Do NOT scan the backlog for new uncompleted stories or BRDs.
+     - Do NOT automatically pick or dispatch the next task.
+     - **WAIT SILENTLY FOR THE HUMAN OPERATOR IN PANE 0 TO ENTER THEIR NEXT COMMAND.**
 
 2. **`auto` (Full Autonomous)**:
    - Runs continuously through all stories in the backlog end-to-end without pausing until no uncompleted stories remain.
