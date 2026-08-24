@@ -48,7 +48,7 @@ export default function (pi) {
             console.error(err.message);
             return;
         }
-        ctx.ui.notify(`Initializing DevSquad Team [--mode=${config.mode}, --layout=${config.layout}, --workspace=${workspace.name}]...`, "info");
+        ctx.ui.notify(`Initializing SquadLoop [--mode=${config.mode}, --layout=${config.layout}, --workspace=${workspace.name}]...`, "info");
         const panes = workspace.setupLayout(config.layout);
         config.panes = panes;
         saveConfig(config);
@@ -77,7 +77,7 @@ export default function (pi) {
             `Print the welcome banner and options (1. Implement BRD/PRD, 2. Pick a specific Story/Issue, 3. Random Implementation, 4. Custom Task/Bug Fix).\n` +
             `DO NOT call send_agent_message or start any work automatically. STOP IMMEDIATELY and wait for the human user in Pane 0 to enter their instruction.`;
         await workspace.sendPrompt(panes.orchestrator, welcomePrompt, false);
-        ctx.ui.notify(`DevSquad setup complete via '${workspace.name}' [--mode=${config.mode}, --layout=${config.layout}].`, "info");
+        ctx.ui.notify(`SquadLoop setup complete via '${workspace.name}' [--mode=${config.mode}, --layout=${config.layout}].`, "info");
     };
     // Handler for session resume
     const handleTeamResume = async (ctx) => {
@@ -107,7 +107,7 @@ export default function (pi) {
                 // Ignore parse error
             }
         }
-        ctx.ui.notify(`Resuming DevSquad Team [--mode=${config.mode}, --layout=${config.layout}, activeIssue=#${activeIssueId}]...`, "info");
+        ctx.ui.notify(`Resuming SquadLoop [--mode=${config.mode}, --layout=${config.layout}, activeIssue=#${activeIssueId}]...`, "info");
         const panes = workspace.setupLayout(config.layout);
         config.panes = panes;
         saveConfig(config);
@@ -116,63 +116,29 @@ export default function (pi) {
             `Active task recovered from log: Issue #${activeIssueId || 'None'} (Status: '${activeStatus}'). Notes: '${activeNotes || 'N/A'}'. ` +
             `Print session recovery banner to user, state active task status, and ask the human user in Pane 0 how to proceed or continue.`;
         await workspace.sendPrompt(panes.orchestrator, resumePrompt, false);
-        ctx.ui.notify(`DevSquad session resumed via '${workspace.name}' [Issue #${activeIssueId || 'None'}, Status: ${activeStatus}].`, "info");
+        ctx.ui.notify(`SquadLoop session resumed via '${workspace.name}' [Issue #${activeIssueId || 'None'}, Status: ${activeStatus}].`, "info");
     };
-    // Command 1: /devsquad-start
-    pi.registerCommand("devsquad-start", {
-        description: "Start a fresh DevSquad AI session in tmux based on .pi/team-config.json",
+    // Command 1: /squadloop-start
+    pi.registerCommand("squadloop-start", {
+        description: "Start a fresh SquadLoop session in tmux based on .pi/team-config.json",
         handler: async (_args, ctx) => {
             await handleTeamStart(ctx);
         }
     });
-    // Command 2: /devsquad-resume
-    pi.registerCommand("devsquad-resume", {
-        description: "Resume active DevSquad AI session from .pi/active-task.json log",
+    // Command 2: /squadloop-resume
+    pi.registerCommand("squadloop-resume", {
+        description: "Resume active SquadLoop session from .pi/active-task.json log",
         handler: async (_args, ctx) => {
             await handleTeamResume(ctx);
         }
     });
-    // Command 3: /devsquad-recover
-    pi.registerCommand("devsquad-recover", {
-        description: "Recover any closed agent pane or window in the active DevSquad workspace",
+    // Command 3: /squadloop-recover
+    pi.registerCommand("squadloop-recover", {
+        description: "Recover any closed agent pane or window in the active SquadLoop workspace",
         handler: async (_args, ctx) => {
             const configPath = path.join(process.cwd(), ".pi", "team-config.json");
             if (!fs.existsSync(configPath)) {
-                ctx.ui.notify("Error: team-config.json not found. Run /devsquad-start first.", "error");
-                return;
-            }
-            try {
-                const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-                const workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
-                const recoveredPanes = workspace.recoverMissingPanes(config.panes);
-                config.panes = recoveredPanes;
-                saveConfig(config);
-                ctx.ui.notify("Pane recovery check complete!", "info");
-            }
-            catch (err) {
-                ctx.ui.notify(`Recovery failed: ${err.message}`, "error");
-            }
-        }
-    });
-    // Aliases for backward compatibility
-    pi.registerCommand("team-start", {
-        description: "Start fresh team session (alias to /devsquad-start)",
-        handler: async (_args, ctx) => { await handleTeamStart(ctx); }
-    });
-    pi.registerCommand("team-resume", {
-        description: "Resume team session (alias to /devsquad-resume)",
-        handler: async (_args, ctx) => { await handleTeamResume(ctx); }
-    });
-    pi.registerCommand("team-dev", {
-        description: "Launch team workflow (alias to /devsquad-start)",
-        handler: async (_args, ctx) => { await handleTeamStart(ctx); }
-    });
-    pi.registerCommand("team-recover", {
-        description: "Recover team workspace (alias to /devsquad-recover)",
-        handler: async (_args, ctx) => {
-            const configPath = path.join(process.cwd(), ".pi", "team-config.json");
-            if (!fs.existsSync(configPath)) {
-                ctx.ui.notify("Error: team-config.json not found. Run /devsquad-start first.", "error");
+                ctx.ui.notify("Error: team-config.json not found. Run /squadloop-start first.", "error");
                 return;
             }
             try {
