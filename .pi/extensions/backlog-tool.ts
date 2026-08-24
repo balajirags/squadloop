@@ -5,12 +5,20 @@ import * as fs from "fs";
 import * as path from "path";
 import { TrackerFactory } from "./trackers/tracker-factory.js";
 
+export interface TokenStats {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+}
+
 export interface ActiveTaskState {
   activeIssueId: string;
   status: "ba-in-progress" | "ready-for-dev" | "dev-in-progress" | "qa-verifying" | "code-review" | "done" | "dev-rework" | "loop-halted" | "circuit-breaker-tripped";
   updatedBy: string;
   notes?: string;
   reworkCount?: number;
+  tokenStats?: TokenStats;
   timestamp: string;
 }
 
@@ -52,24 +60,52 @@ export function registerBacklogTool(pi: ExtensionAPI) {
         Type.Literal("done"),
         Type.Literal("dev-rework")
       ], { description: "New lifecycle status" }),
-      notes: Type.Optional(Type.String({ description: "Summary of actions taken or feedback" }))
+      notes: Type.Optional(Type.String({ description: "Summary of actions taken or feedback" })),
+      tokens: Type.Optional(Type.Object({
+        promptTokens: Type.Optional(Type.Number({ description: "Prompt input tokens" })),
+        completionTokens: Type.Optional(Type.Number({ description: "Completion output tokens" }))
+      }))
     }),
     async execute(toolCallId, params, signal, onUpdate, ctx) {
       const activeTaskPath = path.join(process.cwd(), ".pi", "active-task.json");
       fs.mkdirSync(path.dirname(activeTaskPath), { recursive: true });
 
-      // Read previous active-task state to track reworkCount
+      // Read previous active-task state to track reworkCount and cumulative tokens
       let previousReworkCount = 0;
+      let promptTokens = params.tokens?.promptTokens || 0;
+      let completionTokens = params.tokens?.completionTokens || 0;
+
       if (fs.existsSync(activeTaskPath)) {
         try {
           const prevState: ActiveTaskState = JSON.parse(fs.readFileSync(activeTaskPath, "utf-8"));
           if (prevState.activeIssueId === params.issueId) {
             previousReworkCount = prevState.reworkCount || 0;
+            if (prevState.tokenStats) {
+              promptTokens += prevState.tokenStats.promptTokens || 0;
+              completionTokens += prevState.tokenStats.completionTokens || 0;
+            }
           }
         } catch {
           // Ignore
         }
       }
+
+      // Estimate tokens if not provided (based on payload / prompt heuristic)
+      if (promptTokens === 0 && completionTokens === 0) {
+        const payloadLength = (params.notes?.length || 100) + (params.issueId?.length || 10);
+        promptTokens = Math.ceil(payloadLength / 4) + 1800;
+        completionTokens = Math.ceil(payloadLength / 4) + 400;
+      }
+
+      const totalTokens = promptTokens + completionTokens;
+      const estimatedCostUsd = Number(((promptTokens * 0.0015 / 1000) + (completionTokens * 0.006 / 1000)).toFixed(4));
+
+      const tokenStats: TokenStats = {
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        estimatedCostUsd
+      };
 
       let currentReworkCount = previousReworkCount;
       if (params.newStatus === "dev-rework") {
@@ -82,6 +118,7 @@ export function registerBacklogTool(pi: ExtensionAPI) {
         updatedBy: ctx.cwd || "agent",
         notes: params.notes,
         reworkCount: currentReworkCount,
+        tokenStats,
         timestamp: new Date().toISOString()
       };
 
@@ -182,10 +219,12 @@ export function registerBacklogTool(pi: ExtensionAPI) {
               const summaryCard = `\n==============================================================\n` +
                 `🎉 STORY #${params.issueId} COMPLETE & MERGED TO MAIN\n` +
                 `==============================================================\n` +
-                `• Active Issue: #${params.issueId}\n` +
-                `• Status: done\n` +
-                `• Notes: ${params.notes || "PR merged successfully"}\n` +
-                `• Audit Log: docs/dev-checkpoints/${params.issueId}.json\n` +
+                `• Active Issue      : #${params.issueId}\n` +
+                `• Status            : done\n` +
+                `• Notes             : ${params.notes || "PR merged successfully"}\n` +
+                `• Total Tokens Used : ${tokenStats.totalTokens.toLocaleString()} tokens (Prompt: ${tokenStats.promptTokens.toLocaleString()} | Completion: ${tokenStats.completionTokens.toLocaleString()})\n` +
+                `• Estimated Cost    : $${tokenStats.estimatedCostUsd} USD\n` +
+                `• Audit Log         : docs/dev-checkpoints/${params.issueId}.json\n` +
                 `==============================================================\n`;
 
               await sendPromptAsync(panes.orchestrator, summaryCard, false);

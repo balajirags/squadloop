@@ -118,6 +118,10 @@ function handleStatus() {
       console.log(`   Status          : ${state.status}`);
       console.log(`   Updated By      : ${state.updatedBy}`);
       console.log(`   Notes           : ${state.notes || "N/A"}`);
+      if (state.tokenStats) {
+        console.log(`   Total Tokens    : ${state.tokenStats.totalTokens.toLocaleString()} tokens`);
+        console.log(`   Estimated Cost  : $${state.tokenStats.estimatedCostUsd} USD`);
+      }
       console.log(`   Timestamp       : ${state.timestamp}`);
       return;
     } catch {
