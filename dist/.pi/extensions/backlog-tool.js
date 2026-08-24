@@ -2,6 +2,27 @@ import { Type } from "@sinclair/typebox";
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import { TrackerFactory } from "./trackers/tracker-factory.js";
+import { WorkflowEngine } from "./workflow.js";
+function appendEventLog(eventRecord) {
+    try {
+        const eventsPath = path.join(process.cwd(), ".pi", "events.jsonl");
+        fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
+        let lines = [];
+        if (fs.existsSync(eventsPath)) {
+            lines = fs.readFileSync(eventsPath, "utf-8").trim().split("\n").filter(Boolean);
+        }
+        lines.push(JSON.stringify(eventRecord));
+        // Cap at 1000 events max (auto-truncation log rotation) to prevent file bloat
+        if (lines.length > 1000) {
+            lines = lines.slice(-1000);
+        }
+        fs.writeFileSync(eventsPath, lines.join("\n") + "\n", "utf-8");
+    }
+    catch {
+        // Ignore log write error
+    }
+}
 export function registerBacklogTool(pi) {
     // Tool 1: team_update_status
     pi.registerTool({
@@ -17,19 +38,87 @@ export function registerBacklogTool(pi) {
                 Type.Literal("done"),
                 Type.Literal("dev-rework")
             ], { description: "New lifecycle status" }),
-            notes: Type.Optional(Type.String({ description: "Summary of actions taken or feedback" }))
+            notes: Type.Optional(Type.String({ description: "Summary of actions taken or feedback" })),
+            tokens: Type.Optional(Type.Object({
+                promptTokens: Type.Optional(Type.Number({ description: "Prompt input tokens" })),
+                completionTokens: Type.Optional(Type.Number({ description: "Completion output tokens" }))
+            }))
         }),
         async execute(toolCallId, params, signal, onUpdate, ctx) {
             const activeTaskPath = path.join(process.cwd(), ".pi", "active-task.json");
             fs.mkdirSync(path.dirname(activeTaskPath), { recursive: true });
+            // Read previous active-task state to track reworkCount and cumulative tokens
+            let previousReworkCount = 0;
+            let promptTokens = params.tokens?.promptTokens || 0;
+            let completionTokens = params.tokens?.completionTokens || 0;
+            if (fs.existsSync(activeTaskPath)) {
+                try {
+                    const prevState = JSON.parse(fs.readFileSync(activeTaskPath, "utf-8"));
+                    if (prevState.activeIssueId === params.issueId) {
+                        previousReworkCount = prevState.reworkCount || 0;
+                        if (prevState.tokenStats) {
+                            promptTokens += prevState.tokenStats.promptTokens || 0;
+                            completionTokens += prevState.tokenStats.completionTokens || 0;
+                        }
+                    }
+                }
+                catch {
+                    // Ignore
+                }
+            }
+            // Estimate tokens if not provided (based on payload / prompt heuristic)
+            if (promptTokens === 0 && completionTokens === 0) {
+                const payloadLength = (params.notes?.length || 100) + (params.issueId?.length || 10);
+                promptTokens = Math.ceil(payloadLength / 4) + 1800;
+                completionTokens = Math.ceil(payloadLength / 4) + 400;
+            }
+            const totalTokens = promptTokens + completionTokens;
+            const estimatedCostUsd = Number(((promptTokens * 0.0015 / 1000) + (completionTokens * 0.006 / 1000)).toFixed(4));
+            const tokenStats = {
+                promptTokens,
+                completionTokens,
+                totalTokens,
+                estimatedCostUsd
+            };
+            let currentReworkCount = previousReworkCount;
+            if (params.newStatus === "dev-rework") {
+                currentReworkCount += 1;
+            }
             const state = {
                 activeIssueId: params.issueId,
                 status: params.newStatus,
                 updatedBy: ctx.cwd || "agent",
                 notes: params.notes,
+                reworkCount: currentReworkCount,
+                tokenStats,
                 timestamp: new Date().toISOString()
             };
+            // Check circuit breaker
+            let circuitBreakerTripped = false;
+            if (currentReworkCount > 3) {
+                state.status = "circuit-breaker-tripped";
+                circuitBreakerTripped = true;
+            }
             fs.writeFileSync(activeTaskPath, JSON.stringify(state, null, 2), "utf-8");
+            // Write structured JSON audit checkpoint
+            if (params.issueId) {
+                try {
+                    const checkpointDir = path.join(process.cwd(), "docs", "dev-checkpoints");
+                    fs.mkdirSync(checkpointDir, { recursive: true });
+                    const checkpointPath = path.join(checkpointDir, `${params.issueId}.json`);
+                    fs.writeFileSync(checkpointPath, JSON.stringify({
+                        storyId: params.issueId,
+                        status: state.status,
+                        updatedBy: state.updatedBy,
+                        notes: params.notes || "",
+                        reworkCount: currentReworkCount,
+                        timestamp: state.timestamp
+                    }, null, 2), "utf-8");
+                }
+                catch {
+                    // Ignore checkpoint write error
+                }
+            }
             // Read team-config.json if available
             const configPath = path.join(process.cwd(), ".pi", "team-config.json");
             if (fs.existsSync(configPath)) {
@@ -38,44 +127,36 @@ export function registerBacklogTool(pi) {
                     const mode = config.mode || "step-hitl";
                     const panes = config.panes;
                     if (panes) {
-                        // Send event notification to Master Orchestrator (Pane 0)
-                        const notifyMsg = `EVENT: Task #${params.issueId} updated to '${params.newStatus}' by ${params.notes ? params.notes : "subagent"}.`;
-                        try {
-                            execSync(`tmux send-keys -t ${panes.orchestrator} "${notifyMsg.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
-                        }
-                        catch {
-                            // Ignore if tmux session not attached
-                        }
-                        // Auto-steer transitions according to mode
-                        if (params.newStatus === "ready-for-dev" && (mode === "loop-hitl" || mode === "auto")) {
-                            const prompt = `Issue #${params.issueId} is ready for development. Read project-context.md, checkout branch feature/issue-${params.issueId}, implement code inside backend/ or frontend/, run tests & verify coverage, commit, push, and update status to 'qa-verifying'.`;
-                            execSync(`tmux send-keys -t ${panes.developer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
-                        }
-                        else if (params.newStatus === "qa-verifying" && (mode === "loop-hitl" || mode === "auto")) {
-                            const prompt = `Issue #${params.issueId} is ready for QA verification. Checkout feature branch, verify app server is running on localhost port, execute live HTTP/UI AC checks, and update status.`;
-                            execSync(`tmux send-keys -t ${panes.qa} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
-                        }
-                        else if (params.newStatus === "code-review" && (mode === "loop-hitl" || mode === "auto")) {
-                            const prompt = `Issue #${params.issueId} is ready for Code Review. Inspect git diff vs main, verify P1/P2 standards, merge PR to main, and update status to 'done'.`;
-                            execSync(`tmux send-keys -t ${panes.reviewer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
-                        }
-                        else if (params.newStatus === "dev-rework" && (mode === "loop-hitl" || mode === "auto")) {
-                            const prompt = `Issue #${params.issueId} requires rework. Read feedback notes: '${params.notes || "Check review/QA comments"}', fix issues in backend/ or frontend/, re-run build-verify, commit, push, and update status to 'qa-verifying'.`;
-                            execSync(`tmux send-keys -t ${panes.developer} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
-                        }
-                        else if (params.newStatus === "done") {
-                            if (mode === "loop-hitl") {
-                                // STRICT LOOP-HITL HALT: Stop and wait for human input at story completion
-                                state.status = "loop-halted";
-                                fs.writeFileSync(activeTaskPath, JSON.stringify(state, null, 2), "utf-8");
-                                const prompt = `STORY #${params.issueId} COMPLETE & MERGED! [LOOP-HITL HALT] The 1-story loop has completed end-to-end. Workflow is HALTED. Type 'next' or press Enter to pick up and develop the next story in the backlog.`;
-                                execSync(`tmux send-keys -t ${panes.orchestrator} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+                        // Strategy-driven tracker closure using TrackerFactory when done
+                        if (params.newStatus === "done" && params.issueId) {
+                            try {
+                                const trackerAdapter = TrackerFactory.getAdapter();
+                                await trackerAdapter.closeIssue(params.issueId, "Completed and merged to main by DevSquad AI");
                             }
-                            else if (mode === "auto") {
-                                const prompt = `Story #${params.issueId} is COMPLETE & MERGED! [AUTO MODE] Picking up next story from backlog for BA grooming/dev.`;
-                                execSync(`tmux send-keys -t ${panes.ba} "${prompt.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+                            catch {
+                                // Non-fatal if tracker close fails
+                            }
+                            // Send end-of-story summary card to Pane 0
+                            const summaryCard = `\n==============================================================\n` +
+                                `🎉 STORY #${params.issueId} COMPLETE & MERGED TO MAIN\n` +
+                                `==============================================================\n` +
+                                `• Active Issue      : #${params.issueId}\n` +
+                                `• Status            : done\n` +
+                                `• Notes             : ${params.notes || "PR merged successfully"}\n` +
+                                `• Total Tokens Used : ${tokenStats.totalTokens.toLocaleString()} tokens (Prompt: ${tokenStats.promptTokens.toLocaleString()} | Completion: ${tokenStats.completionTokens.toLocaleString()})\n` +
+                                `• Estimated Cost    : $${tokenStats.estimatedCostUsd} USD\n` +
+                                `• Audit Log         : docs/dev-checkpoints/${params.issueId}.json\n` +
+                                `==============================================================\n`;
+                            try {
+                                const escaped = summaryCard.replace(/"/g, '\\"');
+                                execSync(`tmux send-keys -t ${panes.orchestrator} "${escaped}" Enter`, { stdio: "ignore" });
+                            }
+                            catch {
+                                // Ignore
                             }
                         }
+                        // Delegate workflow transition steering to dedicated WorkflowEngine
+                        await WorkflowEngine.handleTransition(params.issueId, params.newStatus, mode, panes, params.notes, currentReworkCount, circuitBreakerTripped);
                     }
                 }
                 catch {
@@ -101,7 +182,8 @@ export function registerBacklogTool(pi) {
                 Type.Literal("reviewer"),
                 Type.Literal("orchestrator")
             ], { description: "Target agent persona role" }),
-            message: Type.String({ description: "Direct feedback, question, or instruction message to send" })
+            message: Type.String({ description: "Direct feedback, question, or instruction message to send" }),
+            clearContext: Type.Optional(Type.Boolean({ description: "Whether to clear target agent conversation context before sending message (default: false)" }))
         }),
         async execute(toolCallId, params, signal, onUpdate, ctx) {
             const configPath = path.join(process.cwd(), ".pi", "team-config.json");
@@ -120,17 +202,76 @@ export function registerBacklogTool(pi) {
                         details: { success: false }
                     };
                 }
+                const shouldClear = params.clearContext === true;
+                if (shouldClear) {
+                    try {
+                        execSync(`tmux send-keys -t ${targetPane} "/clear" Enter`, { stdio: "ignore" });
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                    }
+                    catch {
+                        // Ignore if tmux send-keys fails
+                    }
+                }
                 const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
                 execSync(`tmux send-keys -t ${targetPane} "${formatted.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+                // Log direct message to .pi/events.jsonl with auto-truncation cap
+                appendEventLog({
+                    eventId: `evt_${Date.now()}`,
+                    type: "direct_message",
+                    targetRole: params.targetRole,
+                    message: params.message,
+                    timestamp: new Date().toISOString()
+                });
                 return {
-                    content: [{ type: "text", text: `Sent direct message to ${params.targetRole.toUpperCase()} pane (${targetPane}).` }],
-                    details: { success: true, targetPane, message: params.message }
+                    content: [{ type: "text", text: `Sent direct message to ${params.targetRole.toUpperCase()} pane (${targetPane})${shouldClear ? " [context cleared]" : ""}.` }],
+                    details: { success: true, targetPane, message: params.message, clearedContext: shouldClear }
                 };
             }
             catch (err) {
                 return {
                     content: [{ type: "text", text: `Error sending message: ${err.message}` }],
                     details: { success: false, error: err.message }
+                };
+            }
+        }
+    });
+    // Tool 3: get_team_events (Persistent Event Bus Inspection)
+    pi.registerTool({
+        name: "get_team_events",
+        label: "Get Team Events",
+        description: "Read recent status update events and inter-agent messages from the persistent event log (.pi/events.jsonl)",
+        parameters: Type.Object({
+            limit: Type.Optional(Type.Number({ description: "Number of recent events to return (default: 10)" }))
+        }),
+        async execute(toolCallId, params, signal, onUpdate, ctx) {
+            const eventsPath = path.join(process.cwd(), ".pi", "events.jsonl");
+            if (!fs.existsSync(eventsPath)) {
+                return {
+                    content: [{ type: "text", text: "No events logged in .pi/events.jsonl yet." }],
+                    details: { events: [] }
+                };
+            }
+            try {
+                const lines = fs.readFileSync(eventsPath, "utf-8").trim().split("\n").filter(Boolean);
+                const limit = params.limit || 10;
+                const recentLines = lines.slice(-limit);
+                const events = recentLines.map(line => {
+                    try {
+                        return JSON.parse(line);
+                    }
+                    catch {
+                        return { raw: line };
+                    }
+                });
+                return {
+                    content: [{ type: "text", text: `Retrieved ${events.length} recent team events:\n` + JSON.stringify(events, null, 2) }],
+                    details: { events }
+                };
+            }
+            catch (err) {
+                return {
+                    content: [{ type: "text", text: `Error reading events: ${err.message}` }],
+                    details: { events: [], error: err.message }
                 };
             }
         }
