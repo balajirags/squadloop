@@ -8,6 +8,8 @@ import * as path from "path";
 export interface TeamConfig {
   mode: "step-hitl" | "loop-hitl" | "auto";
   layout: "panes" | "windows";
+  destructiveCommandPolicy?: "ask-human" | "block" | "allow";
+  customProtectedFiles?: string[];
   panes: {
     orchestrator: string;
     ba: string;
@@ -31,6 +33,8 @@ function getOrCreateConfig(): TeamConfig {
       config = {
         mode: loaded.mode || "loop-hitl",
         layout: loaded.layout || "panes",
+        destructiveCommandPolicy: loaded.destructiveCommandPolicy || "ask-human",
+        customProtectedFiles: loaded.customProtectedFiles || [],
         panes: loaded.panes || config.panes
       };
     } catch {
