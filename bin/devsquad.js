@@ -90,18 +90,30 @@ function handleInit() {
 
 function handleStart() {
   printLogo();
-  console.log("🚀 Launching DevSquad AI session...");
-  spawnSync("pi", ["/devsquad-start"], { stdio: "inherit" });
+  console.log("🚀 Launching DevSquad AI workspace...");
+  // Run setup headlessly (-p) so pi initializes the workspace without leaving an extra interactive session behind
+  spawnSync("pi", ["-p", "/devsquad-start"], { stdio: "ignore" });
+  handleAttach();
 }
 
 function handleResume() {
   printLogo();
-  console.log("🔄 Resuming DevSquad AI session...");
-  spawnSync("pi", ["/devsquad-resume"], { stdio: "inherit" });
+  console.log("🔄 Resuming DevSquad AI workspace...");
+  spawnSync("pi", ["-p", "/devsquad-resume"], { stdio: "ignore" });
+  handleAttach();
 }
 
 function handleAttach() {
   console.log("🔌 Attaching to DevSquad tmux workspace...");
+  if (process.env.TMUX) {
+    try {
+      const res = spawnSync("tmux", ["switch-client", "-t", "devsquad-workspace"], { stdio: "inherit" });
+      if (res.status === 0) return;
+    } catch {
+      // Fallback to attach
+    }
+  }
+
   try {
     const res = spawnSync("tmux", ["attach", "-t", "devsquad-workspace"], { stdio: "inherit" });
     if (res.status !== 0) {
