@@ -57,6 +57,7 @@ The DevSquad AI team configuration is managed directly via `.pi/team-config.json
 {
   "mode": "loop-hitl",
   "layout": "panes",
+  "workspaceMode": "tmux",
   "destructiveCommandPolicy": "ask-human",
   "customProtectedFiles": []
 }
@@ -64,8 +65,17 @@ The DevSquad AI team configuration is managed directly via `.pi/team-config.json
 
 - **`mode`**: `"loop-hitl"` (default), `"step-hitl"`, or `"auto"`.
 - **`layout`**: `"panes"` (default split) or `"windows"` (full-screen windows).
+- **`workspaceMode`**: `"tmux"` (default) or `"regular"` (headless mode for terminals without tmux).
 - **`destructiveCommandPolicy`**: `"ask-human"` (default: prompts Pane 0 for approval before `rm` / `git push --force`), `"block"`, or `"allow"`.
 - **`customProtectedFiles`**: Additional sensitive file patterns to hard-block from reading.
+
+### 🚀 CLI & Slash Commands
+- **`devsquad start`**: Starts a fresh team session headlessly and attaches directly. Resets `.pi/active-task.json` log, sets up workspace, enforces 3.5s Squad Readiness Gate, and waits for human input in Pane 0.
+- **`devsquad resume`**: Resumes active session. Reads `.pi/active-task.json` log to recover task state (`activeIssueId`, `status`), recovers workspace, and presents session recovery banner in Pane 0.
+- **`devsquad init`**: Bootstraps `.pi/` extensions, `Agent.md`, `project-context.md`, and `docs/` template folders into any target repository.
+- **`devsquad attach`**: Attaches directly to the `devsquad-workspace` tmux session.
+- **`devsquad status`**: Displays active task state, token usage, and estimated USD cost.
+- **`/devsquad-recover`**: Recovers any closed or crashed agent pane or window in the workspace. Auto-recovers missing panes on the fly when `send_agent_message` is invoked.
 
 ---
 
