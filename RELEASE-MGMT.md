@@ -1,12 +1,12 @@
-# DevSquad AI — Distribution & Release Management Guide (`RELEASE-MGMT.md`)
+# SquadLoop — Distribution & Release Management Guide (`RELEASE-MGMT.md`)
 
-This guide provides the complete release engineering, versioning, distribution, and adoption workflow for **DevSquad AI**.
+This guide provides the complete release engineering, versioning, distribution, and adoption workflow for **SquadLoop — Your autonomous software team.**
 
 ---
 
 ## 📦 1. Package Configuration & Versioning Scripts
 
-`package.json` is configured with `"name": "devsquad"` and `"bin": { "devsquad": "./bin/devsquad.js" }`.
+`package.json` is configured with `"name": "squadloop"` and `"bin": { "squadloop": "./bin/squadloop.js" }`.
 
 ### Automated Release Scripts (`package.json`)
 Run one of the following commands from the repository root to trigger an automated release build, version bump, tag push, and registry publish:
@@ -56,24 +56,24 @@ npm publish --registry https://npm.pkg.github.com
 
 ## 👥 3. Team Adoption & Installation Guide
 
-Once published, any developer or development team can adopt DevSquad AI in their repository using one of 3 methods:
+Once published, any developer or development team can adopt SquadLoop in their repository using one of 3 methods:
 
 ### Method 1: Global Installation (Recommended)
 ```bash
 # 1. Install globally from registry
-npm install -g devsquad
+npm install -g squadloop
 
 # 2. Navigate to ANY target project repository
 cd ~/projects/my-company-app
 
-# 3. Bootstrap DevSquad AI context, agent personas, and templates
-devsquad init
+# 3. Bootstrap SquadLoop context, agent personas, and templates
+squadloop init
 
 # 4. Configure project-context.md and launch
-devsquad start
+squadloop start
 
 # 5. Attach to tmux workspace
-devsquad attach
+squadloop attach
 ```
 
 ### Method 2: Zero-Install via `npx`
@@ -81,22 +81,22 @@ devsquad attach
 cd ~/projects/my-company-app
 
 # 1. Bootstrap context and templates
-npx devsquad init
+npx squadloop init
 
-# 2. Launch DevSquad AI
-npx devsquad start
+# 2. Launch SquadLoop
+npx squadloop start
 
 # 3. Attach to workspace
-npx devsquad attach
+npx squadloop attach
 ```
 
 ### Method 3: Direct Git Copy (Local Team Share)
 Copy 3 items into the target project root:
 1. `.pi/` directory (agent personas, extensions, skills, templates)
 2. `Agent.md` file (operational mandate)
-3. `bin/` directory (`bin/devsquad.js`)
+3. `bin/` directory (`bin/squadloop.js`)
 
-Then execute `./bin/devsquad.js start` or `./bin/devsquad.js init`.
+Then execute `./bin/squadloop.js init` or `./bin/squadloop.js start`.
 
 ---
 
@@ -106,11 +106,11 @@ To create a formal GitHub release with release notes:
 
 ```bash
 # 1. Create Git tag
-git tag -a v1.0.0 -m "DevSquad AI v1.0.0 Release"
+git tag -a v1.0.0 -m "SquadLoop v1.0.0 Release"
 git push origin main --tags
 
 # 2. Create GitHub Release with gh CLI
-gh release create v1.0.0 --title "DevSquad AI v1.0.0" --notes-file RELEASE.md
+gh release create v1.0.0 --title "SquadLoop v1.0.0" --notes "Initial release of SquadLoop — Your autonomous software team."
 ```
 
 ---
@@ -119,9 +119,9 @@ gh release create v1.0.0 --title "DevSquad AI v1.0.0" --notes-file RELEASE.md
 
 | Distribution Model | Best For | Installation Command |
 | :--- | :--- | :--- |
-| **NPM Registry (Public / Private)** | External teams, company-wide adoption | `npm install -g devsquad` → `devsquad init` |
-| **`npx` On-Demand** | Zero-install trial runs, CI/CD pipelines | `npx devsquad init` → `npx devsquad start` |
-| **Monorepo / Local Share** | Shared internal repository copy | `cp -r /path/to/devsquad/.pi .` → `devsquad start` |
+| **NPM Registry (Public / Private)** | External teams, company-wide adoption | `npm install -g squadloop` → `squadloop init` |
+| **`npx` On-Demand** | Zero-install trial runs, CI/CD pipelines | `npx squadloop init` → `npx squadloop start` |
+| **Monorepo / Local Share** | Shared internal repository copy | `cp -r /path/to/squadloop/.pi .` → `squadloop start` |
 
 ---
 
@@ -129,6 +129,6 @@ gh release create v1.0.0 --title "DevSquad AI v1.0.0" --notes-file RELEASE.md
 
 Before running `npm run release:*`:
 - [ ] Run `npm run build` to verify 0 TypeScript compilation errors.
-- [ ] Verify `bin/devsquad.js` has executable permissions (`chmod +x bin/devsquad.js`).
-- [ ] Confirm `package.json` package name is `"name": "devsquad"`.
-- [ ] Test `devsquad start`, `devsquad resume`, `devsquad status`, and `devsquad init` in testing sandbox (`testing-pi-team`).
+- [ ] Verify `bin/squadloop.js` has executable permissions (`chmod +x bin/squadloop.js`).
+- [ ] Confirm `package.json` package name is `"name": "squadloop"`.
+- [ ] Test `squadloop start`, `squadloop resume`, `squadloop status`, and `squadloop init` in testing sandbox (`testing-pi-team`).

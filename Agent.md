@@ -1,4 +1,4 @@
-# Agent Team Context & Operational Mandate (`pi-team`)
+# SquadLoop — Your Autonomous Software Team (`Agent.md`)
 
 This repository is powered by an AI-native 5-agent team operating concurrently in a 5-pane tmux workspace. Every agent session initialized in this directory must adhere to the rules, context, and operational parameters defined below.
 
@@ -51,7 +51,7 @@ Upon session launch via `/team-dev`, Orchestrator displays a menu with 4 core ch
 
 ## ⚙️ Configuration & Team Commands (`.pi/team-config.json`)
 
-The DevSquad AI team configuration is managed directly via `.pi/team-config.json`:
+The SquadLoop team configuration is managed directly via `.pi/team-config.json`:
 
 ```json
 {
@@ -70,16 +70,16 @@ The DevSquad AI team configuration is managed directly via `.pi/team-config.json
 - **`customProtectedFiles`**: Additional sensitive file patterns to hard-block from reading.
 
 ### 🚀 CLI & Slash Commands
-- **`devsquad start`**: Starts a fresh team session headlessly and attaches directly. Resets `.pi/active-task.json` log, sets up workspace, enforces 3.5s Squad Readiness Gate, and waits for human input in Pane 0.
-- **`devsquad resume`**: Resumes active session. Reads `.pi/active-task.json` log to recover task state (`activeIssueId`, `status`), recovers workspace, and presents session recovery banner in Pane 0.
-- **`devsquad init`**: Bootstraps `.pi/` extensions, `Agent.md`, `project-context.md`, and `docs/` template folders into any target repository.
-- **`devsquad attach`**: Attaches directly to the `devsquad-workspace` tmux session.
-- **`devsquad status`**: Displays active task state, token usage, and estimated USD cost.
-- **`/devsquad-recover`**: Recovers any closed or crashed agent pane or window in the workspace. Auto-recovers missing panes on the fly when `send_agent_message` is invoked.
+- **`squadloop start`**: Starts a fresh team session headlessly and attaches directly. Resets `.pi/active-task.json` log, sets up workspace, enforces 3.5s Squad Readiness Gate, and waits for human input in Pane 0.
+- **`squadloop resume`**: Resumes active session. Reads `.pi/active-task.json` log to recover task state (`activeIssueId`, `status`), recovers workspace, and presents session recovery banner in Pane 0.
+- **`squadloop init`**: Bootstraps `.pi/` extensions, `Agent.md`, `project-context.md`, and `docs/` template folders into any target repository.
+- **`squadloop attach`**: Attaches directly to the `squadloop-workspace` tmux session.
+- **`squadloop status`**: Displays active task state, token usage, and estimated USD cost.
+- **`/squadloop-recover`**: Recovers any closed or crashed agent pane or window in the workspace. Auto-recovers missing panes on the fly when `send_agent_message` is invoked.
 
 ---
 
-## 🛡️ DevSquad Security Guard
+## 🛡️ SquadLoop Security Guard
 
 - **Non-Negotiable Protected Files**: Reading `.env`, `.env.*`, `.bashrc`, `.zshrc`, `~/.ssh/` keys, `~/.aws/credentials`, and any files in `customProtectedFiles` is **strictly prohibited by default** for all agents.
 - **Destructive Command Interception**: Commands matching `rm`, `git push --force`, or `git reset --hard` trigger human approval requests in Pane 0 when `destructiveCommandPolicy` is set to `"ask-human"`.
@@ -106,7 +106,7 @@ In **ALL team modes** (`loop-hitl`, `auto`, and `step-hitl`), the system automat
 
 ## 🎯 Single Source of Truth (SOT) & Extensible Tracker Strategy Pattern
 
-- **Delivery Tracker Strategy Pattern (`ITrackerAdapter`)**: DevSquad AI uses the Strategy Pattern (`ITrackerAdapter`) and `TrackerFactory` to interact with trackers based on `project-context.md`:
+- **Delivery Tracker Strategy Pattern (`ITrackerAdapter`)**: SquadLoop uses the Strategy Pattern (`ITrackerAdapter`) and `TrackerFactory` to interact with trackers based on `project-context.md`:
   - **`GitHubIssuesAdapter`**: Uses `gh` CLI for issue creation, comments, status queries, and closing.
   - **`JiraAdapter`**: Uses `jira` CLI / REST API for ticket creation, status transitions, and closing.
   - **`MarkdownStoryAdapter`**: Uses local markdown files in `docs/stories/<epic>/<story>.md`.

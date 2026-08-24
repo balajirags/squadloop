@@ -1,10 +1,10 @@
 {
-  "name": "devsquad",
+  "name": "squadloop",
   "version": "1.0.0",
-  "description": "DevSquad AI — Autonomous Multi-Agent Engineering Squad (BA, Dev, QA, Reviewer in tmux)",
+  "description": "SquadLoop — Your autonomous software team (BA, Dev, QA, Reviewer in tmux)",
   "main": "dist/index.js",
   "bin": {
-    "devsquad": "./bin/devsquad.js"
+    "squadloop": "./bin/squadloop.js"
   },
   "keywords": [
     "pi-package"

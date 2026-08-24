@@ -14,43 +14,43 @@ const command = args[0]?.toLowerCase() || "help";
 
 function printLogo() {
   console.log(`
-  ██████╗  ███████╗██╗   ██╗███████╗██████╗ ██╗   ██╗ █████╗ ██████╗ 
-  ██╔══██╗ ██╔════╝██║   ██║██╔════╝██╔══██╗██║   ██║██╔══██╗██╔══██╗
-  ██║  ██║ █████╗  ██║   ██║███████╗██║  ██║██║   ██║███████║██║  ██║
-  ██║  ██║ ██╔══╝  ╚██╗ ██╔╝╚════██║██║  ██║██║   ██║██╔══██║██║  ██║
-  ██████╔╝ ███████╗ ╚████╔╝ ███████║██████╔╝╚██████╔╝██║  ██║██████╔╝
-  ╚═════╝  ╚══════╝  ╚═══╝  ╚══════╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝ 
-  🚀 DEVSQUAD AI v1.0.0 — Autonomous Multi-Agent Engineering Squad
-  ==================================================================
+  ██████╗  ██████╗ ██╗   ██╗ █████╗ ██████╗ ██╗      ██████╗  ██████╗ ██████╗ 
+ ██╔════╝ ██╔═══██╗██║   ██║██╔══██╗██╔══██╗██║     ██╔═══██╗██╔═══██╗██╔══██╗
+ ███████╗ ██║   ██║██║   ██║███████║██║  ██║██║     ██║   ██║██║   ██║██████╔╝
+ ╚════██║ ██║▄▄ ██║██║   ██║██╔══██║██║  ██║██║     ██║   ██║██║   ██║██╔═══╝ 
+ ███████║ ╚██████╔╝╚██████╔╝██║  ██║██████╔╝███████╗╚██████╔╝╚██████╔╝██║     
+ ╚══════╝  ╚══▀▀═╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝ ╚══════╝ ╚═════╝  ╚═════╝ ╚═╝     
+ 🚀 SquadLoop v1.0.0 — Your autonomous software team.
+ ===================================================================
   `);
 }
 
 function showHelp() {
   printLogo();
   console.log(`
-Usage: devsquad <command> [options]
+Usage: squadloop <command> [options]
 
 Commands:
-  start     Start a fresh DevSquad team session (resets active task log)
-  resume    Resume active DevSquad session from active task log
-  init      Bootstrap DevSquad context and templates into current directory
-  attach    Attach to the active tmux workspace
+  start     Start a fresh SquadLoop session (resets active task log)
+  resume    Resume active SquadLoop session from active task log
+  init      Bootstrap SquadLoop context and templates into current directory
+  attach    Attach to the active SquadLoop tmux workspace
   status    Display current active task status
   config    Display or edit .pi/team-config.json
   help      Display this help guide
 
 Examples:
-  devsquad start
-  devsquad resume
-  devsquad init
-  devsquad attach
-  devsquad config mode=loop layout=panes
+  squadloop start
+  squadloop resume
+  squadloop init
+  squadloop attach
+  squadloop config mode=loop layout=panes
   `);
 }
 
 function handleInit() {
   printLogo();
-  console.log("📦 Bootstrapping DevSquad AI files into current directory...");
+  console.log("📦 Bootstrapping SquadLoop files into current directory...");
 
   const cwd = process.cwd();
 
@@ -85,29 +85,29 @@ function handleInit() {
   fs.mkdirSync(path.join(cwd, "docs", "stories"), { recursive: true });
   console.log("  ✅ Created docs/brd/ and docs/stories/ template directories");
 
-  console.log("\n🎉 DevSquad AI initialization complete! Run 'devsquad start' to launch your squad.");
+  console.log("\n🎉 SquadLoop initialization complete! Run 'squadloop start' to launch your team.");
 }
 
 function handleStart() {
   printLogo();
-  console.log("🚀 Launching DevSquad AI workspace...");
+  console.log("🚀 Launching SquadLoop workspace...");
   // Run setup headlessly (-p) so pi initializes the workspace without leaving an extra interactive session behind
-  spawnSync("pi", ["-p", "/devsquad-start"], { stdio: "ignore" });
+  spawnSync("pi", ["-p", "/squadloop-start"], { stdio: "ignore" });
   handleAttach();
 }
 
 function handleResume() {
   printLogo();
-  console.log("🔄 Resuming DevSquad AI workspace...");
-  spawnSync("pi", ["-p", "/devsquad-resume"], { stdio: "ignore" });
+  console.log("🔄 Resuming SquadLoop workspace...");
+  spawnSync("pi", ["-p", "/squadloop-resume"], { stdio: "ignore" });
   handleAttach();
 }
 
 function handleAttach() {
-  console.log("🔌 Attaching to DevSquad tmux workspace...");
+  console.log("🔌 Attaching to SquadLoop tmux workspace...");
   if (process.env.TMUX) {
     try {
-      const res = spawnSync("tmux", ["switch-client", "-t", "devsquad-workspace"], { stdio: "inherit" });
+      const res = spawnSync("tmux", ["switch-client", "-t", "squadloop-workspace"], { stdio: "inherit" });
       if (res.status === 0) return;
     } catch {
       // Fallback to attach
@@ -115,12 +115,12 @@ function handleAttach() {
   }
 
   try {
-    const res = spawnSync("tmux", ["attach", "-t", "devsquad-workspace"], { stdio: "inherit" });
+    const res = spawnSync("tmux", ["attach", "-t", "squadloop-workspace"], { stdio: "inherit" });
     if (res.status !== 0) {
-      spawnSync("tmux", ["attach", "-t", "pi-team"], { stdio: "inherit" });
+      spawnSync("tmux", ["attach", "-t", "devsquad-workspace"], { stdio: "inherit" });
     }
   } catch {
-    console.error("❌ Failed to attach: no active DevSquad tmux workspace found.");
+    console.error("❌ Failed to attach: no active SquadLoop tmux workspace found.");
   }
 }
 

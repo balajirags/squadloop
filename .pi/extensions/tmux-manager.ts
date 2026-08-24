@@ -9,7 +9,7 @@ export interface TmuxPaneMap {
 }
 
 export class TmuxManager {
-  private sessionName = "devsquad-workspace";
+  private sessionName = "squadloop-workspace";
 
   public isTmuxAvailable(): boolean {
     try {
@@ -72,11 +72,11 @@ export class TmuxManager {
       execSync(`tmux set-window-option -g pane-border-status top`);
       execSync(`tmux set-window-option -g pane-border-format "#[fg=black,bg=cyan,bold] #{@persona} #[default]"`);
 
-      execSync(`tmux set-option -p -t ${orchestratorPane} @persona "[ DEVSQUAD :: MASTER ORCHESTRATOR ]"`);
-      execSync(`tmux set-option -p -t ${baPane} @persona "[ DEVSQUAD :: BUSINESS ANALYST (BA) ]"`);
-      execSync(`tmux set-option -p -t ${devPane} @persona "[ DEVSQUAD :: DEVELOPER (DEV) ]"`);
-      execSync(`tmux set-option -p -t ${qaPane} @persona "[ DEVSQUAD :: QUALITY ANALYST (QA) ]"`);
-      execSync(`tmux set-option -p -t ${reviewerPane} @persona "[ DEVSQUAD :: CODE REVIEWER (REVIEWER) ]"`);
+      execSync(`tmux set-option -p -t ${orchestratorPane} @persona "[ SQUADLOOP :: MASTER ORCHESTRATOR ]"`);
+      execSync(`tmux set-option -p -t ${baPane} @persona "[ SQUADLOOP :: BUSINESS ANALYST (BA) ]"`);
+      execSync(`tmux set-option -p -t ${devPane} @persona "[ SQUADLOOP :: DEVELOPER (DEV) ]"`);
+      execSync(`tmux set-option -p -t ${qaPane} @persona "[ SQUADLOOP :: QUALITY ANALYST (QA) ]"`);
+      execSync(`tmux set-option -p -t ${reviewerPane} @persona "[ SQUADLOOP :: CODE REVIEWER (REVIEWER) ]"`);
 
       // Resize Orchestrator top pane to 25% height
       execSync(`tmux resize-pane -t ${orchestratorPane} -y 25%`);
@@ -149,7 +149,7 @@ export class TmuxManager {
     try {
       // Bottom Status Ticker Bar (Scoped 100% to devsquad-workspace session)
       execSync(`tmux set-option -t ${this.sessionName} status-style "bg=black,fg=cyan"`);
-      execSync(`tmux set-option -t ${this.sessionName} status-left "#[fg=black,bg=green,bold] 🚀 DEVSQUAD AI #[default] "`);
+      execSync(`tmux set-option -t ${this.sessionName} status-left "#[fg=black,bg=green,bold] 🚀 SquadLoop #[default] "`);
       execSync(`tmux set-option -t ${this.sessionName} status-right "#[fg=cyan,bold] %Y-%m-%d %H:%M #[default]"`);
     } catch {
       // Non-fatal
@@ -182,19 +182,19 @@ export class TmuxManager {
 
       if (!livePanes.includes(currentPanes.ba)) {
         updated.ba = execSync(`tmux split-window -v -t ${currentPanes.orchestrator} -P -F "#{pane_id}" "pi -a ba; exec bash"`).toString().trim();
-        execSync(`tmux set-option -p -t ${updated.ba} @persona "📋 BUSINESS ANALYST - BA (Pane 1)"`);
+        execSync(`tmux set-option -p -t ${updated.ba} @persona "[ SQUADLOOP :: BUSINESS ANALYST (BA) ]"`);
       }
       if (!livePanes.includes(currentPanes.developer)) {
         updated.developer = execSync(`tmux split-window -h -t ${updated.ba} -P -F "#{pane_id}" "pi -a developer; exec bash"`).toString().trim();
-        execSync(`tmux set-option -p -t ${updated.developer} @persona "💻 FULLSTACK DEVELOPER - DEV (Pane 2)"`);
+        execSync(`tmux set-option -p -t ${updated.developer} @persona "[ SQUADLOOP :: DEVELOPER (DEV) ]"`);
       }
       if (!livePanes.includes(currentPanes.qa)) {
         updated.qa = execSync(`tmux split-window -v -t ${updated.ba} -P -F "#{pane_id}" "pi -a qa; exec bash"`).toString().trim();
-        execSync(`tmux set-option -p -t ${updated.qa} @persona "🧪 QUALITY ANALYST - QA (Pane 3)"`);
+        execSync(`tmux set-option -p -t ${updated.qa} @persona "[ SQUADLOOP :: QUALITY ANALYST (QA) ]"`);
       }
       if (!livePanes.includes(currentPanes.reviewer)) {
         updated.reviewer = execSync(`tmux split-window -v -t ${updated.developer} -P -F "#{pane_id}" "pi -a reviewer; exec bash"`).toString().trim();
-        execSync(`tmux set-option -p -t ${updated.reviewer} @persona "🔍 CODE REVIEWER - REVIEWER (Pane 4)"`);
+        execSync(`tmux set-option -p -t ${updated.reviewer} @persona "[ SQUADLOOP :: CODE REVIEWER (REVIEWER) ]"`);
       }
 
       return updated;

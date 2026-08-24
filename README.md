@@ -1,6 +1,6 @@
-# DevSquad AI — Autonomous Multi-Agent Engineering Squad (`devsquad`)
+# SquadLoop — Your Autonomous Software Team (`squadloop`)
 
-**DevSquad AI** turns Pi Agent into an AI-native 5-agent software engineering squad operating concurrently in a workspace (either 5 split panes in 1 window or 5 full-screen windows in tmux, or in regular mode on any terminal):
+**SquadLoop** turns Pi Agent into an AI-native 5-agent software engineering team operating concurrently in a workspace (either 5 split panes in 1 window or 5 full-screen windows in tmux, or in regular mode on any terminal):
 
 1. **🤖 Master Orchestrator (Pane 0 / Window 0)**: Central Human-in-the-Loop (HITL) command room. Displays interactive options (*"Implement BRD"*, *"Pick Story #42"*, *"Random Implementation"*, *"Custom Task"*), delegates tasks to child agents via `send_agent_message`, and manages state transitions.
 2. **📋 BA - Business Analyst (Pane 1 / Window 1)**: Auto re-slices PRDs/BRDs into atomic user stories with Gherkin Acceptance Criteria (ACs), creating tickets in GitHub Issues, Jira, or local story files.
@@ -14,29 +14,29 @@ Based on the philosophy from [AI-Native Development Specifications](https://aish
 
 ## ⚡ Quickstart Guide
 
-### Step 1: Install DevSquad AI
+### Step 1: Install SquadLoop
 ```bash
-npm install -g devsquad
+npm install -g squadloop
 # Or link locally from repo:
 npm link
 ```
 
 ### Step 2: Initialize in Any Target Repository
-Navigate to your project repository and run `devsquad init`:
+Navigate to your project repository and run `squadloop init`:
 
 ```bash
 cd ~/projects/my-company-app
-devsquad init
+squadloop init
 ```
-*`devsquad init` automatically bootstraps `.pi/` extensions, `Agent.md`, `project-context.md`, and `docs/` template folders.*
+*`squadloop init` automatically bootstraps `.pi/` extensions, `Agent.md`, `project-context.md`, and `docs/` template folders.*
 
 ### Step 3: Configure `project-context.md` & `.pi/team-config.json`
 Set your build/test commands and source boundaries in `project-context.md`. Set your workflow mode and workspace preference in `.pi/team-config.json`.
 
 ### Step 4: Launch & Attach
 ```bash
-devsquad start
-devsquad attach
+squadloop start
+squadloop attach
 ```
 
 ---
@@ -64,18 +64,18 @@ Configure team workflow modes, workspace layouts, security policies, and workspa
   Pauses for human approval at EVERY stage transition (BA → HITL → Dev → HITL → QA → HITL → Reviewer → HITL).
 
 ### 🖥️ Workspace Layouts & Modes
-- **`"workspaceMode": "tmux"` (Default)**: Runs DevSquad inside tmux using split panes or full-screen windows.
+- **`"workspaceMode": "tmux"` (Default)**: Runs SquadLoop inside tmux using split panes or full-screen windows.
   - **`"layout": "panes"` (Default)**: 5 split panes within 1 window (`team`) for real-time visual collaboration.
   - **`"layout": "windows"`**: 5 full-screen windows within the same tmux session (`orchestrator`, `ba`, `developer`, `qa`, `reviewer`).
 - **`"workspaceMode": "regular"` (No Tmux Required)**:
-  Runs DevSquad in regular headless event-bus mode on any terminal (iTerm2 tabs, VS Code splits, CI/CD).
-  *(Note: If `"workspaceMode": "tmux"` is configured but `tmux` is missing from your system, DevSquad halts and guides you to install `tmux` or switch to `"workspaceMode": "regular"`).*
+  Runs SquadLoop in regular headless event-bus mode on any terminal (iTerm2 tabs, VS Code splits, CI/CD).
+  *(Note: If `"workspaceMode": "tmux"` is configured but `tmux` is missing from your system, SquadLoop halts and guides you to install `tmux` or switch to `"workspaceMode": "regular"`).*
 
 ---
 
-## 🛡️ DevSquad Security Guard
+## 🛡️ SquadLoop Security Guard
 
-DevSquad AI includes an automated pre-execution security guard extension (`.pi/extensions/security-guard.ts`):
+SquadLoop includes an automated pre-execution security guard extension (`.pi/extensions/security-guard.ts`):
 
 1. **Non-Negotiable Protected Files**:
    - Reading `.env`, `.env.*`, `.bashrc`, `.zshrc`, `~/.ssh/` keys, `~/.aws/credentials`, and any paths listed in `"customProtectedFiles"` is **strictly hard-blocked by default** for all agents.
@@ -89,7 +89,7 @@ DevSquad AI includes an automated pre-execution security guard extension (`.pi/e
 
 ## 🎯 Extensible Delivery Tracker Strategy (`ITrackerAdapter`)
 
-DevSquad AI uses the **Strategy Pattern** (`ITrackerAdapter` and `TrackerFactory`) to manage story creation, status updates, and issue closure:
+SquadLoop uses the **Strategy Pattern** (`ITrackerAdapter` and `TrackerFactory`) to manage story creation, status updates, and issue closure:
 
 * **`GitHubIssuesAdapter`**: Uses `gh` CLI (`gh issue create`, `gh issue close`, `gh issue list`).
 * **`JiraAdapter`**: Uses `jira` CLI or REST API (`jira issue create`, `jira issue move`).
@@ -99,22 +99,22 @@ DevSquad AI uses the **Strategy Pattern** (`ITrackerAdapter` and `TrackerFactory
 
 ---
 
-## 🛠️ CLI Commands (`devsquad`)
+## 🛠️ CLI Commands (`squadloop`)
 
 | Command | Description |
 | :--- | :--- |
-| `devsquad start` | Starts a fresh DevSquad session, resets active task log (`status: "awaiting-human-input"`), and opens the workspace. |
-| `devsquad resume` | Resumes an active DevSquad session from `.pi/active-task.json` log. |
-| `devsquad init` | Bootstraps `.pi/`, `Agent.md`, `project-context.md`, and template folders into current directory. |
-| `devsquad attach` | Attaches directly to the `devsquad-workspace` tmux session. |
-| `devsquad status` | Displays active task state, token usage, and estimated cost directly from terminal. |
-| `devsquad config` | Displays or updates `.pi/team-config.json` (`mode`, `layout`, `workspaceMode`, `destructiveCommandPolicy`). |
-| `devsquad help` | Displays the DevSquad CLI usage guide and options. |
+| `squadloop start` | Starts a fresh SquadLoop session, resets active task log (`status: "awaiting-human-input"`), and opens the workspace. |
+| `squadloop resume` | Resumes an active SquadLoop session from `.pi/active-task.json` log. |
+| `squadloop init` | Bootstraps `.pi/`, `Agent.md`, `project-context.md`, and template folders into current directory. |
+| `squadloop attach` | Attaches directly to the `squadloop-workspace` tmux session. |
+| `squadloop status` | Displays active task state, token usage, and estimated cost directly from terminal. |
+| `squadloop config` | Displays or updates `.pi/team-config.json` (`mode`, `layout`, `workspaceMode`, `destructiveCommandPolicy`). |
+| `squadloop help` | Displays the SquadLoop CLI usage guide and options. |
 
 ### Slash Command Aliases (Inside Pi)
-- `/devsquad-start` (alias `/team-start`, `/team-dev`)
-- `/devsquad-resume` (alias `/team-resume`)
-- `/devsquad-recover` (alias `/team-recover`)
+- `/squadloop-start` (alias `/team-start`, `/devsquad-start`, `/team-dev`)
+- `/squadloop-resume` (alias `/team-resume`, `/devsquad-resume`)
+- `/squadloop-recover` (alias `/team-recover`, `/devsquad-recover`)
 
 ---
 
@@ -130,7 +130,7 @@ DevSquad AI uses the **Strategy Pattern** (`ITrackerAdapter` and `TrackerFactory
 
 ## 📋 Prerequisites
 
-Before running DevSquad AI, ensure you have installed:
+Before running SquadLoop, ensure you have installed:
 
 - **Node.js**: v20 or later
 - **Pi Coding Agent**: Installed globally
