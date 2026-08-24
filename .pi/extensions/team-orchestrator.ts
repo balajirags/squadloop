@@ -60,7 +60,14 @@ export default function (pi: ExtensionAPI) {
   // Handler for fresh start
   const handleTeamStart = async (ctx: any) => {
     const config = getOrCreateConfig();
-    const workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
+    let workspace;
+    try {
+      workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
+    } catch (err: any) {
+      ctx.ui.notify(err.message, "error");
+      console.error(err.message);
+      return;
+    }
 
     ctx.ui.notify(`Initializing DevSquad Team [--mode=${config.mode}, --layout=${config.layout}, --workspace=${workspace.name}]...`, "info");
 
@@ -92,7 +99,14 @@ export default function (pi: ExtensionAPI) {
   // Handler for session resume
   const handleTeamResume = async (ctx: any) => {
     const config = getOrCreateConfig();
-    const workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
+    let workspace;
+    try {
+      workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
+    } catch (err: any) {
+      ctx.ui.notify(err.message, "error");
+      console.error(err.message);
+      return;
+    }
 
     // Read active-task.json if available
     const activeTaskPath = path.join(process.cwd(), ".pi", "active-task.json");
