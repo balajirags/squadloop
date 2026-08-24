@@ -54,7 +54,7 @@ When your verdict is **APPROVE** (All P1/P2 findings resolved):
 1. 🚫 **MUST MERGE PR/BRANCH TO MAIN FIRST**: Execute `gh pr merge <issue-id> --merge --delete-branch` (or `git checkout main && git merge feature/issue-<id> && git push origin main`) via bash tool call.
 2. Verify merge commit on `main`.
 3. **Update Delivery Tracker SOT (Based on `project-context.md` -> Delivery Tracker)**:
-   - **GitHub Issues**: `gh issue close <issue-id> --comment "Merged to main by DevSquad AI"`
+   - **GitHub Issues**: `gh issue close <issue-id> --comment "Merged to main by SquadLoop"`
    - **Jira**: `jira issue move <issue-key> "Done"` (or transition ticket to Done via Jira API/CLI)
    - **Local Markdown Files**: Edit `docs/stories/<epic>/<story-id>.md` header metadata to `Status: Closed` / `Status: Done`.
 4. Call `team_update_status(issueId, "done", "PR #<id> merged to main successfully and tracker issue closed")`.

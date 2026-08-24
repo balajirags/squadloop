@@ -1,42 +1,42 @@
-# BRD: DevSquad AI — Standalone CLI, Rebranding, Resilience & Distribution Framework
+# BRD: SquadLoop — Standalone CLI, Rebranding, Resilience & Distribution Framework
 
 ## Executive Summary
-This document consolidates all product requirements for **DevSquad AI** into a single master specification. It defines the standalone CLI wrapper (`devsquad`), distribution framework (`devsquad init`), rebranded tmux workspace UI, workflow circuit breakers, QA-managed quality gates, and automated story telemetry.
+This document consolidates all product requirements for **SquadLoop — Your autonomous software team** into a single master specification. It defines the standalone CLI wrapper (`squadloop`), distribution framework (`squadloop init`), rebranded tmux workspace UI, workflow circuit breakers, QA-managed quality gates, and automated story telemetry.
 
 ---
 
-## 1. Standalone CLI Executable (`devsquad`) & Distribution Framework
+## 1. Standalone CLI Executable (`squadloop`) & Distribution Framework
 
-### 1.1 Package Executable (`bin/devsquad.js`)
-- **Requirement**: Register `"bin": { "devsquad": "./bin/devsquad.js" }` in `package.json` for global (`npm install -g devsquad`) or `npx` execution.
+### 1.1 Package Executable (`bin/squadloop.js`)
+- **Requirement**: Register `"bin": { "squadloop": "./bin/squadloop.js" }` in `package.json` for global (`npm install -g squadloop`) or `npx` execution.
 - **Commands**:
-  - `devsquad start`: Starts fresh session, resets active-task log (`activeIssueId=""`, `status="awaiting-human-input"`), launches layout (`panes` or `windows`).
-  - `devsquad resume`: Recovers active session from `.pi/active-task.json` log.
-  - `devsquad init`: Bootstraps `.pi/` extensions, `Agent.md`, `project-context.md`, and BRD/story template directories into any target repository.
-  - `devsquad attach`: Attaches directly to the `devsquad-workspace` tmux session.
-  - `devsquad status`: Displays current active task state from terminal.
-  - `devsquad config`: Displays or updates `.pi/team-config.json` (`mode` and `layout`).
-  - `devsquad help`: Displays CLI usage guide.
+  - `squadloop start`: Starts fresh session, resets active-task log (`activeIssueId=""`, `status="awaiting-human-input"`), launches layout (`panes` or `windows`).
+  - `squadloop resume`: Recovers active session from `.pi/active-task.json` log.
+  - `squadloop init`: Bootstraps `.pi/` extensions, `Agent.md`, `project-context.md`, and BRD/story template directories into any target repository.
+  - `squadloop attach`: Attaches directly to the `squadloop-workspace` tmux session.
+  - `squadloop status`: Displays current active task state from terminal.
+  - `squadloop config`: Displays or updates `.pi/team-config.json` (`mode` and `layout`).
+  - `squadloop help`: Displays CLI usage guide.
 
 ---
 
 ## 2. Tmux Workspace & Extension Rebranding
 
 ### 2.1 Workspace Rebranding
-- **Session Name**: `devsquad-workspace` (formerly `pi-team`).
+- **Session Name**: `squadloop-workspace` (formerly `pi-team`).
 - **Pane Titles**:
-  - Pane 0: `[ DEVSQUAD :: MASTER ORCHESTRATOR ]`
-  - Pane 1: `[ DEVSQUAD :: BUSINESS ANALYST (BA) ]`
-  - Pane 2: `[ DEVSQUAD :: DEVELOPER (DEV) ]`
-  - Pane 3: `[ DEVSQUAD :: QUALITY ANALYST (QA) ]`
-  - Pane 4: `[ DEVSQUAD :: CODE REVIEWER (REVIEWER) ]`
-- **Commands**: Register `/devsquad-start` and `/devsquad-recover` aliases.
+  - Pane 0: `[ SQUADLOOP :: MASTER ORCHESTRATOR ]`
+  - Pane 1: `[ SQUADLOOP :: BUSINESS ANALYST (BA) ]`
+  - Pane 2: `[ SQUADLOOP :: DEVELOPER (DEV) ]`
+  - Pane 3: `[ SQUADLOOP :: QUALITY ANALYST (QA) ]`
+  - Pane 4: `[ SQUADLOOP :: CODE REVIEWER (REVIEWER) ]`
+- **Commands**: Register `/squadloop-start` and `/squadloop-recover` commands.
 
 ### 2.2 Welcome Banner
-- Master Orchestrator in Pane 0 displays the DevSquad welcome banner upon startup:
+- Master Orchestrator in Pane 0 displays the SquadLoop welcome banner upon startup:
 ```text
 ==============================================================
-🚀 DEVSQUAD AI ONLINE [--mode=loop-hitl, --layout=panes]
+🚀 SQUADLOOP ONLINE [--mode=loop-hitl, --layout=panes]
 ==============================================================
 Please select an option or state your request:
 
@@ -66,7 +66,7 @@ Please select an option or state your request:
 ### 4.1 Tmux Bottom Status Bar Ticker
 - **Requirement**: Configure tmux `status-right` / `status-left` to display a live real-time status ticker:
   ```text
-  [ DEVSQUAD AI ] | Mode: LOOP-HITL | Layout: PANES | Active: Issue #12 [DEV in progress]
+  [ 🚀 SquadLoop ] | Mode: LOOP-HITL | Layout: PANES | Active: Issue #12 [DEV in progress]
   ```
 
 ### 4.2 Instant Navigation Shortcuts (No `Ctrl+b` Required)

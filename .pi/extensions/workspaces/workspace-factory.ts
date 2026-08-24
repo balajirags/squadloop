@@ -34,10 +34,10 @@ export class WorkspaceFactory {
         `To install tmux:\n` +
         `  • macOS          : brew install tmux\n` +
         `  • Ubuntu/Debian  : sudo apt install tmux\n\n` +
-        `Alternatively, to run DevSquad in Regular Mode (without tmux):\n` +
+        `Alternatively, to run SquadLoop in Regular Mode (without tmux):\n` +
         `  1. Edit .pi/team-config.json\n` +
         `  2. Set "workspaceMode": "regular"\n` +
-        `  3. Run 'devsquad start' again.`;
+        `  3. Run 'squadloop start' again.`;
       throw new Error(errorMsg);
     }
 

@@ -117,7 +117,7 @@ function handleAttach() {
   try {
     const res = spawnSync("tmux", ["attach", "-t", "squadloop-workspace"], { stdio: "inherit" });
     if (res.status !== 0) {
-      spawnSync("tmux", ["attach", "-t", "devsquad-workspace"], { stdio: "inherit" });
+      spawnSync("tmux", ["attach", "-t", "pi-team"], { stdio: "inherit" });
     }
   } catch {
     console.error("❌ Failed to attach: no active SquadLoop tmux workspace found.");

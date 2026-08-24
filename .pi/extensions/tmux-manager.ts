@@ -147,7 +147,7 @@ export class TmuxManager {
 
   private configureErgonomics(): void {
     try {
-      // Bottom Status Ticker Bar (Scoped 100% to devsquad-workspace session)
+      // Bottom Status Ticker Bar (Scoped 100% to squadloop-workspace session)
       execSync(`tmux set-option -t ${this.sessionName} status-style "bg=black,fg=cyan"`);
       execSync(`tmux set-option -t ${this.sessionName} status-left "#[fg=black,bg=green,bold] 🚀 SquadLoop #[default] "`);
       execSync(`tmux set-option -t ${this.sessionName} status-right "#[fg=cyan,bold] %Y-%m-%d %H:%M #[default]"`);

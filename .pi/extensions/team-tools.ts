@@ -165,7 +165,7 @@ export function registerTeamTools(pi: ExtensionAPI) {
             if (params.newStatus === "done" && params.issueId) {
               try {
                 const trackerAdapter = TrackerFactory.getAdapter();
-                await trackerAdapter.closeIssue(params.issueId, "Completed and merged to main by DevSquad AI");
+                await trackerAdapter.closeIssue(params.issueId, "Completed and merged to main by SquadLoop");
               } catch {
                 // Non-fatal if tracker close fails
               }

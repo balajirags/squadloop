@@ -1,6 +1,6 @@
-# How to Add a New Delivery Tracker Adapter to DevSquad AI
+# How to Add a New Delivery Tracker Adapter to SquadLoop
 
-DevSquad AI uses the **Strategy Pattern** to support any Delivery Tracker (GitHub Issues, Jira, Local Markdown Stories, Linear, Azure DevOps, Trello, etc.).
+SquadLoop uses the **Strategy Pattern** to support any Delivery Tracker (GitHub Issues, Jira, Local Markdown Stories, Linear, Azure DevOps, Trello, etc.).
 
 All tracker logic is decoupled behind the `ITrackerAdapter` interface and instantiated dynamically by `TrackerFactory`.
 
@@ -88,7 +88,7 @@ Open `.pi/extensions/trackers/tracker-factory.ts`:
    ```
 
 ### Step 4: Configure in `project-context.md`
-In any repository using DevSquad AI, set the `Delivery Tracker` row in `project-context.md`:
+In any repository using SquadLoop, set the `Delivery Tracker` row in `project-context.md`:
 
 ```markdown
 ## Repository
@@ -98,7 +98,7 @@ In any repository using DevSquad AI, set the `Delivery Tracker` row in `project-
 | Delivery Tracker | Linear |
 ```
 
-DevSquad AI's `TrackerFactory` will automatically detect `"Linear"`, instantiate `LinearAdapter`, and route all story creation, status updates, and issue closures through your adapter!
+SquadLoop's `TrackerFactory` will automatically detect `"Linear"`, instantiate `LinearAdapter`, and route all story creation, status updates, and issue closures through your adapter!
 
 ---
 

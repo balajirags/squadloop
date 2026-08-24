@@ -48,7 +48,7 @@ export class GitHubIssuesAdapter implements ITrackerAdapter {
     if (!num) return;
 
     try {
-      const commentFlag = comment ? `--comment "${comment.replace(/"/g, '\\"')}"` : '--comment "Closed by DevSquad AI"';
+      const commentFlag = comment ? `--comment "${comment.replace(/"/g, '\\"')}"` : '--comment "Closed by SquadLoop"';
       execSync(`gh issue close ${num} ${commentFlag}`, { stdio: "ignore" });
     } catch {
       // Non-fatal if gh CLI fails

@@ -1,10 +1,112 @@
-# SquadLoop — Distribution & Release Management Guide (`RELEASE-MGMT.md`)
+# SquadLoop — Release Management & Distribution Guide (`RELEASE-MGMT.md`)
 
-This guide provides the complete release engineering, versioning, distribution, and adoption workflow for **SquadLoop — Your autonomous software team.**
+This guide provides the complete release engineering, versioning, local testing, and peer/NPM distribution workflow for **SquadLoop — Your autonomous software team.**
 
 ---
 
-## 📦 1. Package Configuration & Versioning Scripts
+## 💻 1. Local System Testing Workflow (Any Directory)
+
+Since `squadloop` is globally linked on your computer via `npm link`, you can run and test SquadLoop inside **any project directory or repository on your machine**:
+
+```bash
+# 1. Open terminal and navigate to ANY project directory
+cd /path/to/any-project-folder
+
+# 2. Bootstrap SquadLoop agent personas, extensions, and templates
+squadloop init
+
+# 3. Launch SquadLoop team
+squadloop start
+
+# 4. Attach to the tmux workspace
+squadloop attach
+```
+
+---
+
+## 📦 2. Creating Portable Package Tarball Builds (`npm pack`)
+
+You can bundle SquadLoop into a single, lightweight tarball file to share directly with others via Slack, Email, AirDrop, Google Drive, or USB drive without requiring a published NPM registry:
+
+### Step 1: Generate Package Tarball
+Run `npm pack` inside the `pi-team` repository root:
+
+```bash
+cd /Users/gbalaji/projects/personal/pi-team
+npm run build
+npm pack
+```
+
+*Output*: Generates a single ~98 KB compressed tarball: **`squadloop-1.0.0.tgz`**.
+
+### What Is Included in `squadloop-1.0.0.tgz`?
+- `bin/squadloop.js` — Executable CLI binary with ASCII art logo.
+- `.pi/agents/` — All 5 agent personas (`orchestrator`, `ba`, `developer`, `qa`, `reviewer`).
+- `.pi/extensions/` — `WorkflowEngine`, `SecurityGuard`, `TrackerFactory`, `WorkspaceFactory`, `team-tools`.
+- `.pi/skills/` & `.pi/templates/` — All domain skills and document templates.
+- `Agent.md` — Operational mandate and workspace rules.
+- `package.json` — Package configuration and CLI binary declaration.
+
+---
+
+## 👥 3. Peer-to-Peer & Colleague Distribution (Zero Registry Needed)
+
+### Method A: Portable Tarball Share (Recommended - Zero Registry Needed)
+Send **`squadloop-1.0.0.tgz`** to your friend or colleague.
+
+#### On Your Friend's Machine:
+```bash
+# 1. Install globally directly from the tarball file:
+npm install -g /path/to/squadloop-1.0.0.tgz
+
+# 2. Navigate to their own project repository:
+cd ~/projects/their-app
+
+# 3. Bootstrap SquadLoop files:
+squadloop init
+
+# 4. Launch SquadLoop:
+squadloop start
+```
+
+---
+
+### Method B: Git Clone & Local Link
+If your colleague has access to your Git repository:
+
+```bash
+# On your colleague's machine:
+git clone https://github.com/balajirags/pi-team.git squadloop-repo
+cd squadloop-repo
+npm install
+npm run build
+npm link
+
+# Now squadloop is available globally on their system!
+cd ~/projects/their-app
+squadloop init
+squadloop start
+```
+
+---
+
+### Method C: Self-Contained Repository Copy
+If they want SquadLoop fully self-contained inside a single project folder without installing globally:
+
+Copy 3 items into their project root:
+1. `.pi/` directory
+2. `Agent.md` file
+3. `bin/` directory
+
+Then inside their project folder, run:
+```bash
+./bin/squadloop.js init
+./bin/squadloop.js start
+```
+
+---
+
+## 🚀 4. NPM & Private Registry Distribution Workflow
 
 `package.json` is configured with `"name": "squadloop"` and `"bin": { "squadloop": "./bin/squadloop.js" }`.
 
@@ -28,20 +130,7 @@ npm run release:major
 3. `git push origin main --tags` — Pushes commits and tags to remote.
 4. `npm publish` — Publishes package to NPM or private registry.
 
----
-
-## 🚀 2. NPM Distribution Workflow
-
-### A. Publishing to Public NPM Registry
-```bash
-# Login to NPM
-npm login
-
-# Publish package
-npm publish --access public
-```
-
-### B. Publishing to Private Company Registries (GitHub Packages, Artifactory, Verdaccio, AWS CodeArtifact)
+### Publishing to Private Company Registries (GitHub Packages, Artifactory, Verdaccio, AWS CodeArtifact)
 Configure `.npmrc` in project root:
 ```ini
 @my-company:registry=https://npm.pkg.github.com
@@ -54,53 +143,7 @@ npm publish --registry https://npm.pkg.github.com
 
 ---
 
-## 👥 3. Team Adoption & Installation Guide
-
-Once published, any developer or development team can adopt SquadLoop in their repository using one of 3 methods:
-
-### Method 1: Global Installation (Recommended)
-```bash
-# 1. Install globally from registry
-npm install -g squadloop
-
-# 2. Navigate to ANY target project repository
-cd ~/projects/my-company-app
-
-# 3. Bootstrap SquadLoop context, agent personas, and templates
-squadloop init
-
-# 4. Configure project-context.md and launch
-squadloop start
-
-# 5. Attach to tmux workspace
-squadloop attach
-```
-
-### Method 2: Zero-Install via `npx`
-```bash
-cd ~/projects/my-company-app
-
-# 1. Bootstrap context and templates
-npx squadloop init
-
-# 2. Launch SquadLoop
-npx squadloop start
-
-# 3. Attach to workspace
-npx squadloop attach
-```
-
-### Method 3: Direct Git Copy (Local Team Share)
-Copy 3 items into the target project root:
-1. `.pi/` directory (agent personas, extensions, skills, templates)
-2. `Agent.md` file (operational mandate)
-3. `bin/` directory (`bin/squadloop.js`)
-
-Then execute `./bin/squadloop.js init` or `./bin/squadloop.js start`.
-
----
-
-## 🏷️ 4. GitHub Release Management (`gh` CLI)
+## 🏷️ 5. GitHub Release Management (`gh` CLI)
 
 To create a formal GitHub release with release notes:
 
@@ -115,17 +158,18 @@ gh release create v1.0.0 --title "SquadLoop v1.0.0" --notes "Initial release of 
 
 ---
 
-## 📊 5. Distribution Matrix Summary
+## 📊 6. Distribution Matrix Summary
 
 | Distribution Model | Best For | Installation Command |
 | :--- | :--- | :--- |
 | **NPM Registry (Public / Private)** | External teams, company-wide adoption | `npm install -g squadloop` → `squadloop init` |
 | **`npx` On-Demand** | Zero-install trial runs, CI/CD pipelines | `npx squadloop init` → `npx squadloop start` |
 | **Monorepo / Local Share** | Shared internal repository copy | `cp -r /path/to/squadloop/.pi .` → `squadloop start` |
+| **Tarball Share (`.tgz`)** | Direct peer sharing without registry | `npm install -g squadloop-1.0.0.tgz` |
 
 ---
 
-## 🔍 6. Pre-Release Quality Checklist
+## 🔍 7. Pre-Release Quality Checklist
 
 Before running `npm run release:*`:
 - [ ] Run `npm run build` to verify 0 TypeScript compilation errors.

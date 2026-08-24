@@ -112,9 +112,9 @@ SquadLoop uses the **Strategy Pattern** (`ITrackerAdapter` and `TrackerFactory`)
 | `squadloop help` | Displays the SquadLoop CLI usage guide and options. |
 
 ### Slash Command Aliases (Inside Pi)
-- `/squadloop-start` (alias `/team-start`, `/devsquad-start`, `/team-dev`)
-- `/squadloop-resume` (alias `/team-resume`, `/devsquad-resume`)
-- `/squadloop-recover` (alias `/team-recover`, `/devsquad-recover`)
+- `/squadloop-start` (alias `/team-start`, `/team-dev`)
+- `/squadloop-resume` (alias `/team-resume`)
+- `/squadloop-recover` (alias `/team-recover`)
 
 ---
 

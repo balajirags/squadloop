@@ -100,7 +100,7 @@ export function registerSecurityGuard(pi: ExtensionAPI) {
       if (targetText) {
         for (const pattern of allProtectedPatterns) {
           if (pattern.test(targetText)) {
-            const blockMsg = `🛑 ACCESS DENIED: Reading or modifying sensitive environment files or system credentials (${targetText}) is strictly prohibited by DevSquad Security Guard.`;
+            const blockMsg = `🛑 ACCESS DENIED: Reading or modifying sensitive environment files or system credentials (${targetText}) is strictly prohibited by SquadLoop Security Guard.`;
             logSecurityEvent({
               eventId: `evt_${Date.now()}`,
               type: "security_blocked",
@@ -123,7 +123,7 @@ export function registerSecurityGuard(pi: ExtensionAPI) {
           const policy = config.destructiveCommandPolicy || "ask-human";
 
           if (policy === "block") {
-            const blockMsg = `🛑 SECURITY POLICY VIOLATION: Destructive command '${cmd}' is blocked by DevSquad Security Guard policy (destructiveCommandPolicy: "block").`;
+            const blockMsg = `🛑 SECURITY POLICY VIOLATION: Destructive command '${cmd}' is blocked by SquadLoop Security Guard policy (destructiveCommandPolicy: "block").`;
             logSecurityEvent({
               eventId: `evt_${Date.now()}`,
               type: "security_blocked",
