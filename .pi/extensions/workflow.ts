@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { WorkspaceFactory } from "./workspaces/workspace-factory.js";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -14,16 +14,8 @@ export type WorkflowStage =
 
 export class WorkflowEngine {
   private static async sendPromptAsync(paneTarget: string, promptText: string, clear = true): Promise<void> {
-    try {
-      if (clear) {
-        execSync(`tmux send-keys -t ${paneTarget} "/clear" Enter`, { stdio: "ignore" });
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      }
-      const escaped = promptText.replace(/"/g, '\\"');
-      execSync(`tmux send-keys -t ${paneTarget} "${escaped}" Enter`, { stdio: "ignore" });
-    } catch {
-      // Ignore if tmux session not attached
-    }
+    const workspace = WorkspaceFactory.getAdapter();
+    await workspace.sendPrompt(paneTarget, promptText, clear);
   }
 
   public static async handleTransition(

@@ -1,13 +1,14 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerTeamTools } from "./team-tools.js";
 import { registerStatusBanner } from "./status-banner.js";
-import { TmuxManager } from "./tmux-manager.js";
+import { WorkspaceFactory } from "./workspaces/workspace-factory.js";
 import * as fs from "fs";
 import * as path from "path";
 
 export interface TeamConfig {
   mode: "step-hitl" | "loop-hitl" | "auto";
   layout: "panes" | "windows";
+  workspaceMode?: "tmux" | "regular";
   destructiveCommandPolicy?: "ask-human" | "block" | "allow";
   customProtectedFiles?: string[];
   panes: {
@@ -33,6 +34,7 @@ function getOrCreateConfig(): TeamConfig {
       config = {
         mode: loaded.mode || "loop-hitl",
         layout: loaded.layout || "panes",
+        workspaceMode: loaded.workspaceMode || "tmux",
         destructiveCommandPolicy: loaded.destructiveCommandPolicy || "ask-human",
         customProtectedFiles: loaded.customProtectedFiles || [],
         panes: loaded.panes || config.panes
@@ -55,19 +57,14 @@ export default function (pi: ExtensionAPI) {
   registerTeamTools(pi);
   registerStatusBanner(pi);
 
-  const tmux = new TmuxManager();
-
   // Handler for fresh start
   const handleTeamStart = async (ctx: any) => {
-    if (!tmux.isTmuxAvailable()) {
-      ctx.ui.notify("Error: tmux is required to run multi-agent team mode.", "error");
-      return;
-    }
-
     const config = getOrCreateConfig();
-    ctx.ui.notify(`Initializing DevSquad Team [--mode=${config.mode}, --layout=${config.layout}]...`, "info");
+    const workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
 
-    const panes = tmux.setupLayout(config.layout);
+    ctx.ui.notify(`Initializing DevSquad Team [--mode=${config.mode}, --layout=${config.layout}, --workspace=${workspace.name}]...`, "info");
+
+    const panes = workspace.setupLayout(config.layout);
     config.panes = panes;
     saveConfig(config);
 
@@ -83,22 +80,19 @@ export default function (pi: ExtensionAPI) {
     }, null, 2), "utf-8");
 
     // Initial greeting prompt in Orchestrator: Display welcome menu and STOP
-    tmux.sendPromptToPane(
+    await workspace.sendPrompt(
       panes.orchestrator,
-      `Master Orchestrator online [--mode=${config.mode}, --layout=${config.layout}]! Print the welcome banner and options (1. Implement BRD/PRD, 2. Pick a specific Story/Issue, 3. Random Implementation, 4. Custom Task/Bug Fix). DO NOT call send_agent_message or start any work automatically. STOP IMMEDIATELY and wait for the human user in Pane 0 to enter their instruction.`
+      `Master Orchestrator online [--mode=${config.mode}, --layout=${config.layout}, --workspace=${workspace.name}]! Print the welcome banner and options (1. Implement BRD/PRD, 2. Pick a specific Story/Issue, 3. Random Implementation, 4. Custom Task/Bug Fix). DO NOT call send_agent_message or start any work automatically. STOP IMMEDIATELY and wait for the human user in Pane 0 to enter their instruction.`,
+      false
     );
 
-    ctx.ui.notify(`DevSquad setup complete in tmux session 'devsquad-workspace' [--mode=${config.mode}, --layout=${config.layout}]. Attach with: tmux attach -t devsquad-workspace`, "info");
+    ctx.ui.notify(`DevSquad setup complete via '${workspace.name}' [--mode=${config.mode}, --layout=${config.layout}].`, "info");
   };
 
   // Handler for session resume
   const handleTeamResume = async (ctx: any) => {
-    if (!tmux.isTmuxAvailable()) {
-      ctx.ui.notify("Error: tmux is required to run multi-agent team mode.", "error");
-      return;
-    }
-
     const config = getOrCreateConfig();
+    const workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
 
     // Read active-task.json if available
     const activeTaskPath = path.join(process.cwd(), ".pi", "active-task.json");
@@ -119,18 +113,18 @@ export default function (pi: ExtensionAPI) {
 
     ctx.ui.notify(`Resuming DevSquad Team [--mode=${config.mode}, --layout=${config.layout}, activeIssue=#${activeIssueId}]...`, "info");
 
-    const panes = tmux.setupLayout(config.layout);
+    const panes = workspace.setupLayout(config.layout);
     config.panes = panes;
     saveConfig(config);
 
     // Resume prompt in Orchestrator Pane 0
-    const resumePrompt = `Master Orchestrator RESUMED [--mode=${config.mode}, --layout=${config.layout}]! ` +
+    const resumePrompt = `Master Orchestrator RESUMED [--mode=${config.mode}, --layout=${config.layout}, --workspace=${workspace.name}]! ` +
       `Active task recovered from log: Issue #${activeIssueId || 'None'} (Status: '${activeStatus}'). Notes: '${activeNotes || 'N/A'}'. ` +
       `Print session recovery banner to user, state active task status, and ask the human user in Pane 0 how to proceed or continue.`;
 
-    tmux.sendPromptToPane(panes.orchestrator, resumePrompt);
+    await workspace.sendPrompt(panes.orchestrator, resumePrompt, false);
 
-    ctx.ui.notify(`DevSquad session resumed in tmux 'devsquad-workspace' [Issue #${activeIssueId || 'None'}, Status: ${activeStatus}]. Attach with: tmux attach -t devsquad-workspace`, "info");
+    ctx.ui.notify(`DevSquad session resumed via '${workspace.name}' [Issue #${activeIssueId || 'None'}, Status: ${activeStatus}].`, "info");
   };
 
   // Command 1: /devsquad-start
@@ -161,7 +155,8 @@ export default function (pi: ExtensionAPI) {
 
       try {
         const config: TeamConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-        const recoveredPanes = tmux.recoverMissingPanes(config.panes);
+        const workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
+        const recoveredPanes = workspace.recoverMissingPanes(config.panes);
         config.panes = recoveredPanes;
         saveConfig(config);
         ctx.ui.notify("Pane recovery check complete!", "info");
@@ -198,7 +193,8 @@ export default function (pi: ExtensionAPI) {
 
       try {
         const config: TeamConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-        const recoveredPanes = tmux.recoverMissingPanes(config.panes);
+        const workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
+        const recoveredPanes = workspace.recoverMissingPanes(config.panes);
         config.panes = recoveredPanes;
         saveConfig(config);
         ctx.ui.notify("Pane recovery check complete!", "info");
