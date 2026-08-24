@@ -5,6 +5,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { TrackerFactory } from "./trackers/tracker-factory.js";
 import { WorkflowEngine } from "./workflow.js";
+import { WorkspaceFactory } from "./workspaces/workspace-factory.js";
 
 export interface TokenStats {
   promptTokens: number;
@@ -239,26 +240,35 @@ export function registerTeamTools(pi: ExtensionAPI) {
 
       try {
         const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-        const targetPane = config.panes?.[params.targetRole];
-        if (!targetPane) {
-          return {
-            content: [{ type: "text", text: `Error: pane for role '${params.targetRole}' not found.` }],
-            details: { success: false }
-          };
-        }
-
+        let targetPane = config.panes?.[params.targetRole];
         const shouldClear = params.clearContext === true;
-        if (shouldClear) {
-          try {
+
+        try {
+          if (shouldClear) {
             execSync(`tmux send-keys -t ${targetPane} "/clear" Enter`, { stdio: "ignore" });
             await new Promise(resolve => setTimeout(resolve, 1500));
+          }
+          const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
+          execSync(`tmux send-keys -t ${targetPane} "${formatted.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
+        } catch {
+          // Auto-recover missing pane on the fly if target pane crashed/closed
+          try {
+            const workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
+            const recoveredPanes = workspace.recoverMissingPanes(config.panes);
+            config.panes = recoveredPanes;
+            fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+            targetPane = config.panes[params.targetRole];
+
+            if (shouldClear) {
+              try { execSync(`tmux send-keys -t ${targetPane} "/clear" Enter`, { stdio: "ignore" }); } catch {}
+              await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+            const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
+            execSync(`tmux send-keys -t ${targetPane} "${formatted.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
           } catch {
-            // Ignore if tmux send-keys fails
+            // Non-fatal
           }
         }
-
-        const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
-        execSync(`tmux send-keys -t ${targetPane} "${formatted.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
 
         // Log direct message to .pi/events.jsonl with auto-truncation cap
         appendEventLog({
