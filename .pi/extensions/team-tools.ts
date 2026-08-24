@@ -46,7 +46,7 @@ function appendEventLog(eventRecord: any): void {
   }
 }
 
-export function registerBacklogTool(pi: ExtensionAPI) {
+export function registerTeamTools(pi: ExtensionAPI) {
   // Tool 1: team_update_status
   pi.registerTool({
     name: "team_update_status",

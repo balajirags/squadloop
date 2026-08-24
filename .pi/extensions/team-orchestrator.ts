@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { registerBacklogTool } from "./backlog-tool.js";
+import { registerTeamTools } from "./team-tools.js";
 import { registerStatusBanner } from "./status-banner.js";
 import { TmuxManager } from "./tmux-manager.js";
 import * as fs from "fs";
@@ -52,7 +52,7 @@ function saveConfig(config: TeamConfig): void {
 }
 
 export default function (pi: ExtensionAPI) {
-  registerBacklogTool(pi);
+  registerTeamTools(pi);
   registerStatusBanner(pi);
 
   const tmux = new TmuxManager();
