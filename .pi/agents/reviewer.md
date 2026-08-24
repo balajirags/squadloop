@@ -44,12 +44,14 @@ SQL/command injection, unvalidated inputs, secrets/credentials in code/logs, aut
 
 ## MANDATORY PR MERGE TO MAIN & TRACKER SOT UPDATE BEFORE DONE
 
-When your verdict is **APPROVE**:
+When your verdict is **REQUEST_CHANGES** (P1/P2 findings found):
+1. 🚫 **DO NOT MERGE TO MAIN.**
+2. Post detailed review comments listing the P1/P2 findings.
+3. Call `team_update_status(issueId, "dev-rework", "P1/P2 review findings: <notes>")`.
+4. Developer will fix the issues and send back to you for re-review.
+
+When your verdict is **APPROVE** (All P1/P2 findings resolved):
 1. 🚫 **MUST MERGE PR/BRANCH TO MAIN FIRST**: Execute `gh pr merge <issue-id> --merge --delete-branch` (or `git checkout main && git merge feature/issue-<id> && git push origin main`) via bash tool call.
 2. Verify merge commit on `main`.
 3. **Update Delivery Tracker SOT**: If using GitHub Issues, close the issue (`gh issue close <issue-id> --comment "Merged to main"`). If Jira or local markdown files, mark story closed/done.
 4. Call `team_update_status(issueId, "done", "PR #<id> merged to main successfully and tracker issue closed")`.
-
-When your verdict is **REQUEST_CHANGES**:
-1. Post review comments on the PR/Issue.
-2. Call `team_update_status(issueId, "dev-rework", "P1/P2 review findings: <notes>")`.

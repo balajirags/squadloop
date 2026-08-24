@@ -164,13 +164,15 @@ export function registerBacklogTool(pi: ExtensionAPI) {
               const prompt = `Issue #${params.issueId} is ready for Code Review. Inspect git diff feature/issue-${params.issueId} vs main, verify P1/P2 standards, merge branch to main, push main, close tracker issue, and update status to 'done'.`;
               await sendPromptAsync(panes.reviewer, prompt, true);
             } else if (params.newStatus === "dev-rework" && (mode === "loop-hitl" || mode === "auto")) {
-              const prompt = `Issue #${params.issueId} requires rework (attempt ${currentReworkCount}/3). Read feedback notes: '${params.notes || "Check review/QA comments"}', fix issues in backend/ or frontend/, re-run build-verify, commit, push, and update status to 'qa-verifying'.`;
+              const prompt = `Issue #${params.issueId} requires rework (attempt ${currentReworkCount}/3). Read review/QA feedback notes: '${params.notes || "Check P1/P2 review comments"}', fix issues in backend/ or frontend/, re-run build-verify, commit, push to feature branch feature/issue-${params.issueId}, and update status to 'code-review' so Code Reviewer can verify the fix.`;
               await sendPromptAsync(panes.developer, prompt, false);
             } else if (params.newStatus === "done") {
-              // Automated fallback: close GitHub Issue on tracker if issue ID is numeric
-              if (params.issueId && /^\d+$/.test(params.issueId.trim())) {
+              // Automated fallback: close GitHub Issue on tracker by extracting numeric issue ID
+              const issueNumMatch = params.issueId ? params.issueId.match(/\b\d+\b/) : null;
+              if (issueNumMatch && issueNumMatch[0]) {
+                const issueNum = issueNumMatch[0];
                 try {
-                  execSync(`gh issue close ${params.issueId} --comment "Completed and merged to main by DevSquad AI"`, { stdio: "ignore" });
+                  execSync(`gh issue close ${issueNum} --comment "Completed and merged to main by DevSquad AI"`, { stdio: "ignore" });
                 } catch {
                   // Ignore if gh CLI not logged in or non-github tracker
                 }
