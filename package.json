@@ -11,7 +11,11 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "release:patch": "npm run build && npm version patch && git push origin main --tags && npm publish",
+    "release:minor": "npm run build && npm version minor && git push origin main --tags && npm publish",
+    "release:major": "npm run build && npm version major && git push origin main --tags && npm publish"
   },
   "pi": {
     "extensions": [
