@@ -3,6 +3,7 @@ import { Type } from "@sinclair/typebox";
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import { TrackerFactory } from "./trackers/tracker-factory.js";
 
 export interface ActiveTaskState {
   activeIssueId: string;
@@ -167,61 +168,13 @@ export function registerBacklogTool(pi: ExtensionAPI) {
               const prompt = `Issue #${params.issueId} requires rework (attempt ${currentReworkCount}/3). Read review/QA feedback notes: '${params.notes || "Check P1/P2 review comments"}', fix issues in backend/ or frontend/, re-run build-verify, commit, push to feature branch feature/issue-${params.issueId}, and update status to 'code-review' so Code Reviewer can verify the fix.`;
               await sendPromptAsync(panes.developer, prompt, false);
             } else if (params.newStatus === "done") {
-              // Automated multi-tracker fallback close (GitHub Issues, Jira, or Local Markdown files)
+              // Strategy-driven tracker closure using TrackerFactory
               if (params.issueId) {
-                const issueNumMatch = params.issueId.match(/\b\d+\b/);
-                const issueNum = issueNumMatch ? issueNumMatch[0] : null;
-
-                // 1. Try GitHub Issue Close
-                if (issueNum) {
-                  try {
-                    execSync(`gh issue close ${issueNum} --comment "Completed and merged to main by DevSquad AI"`, { stdio: "ignore" });
-                  } catch {
-                    // Non-fatal
-                  }
-                }
-
-                // 2. Try Jira Issue Move
                 try {
-                  if (params.issueId.includes("-")) {
-                    execSync(`jira issue move ${params.issueId} "Done"`, { stdio: "ignore" });
-                  }
+                  const trackerAdapter = TrackerFactory.getAdapter();
+                  await trackerAdapter.closeIssue(params.issueId, "Completed and merged to main by DevSquad AI");
                 } catch {
-                  // Non-fatal
-                }
-
-                // 3. Try Local Markdown Story File Status Update
-                try {
-                  const storiesDir = path.join(process.cwd(), "docs", "stories");
-                  if (fs.existsSync(storiesDir)) {
-                    const findStoryFiles = (dir: string): string[] => {
-                      let results: string[] = [];
-                      const list = fs.readdirSync(dir);
-                      list.forEach(file => {
-                        const filePath = path.join(dir, file);
-                        const stat = fs.statSync(filePath);
-                        if (stat && stat.isDirectory()) {
-                          results = results.concat(findStoryFiles(filePath));
-                        } else if (file.endsWith(".md") && (file.includes(params.issueId) || (issueNum && file.includes(issueNum)))) {
-                          results.push(filePath);
-                        }
-                      });
-                      return results;
-                    };
-
-                    const storyFiles = findStoryFiles(storiesDir);
-                    storyFiles.forEach(file => {
-                      try {
-                        let content = fs.readFileSync(file, "utf-8");
-                        content = content.replace(/Status:\s*(Open|In\s*Progress|Ready|Pending)/i, "Status: Closed");
-                        fs.writeFileSync(file, content, "utf-8");
-                      } catch {
-                        // Ignore
-                      }
-                    });
-                  }
-                } catch {
-                  // Non-fatal
+                  // Non-fatal if tracker close fails
                 }
               }
 
