@@ -60,10 +60,9 @@ function resolveRoleModel(role) {
 }
 function getAgentCommand(role) {
     const model = resolveRoleModel(role);
-    if (model) {
-        return `pi -a ${role} --model "${model}"; exec bash`;
-    }
-    return `pi -a ${role}; exec bash`;
+    const agentFile = `.pi/agents/${role}.md`;
+    const modelFlag = model ? ` --model "${model}"` : "";
+    return `pi --approve --system-prompt "$(cat ${agentFile})"${modelFlag}; exec bash`;
 }
 export class TmuxWorkspaceAdapter {
     name = "Tmux Workspace";
