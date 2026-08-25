@@ -26,7 +26,22 @@ function resolveRoleModel(role: string): string | null {
     }
   }
 
-  // 2. Check .pi/agents/<role>.md frontmatter for model:
+  // 2. Check .pi/models.json
+  const modelsJsonPath = path.join(process.cwd(), ".pi", "models.json");
+  if (fs.existsSync(modelsJsonPath)) {
+    try {
+      const modelsData = JSON.parse(fs.readFileSync(modelsJsonPath, "utf-8"));
+      const rawModel = modelsData.models?.[role] || modelsData[role];
+      if (rawModel && typeof rawModel === "string") {
+        const cleaned = cleanModelString(rawModel);
+        if (cleaned) return cleaned;
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  // 3. Check .pi/agents/<role>.md frontmatter for model:
   const agentPath = path.join(process.cwd(), ".pi", "agents", `${role}.md`);
   if (fs.existsSync(agentPath)) {
     try {
