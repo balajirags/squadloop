@@ -147,22 +147,27 @@ function handleResume() {
 
 function handleAttach() {
   console.log("🔌 Attaching to SquadLoop tmux workspace...");
-  if (process.env.TMUX) {
+  const hasSquadLoop = spawnSync("tmux", ["has-session", "-t", "squadloop-workspace"], { stdio: "ignore" }).status === 0;
+  const targetSession = hasSquadLoop ? "squadloop-workspace" : "pi-team";
+
+  // Check if current terminal process is running inside an active tmux session
+  const inTmux = Boolean(process.env.TMUX) || spawnSync("tmux", ["display-message"], { stdio: "ignore" }).status === 0;
+
+  if (inTmux) {
     try {
-      const res = spawnSync("tmux", ["switch-client", "-t", "squadloop-workspace"], { stdio: "inherit" });
+      const res = spawnSync("tmux", ["switch-client", "-t", targetSession], { stdio: "inherit" });
       if (res.status === 0) return;
     } catch {
-      // Fallback to attach
+      // Fallback to attach with un-set TMUX
     }
   }
 
   try {
-    const res = spawnSync("tmux", ["attach", "-t", "squadloop-workspace"], { stdio: "inherit" });
-    if (res.status !== 0) {
-      spawnSync("tmux", ["attach", "-t", "pi-team"], { stdio: "inherit" });
-    }
+    const env = { ...process.env };
+    delete env.TMUX;
+    spawnSync("tmux", ["attach", "-t", targetSession], { stdio: "inherit", env });
   } catch {
-    console.error("❌ Failed to attach: no active SquadLoop tmux workspace found.");
+    console.error(`❌ Failed to attach: no active '${targetSession}' tmux workspace found.`);
   }
 }
 
