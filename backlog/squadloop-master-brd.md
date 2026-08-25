@@ -107,19 +107,3 @@ Please select an option or state your request:
 ==============================================================
 ```
 
----
-
-## 7. Core Engine Bundling & Legal/Maintenance Strategy
-
-### 7.1 Bundled Dependency Engine (`dependencies` in `package.json`)
-- **Requirement**: Place `@earendil-works/pi-coding-agent` directly inside `dependencies` in `package.json`:
-  ```json
-  "dependencies": {
-    "@earendil-works/pi-coding-agent": "^1.0.0"
-  }
-  ```
-- **Rationale & Legal Compliance**:
-  - **MIT Licensed**: 100% legal to bundle, rebrand, and distribute under `squadloop`. Include MIT license attribution in `LICENSE` or `THIRD-PARTY-LICENSES.md`.
-  - **Zero Upstream Maintenance Overhead**: Preserves standard dependency linkage so SquadLoop automatically inherits upstream LLM model drivers (Claude, OpenAI, Gemini, DeepSeek), bug fixes, and security patches without code drift.
-- **Single Command Installation**: Users run `npm install -g squadloop` (or `npx squadloop init`), which installs all dependencies under the hood without requiring a separate manual `pi` installation step.
-
