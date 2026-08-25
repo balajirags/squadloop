@@ -11,6 +11,11 @@ function cleanModelString(raw: string): string {
   return val.replace(/^["']|["']$/g, "").trim();
 }
 
+function cleanPaneId(raw: string): string {
+  const match = String(raw).match(/%[0-9]+/);
+  return match ? match[0] : String(raw).trim().split("\n")[0];
+}
+
 function resolveRoleModel(role: string): string | null {
   // 1. Check .pi/team-config.json models
   const configPath = path.join(process.cwd(), ".pi", "team-config.json");
@@ -63,7 +68,7 @@ function getAgentCommand(role: string): string {
   const model = resolveRoleModel(role);
   const agentFile = `.pi/agents/${role}.md`;
   const modelFlag = model ? ` --model "${model}"` : "";
-  return `pi --approve --system-prompt "$(cat ${agentFile})"${modelFlag}; exec bash`;
+  return `pi --approve --append-system-prompt "${agentFile}"${modelFlag}; exec bash`;
 }
 
 export class TmuxWorkspaceAdapter implements IWorkspaceAdapter {
@@ -93,25 +98,30 @@ export class TmuxWorkspaceAdapter implements IWorkspaceAdapter {
       // Ignore
     }
 
-    const orchestratorPane = execSync(
+    const rawOrch = execSync(
       `tmux new-session -d -s ${this.sessionName} -n team -P -F "#{pane_id}" "${getAgentCommand("orchestrator")}"`
-    ).toString().trim();
+    ).toString();
+    const orchestratorPane = cleanPaneId(rawOrch);
 
-    const baPane = execSync(
+    const rawBa = execSync(
       `tmux split-window -v -t ${orchestratorPane} -P -F "#{pane_id}" "${getAgentCommand("ba")}"`
-    ).toString().trim();
+    ).toString();
+    const baPane = cleanPaneId(rawBa);
 
-    const devPane = execSync(
+    const rawDev = execSync(
       `tmux split-window -h -t ${baPane} -P -F "#{pane_id}" "${getAgentCommand("developer")}"`
-    ).toString().trim();
+    ).toString();
+    const devPane = cleanPaneId(rawDev);
 
-    const qaPane = execSync(
+    const rawQa = execSync(
       `tmux split-window -v -t ${baPane} -P -F "#{pane_id}" "${getAgentCommand("qa")}"`
-    ).toString().trim();
+    ).toString();
+    const qaPane = cleanPaneId(rawQa);
 
-    const reviewerPane = execSync(
+    const rawRev = execSync(
       `tmux split-window -v -t ${devPane} -P -F "#{pane_id}" "${getAgentCommand("reviewer")}"`
-    ).toString().trim();
+    ).toString();
+    const reviewerPane = cleanPaneId(rawRev);
 
     try {
       execSync(`tmux set-option -w -t ${this.sessionName} allow-rename off`);
@@ -155,25 +165,25 @@ export class TmuxWorkspaceAdapter implements IWorkspaceAdapter {
       // Ignore
     }
 
-    const orchestratorPane = execSync(
+    const orchestratorPane = cleanPaneId(execSync(
       `tmux new-session -d -s ${this.sessionName} -n orchestrator -P -F "#{pane_id}" "${getAgentCommand("orchestrator")}"`
-    ).toString().trim();
+    ).toString());
 
-    const baPane = execSync(
+    const baPane = cleanPaneId(execSync(
       `tmux new-window -t ${this.sessionName} -n ba -P -F "#{pane_id}" "${getAgentCommand("ba")}"`
-    ).toString().trim();
+    ).toString());
 
-    const devPane = execSync(
+    const devPane = cleanPaneId(execSync(
       `tmux new-window -t ${this.sessionName} -n developer -P -F "#{pane_id}" "${getAgentCommand("developer")}"`
-    ).toString().trim();
+    ).toString());
 
-    const qaPane = execSync(
+    const qaPane = cleanPaneId(execSync(
       `tmux new-window -t ${this.sessionName} -n qa -P -F "#{pane_id}" "${getAgentCommand("qa")}"`
-    ).toString().trim();
+    ).toString());
 
-    const reviewerPane = execSync(
+    const reviewerPane = cleanPaneId(execSync(
       `tmux new-window -t ${this.sessionName} -n reviewer -P -F "#{pane_id}" "${getAgentCommand("reviewer")}"`
-    ).toString().trim();
+    ).toString());
 
     try {
       execSync(`tmux select-window -t ${this.sessionName}:0`);
