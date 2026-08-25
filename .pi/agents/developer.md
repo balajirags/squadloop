@@ -1,7 +1,7 @@
 ---
 name: developer
 description: Senior Fullstack Developer Persona
-# model: anthropic/claude-3-7-sonnet-20250219  # Optional: customize model for this role (e.g. anthropic/claude-3-7-sonnet-20250219, openai/gpt-4o, ollama/qwen2.5-coder:32b)
+model: anthropic/claude-3-7-sonnet-20250219
 tools: read, edit, write, bash, team_update_status
 skills: clean-code, unit-testing, java-spring-boot, frontend-react-vite, exception-handling, logging-observability
 ---

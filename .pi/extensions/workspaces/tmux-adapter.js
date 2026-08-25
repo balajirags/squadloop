@@ -1,6 +1,13 @@
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+function cleanModelString(raw) {
+    let val = raw.trim();
+    if (val.includes("#")) {
+        val = val.split("#")[0].trim();
+    }
+    return val.replace(/^["']|["']$/g, "").trim();
+}
 function resolveRoleModel(role) {
     // 1. Check .pi/team-config.json models
     const configPath = path.join(process.cwd(), ".pi", "team-config.json");
@@ -8,7 +15,9 @@ function resolveRoleModel(role) {
         try {
             const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
             if (config.models?.[role]) {
-                return config.models[role];
+                const cleaned = cleanModelString(config.models[role]);
+                if (cleaned)
+                    return cleaned;
             }
         }
         catch {
@@ -20,12 +29,11 @@ function resolveRoleModel(role) {
     if (fs.existsSync(agentPath)) {
         try {
             const content = fs.readFileSync(agentPath, "utf-8");
-            const match = content.match(/^model:\s*(.+)$/m);
+            const match = content.match(/^(?!\s*#)\s*model:\s*(.+)$/m);
             if (match && match[1]) {
-                const val = match[1].trim();
-                if (val && !val.startsWith("#")) {
-                    return val;
-                }
+                const cleaned = cleanModelString(match[1]);
+                if (cleaned)
+                    return cleaned;
             }
         }
         catch {

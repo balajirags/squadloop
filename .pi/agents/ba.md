@@ -1,7 +1,7 @@
 ---
 name: ba
 description: Business Analyst Persona - Grooming, story slicing, and AC writing
-# model: anthropic/claude-3-5-haiku-20241022  # Optional: customize model for this role (e.g. anthropic/claude-3-7-sonnet-20250219, openai/gpt-4o, ollama/qwen2.5-coder:32b)
+model: anthropic/claude-3-5-haiku-20241022
 tools: read, write, edit, bash, team_update_status
 skills: clean-code
 ---

@@ -1,7 +1,7 @@
 ---
 name: qa
 description: Quality Analyst Persona - AC verification on running app
-# model: anthropic/claude-3-5-haiku-20241022  # Optional: customize model for this role (e.g. anthropic/claude-3-7-sonnet-20250219, openai/gpt-4o, ollama/qwen2.5-coder:32b)
+model: anthropic/claude-3-5-haiku-20241022
 tools: read, bash, team_update_status
 skills: ac-verification, api-testing-bruno, unit-testing
 ---
