@@ -88,7 +88,34 @@ function handleInit() {
   console.log("\n🎉 SquadLoop initialization complete! Run 'squadloop start' to launch your team.");
 }
 
+function checkPiInstalled() {
+  try {
+    execSync("pi --version", { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function ensurePiInstalled() {
+  if (!checkPiInstalled()) {
+    printLogo();
+    console.error(`
+❌ ERROR: Pi Coding Agent ('pi') is not installed on this system.
+
+SquadLoop is built on top of Pi Coding Agent and requires the 'pi' CLI executable.
+
+To install Pi Coding Agent globally, run:
+  npm install -g @earendil-works/pi-coding-agent
+
+After installation, run 'squadloop ${command}' again.
+    `);
+    process.exit(1);
+  }
+}
+
 function handleStart() {
+  ensurePiInstalled();
   printLogo();
   console.log("🚀 Launching SquadLoop workspace...");
   // Run setup headlessly (-p) so pi initializes the workspace without leaving an extra interactive session behind
@@ -97,6 +124,7 @@ function handleStart() {
 }
 
 function handleResume() {
+  ensurePiInstalled();
   printLogo();
   console.log("🔄 Resuming SquadLoop workspace...");
   spawnSync("pi", ["-p", "/squadloop-resume"], { stdio: "ignore" });
