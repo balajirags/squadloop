@@ -62,7 +62,7 @@ function resolveRoleModel(role: string): string | null {
 function getAgentCommand(role: string): string {
   const model = resolveRoleModel(role);
   if (model) {
-    return `pi -a ${role} -m "${model}"; exec bash`;
+    return `pi -a ${role} --model "${model}"; exec bash`;
   }
   return `pi -a ${role}; exec bash`;
 }
