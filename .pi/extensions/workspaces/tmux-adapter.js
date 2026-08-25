@@ -1,4 +1,46 @@
 import { execSync } from "child_process";
+import * as fs from "fs";
+import * as path from "path";
+function resolveRoleModel(role) {
+    // 1. Check .pi/team-config.json models
+    const configPath = path.join(process.cwd(), ".pi", "team-config.json");
+    if (fs.existsSync(configPath)) {
+        try {
+            const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+            if (config.models?.[role]) {
+                return config.models[role];
+            }
+        }
+        catch {
+            // Ignore
+        }
+    }
+    // 2. Check .pi/agents/<role>.md frontmatter for model:
+    const agentPath = path.join(process.cwd(), ".pi", "agents", `${role}.md`);
+    if (fs.existsSync(agentPath)) {
+        try {
+            const content = fs.readFileSync(agentPath, "utf-8");
+            const match = content.match(/^model:\s*(.+)$/m);
+            if (match && match[1]) {
+                const val = match[1].trim();
+                if (val && !val.startsWith("#")) {
+                    return val;
+                }
+            }
+        }
+        catch {
+            // Ignore
+        }
+    }
+    return null;
+}
+function getAgentCommand(role) {
+    const model = resolveRoleModel(role);
+    if (model) {
+        return `pi -a ${role} -m "${model}"; exec bash`;
+    }
+    return `pi -a ${role}; exec bash`;
+}
 export class TmuxWorkspaceAdapter {
     name = "Tmux Workspace";
     sessionName = "squadloop-workspace";
@@ -24,11 +66,11 @@ export class TmuxWorkspaceAdapter {
         catch {
             // Ignore
         }
-        const orchestratorPane = execSync(`tmux new-session -d -s ${this.sessionName} -n team -P -F "#{pane_id}" "pi -a orchestrator; exec bash"`).toString().trim();
-        const baPane = execSync(`tmux split-window -v -t ${orchestratorPane} -P -F "#{pane_id}" "pi -a ba; exec bash"`).toString().trim();
-        const devPane = execSync(`tmux split-window -h -t ${baPane} -P -F "#{pane_id}" "pi -a developer; exec bash"`).toString().trim();
-        const qaPane = execSync(`tmux split-window -v -t ${baPane} -P -F "#{pane_id}" "pi -a qa; exec bash"`).toString().trim();
-        const reviewerPane = execSync(`tmux split-window -v -t ${devPane} -P -F "#{pane_id}" "pi -a reviewer; exec bash"`).toString().trim();
+        const orchestratorPane = execSync(`tmux new-session -d -s ${this.sessionName} -n team -P -F "#{pane_id}" "${getAgentCommand("orchestrator")}"`).toString().trim();
+        const baPane = execSync(`tmux split-window -v -t ${orchestratorPane} -P -F "#{pane_id}" "${getAgentCommand("ba")}"`).toString().trim();
+        const devPane = execSync(`tmux split-window -h -t ${baPane} -P -F "#{pane_id}" "${getAgentCommand("developer")}"`).toString().trim();
+        const qaPane = execSync(`tmux split-window -v -t ${baPane} -P -F "#{pane_id}" "${getAgentCommand("qa")}"`).toString().trim();
+        const reviewerPane = execSync(`tmux split-window -v -t ${devPane} -P -F "#{pane_id}" "${getAgentCommand("reviewer")}"`).toString().trim();
         try {
             execSync(`tmux set-option -w -t ${this.sessionName} allow-rename off`);
             execSync(`tmux set-window-option -t ${this.sessionName} automatic-rename off`);
@@ -66,11 +108,11 @@ export class TmuxWorkspaceAdapter {
         catch {
             // Ignore
         }
-        const orchestratorPane = execSync(`tmux new-session -d -s ${this.sessionName} -n orchestrator -P -F "#{pane_id}" "pi -a orchestrator; exec bash"`).toString().trim();
-        const baPane = execSync(`tmux new-window -t ${this.sessionName} -n ba -P -F "#{pane_id}" "pi -a ba; exec bash"`).toString().trim();
-        const devPane = execSync(`tmux new-window -t ${this.sessionName} -n developer -P -F "#{pane_id}" "pi -a developer; exec bash"`).toString().trim();
-        const qaPane = execSync(`tmux new-window -t ${this.sessionName} -n qa -P -F "#{pane_id}" "pi -a qa; exec bash"`).toString().trim();
-        const reviewerPane = execSync(`tmux new-window -t ${this.sessionName} -n reviewer -P -F "#{pane_id}" "pi -a reviewer; exec bash"`).toString().trim();
+        const orchestratorPane = execSync(`tmux new-session -d -s ${this.sessionName} -n orchestrator -P -F "#{pane_id}" "${getAgentCommand("orchestrator")}"`).toString().trim();
+        const baPane = execSync(`tmux new-window -t ${this.sessionName} -n ba -P -F "#{pane_id}" "${getAgentCommand("ba")}"`).toString().trim();
+        const devPane = execSync(`tmux new-window -t ${this.sessionName} -n developer -P -F "#{pane_id}" "${getAgentCommand("developer")}"`).toString().trim();
+        const qaPane = execSync(`tmux new-window -t ${this.sessionName} -n qa -P -F "#{pane_id}" "${getAgentCommand("qa")}"`).toString().trim();
+        const reviewerPane = execSync(`tmux new-window -t ${this.sessionName} -n reviewer -P -F "#{pane_id}" "${getAgentCommand("reviewer")}"`).toString().trim();
         try {
             execSync(`tmux select-window -t ${this.sessionName}:0`);
         }
@@ -118,19 +160,19 @@ export class TmuxWorkspaceAdapter {
             const livePanes = execSync(`tmux list-panes -a -t ${this.sessionName} -F "#{pane_id}"`).toString();
             const updated = { ...currentPanes };
             if (!livePanes.includes(currentPanes.ba)) {
-                updated.ba = execSync(`tmux split-window -v -t ${currentPanes.orchestrator} -P -F "#{pane_id}" "pi -a ba; exec bash"`).toString().trim();
+                updated.ba = execSync(`tmux split-window -v -t ${currentPanes.orchestrator} -P -F "#{pane_id}" "${getAgentCommand("ba")}"`).toString().trim();
                 execSync(`tmux set-option -p -t ${updated.ba} @persona "[ SQUADLOOP :: BUSINESS ANALYST (BA) ]"`);
             }
             if (!livePanes.includes(currentPanes.developer)) {
-                updated.developer = execSync(`tmux split-window -h -t ${updated.ba} -P -F "#{pane_id}" "pi -a developer; exec bash"`).toString().trim();
+                updated.developer = execSync(`tmux split-window -h -t ${updated.ba} -P -F "#{pane_id}" "${getAgentCommand("developer")}"`).toString().trim();
                 execSync(`tmux set-option -p -t ${updated.developer} @persona "[ SQUADLOOP :: DEVELOPER (DEV) ]"`);
             }
             if (!livePanes.includes(currentPanes.qa)) {
-                updated.qa = execSync(`tmux split-window -v -t ${updated.ba} -P -F "#{pane_id}" "pi -a qa; exec bash"`).toString().trim();
+                updated.qa = execSync(`tmux split-window -v -t ${updated.ba} -P -F "#{pane_id}" "${getAgentCommand("qa")}"`).toString().trim();
                 execSync(`tmux set-option -p -t ${updated.qa} @persona "[ SQUADLOOP :: QUALITY ANALYST (QA) ]"`);
             }
             if (!livePanes.includes(currentPanes.reviewer)) {
-                updated.reviewer = execSync(`tmux split-window -v -t ${updated.developer} -P -F "#{pane_id}" "pi -a reviewer; exec bash"`).toString().trim();
+                updated.reviewer = execSync(`tmux split-window -v -t ${updated.developer} -P -F "#{pane_id}" "${getAgentCommand("reviewer")}"`).toString().trim();
                 execSync(`tmux set-option -p -t ${updated.reviewer} @persona "[ SQUADLOOP :: CODE REVIEWER (REVIEWER) ]"`);
             }
             return updated;
