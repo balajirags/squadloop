@@ -32,9 +32,9 @@
     "@earendil-works/pi-coding-agent": "*"
   },
   "dependencies": {
-    "@earendil-works/pi-coding-agent": "^1.0.0",
-    "@sinclair/typebox": "^0.34.0",
-    "@tintinweb/pi-subagents": "*"
+    "@earendil-works/pi-coding-agent": "1.0.0",
+    "@sinclair/typebox": "0.34.0",
+    "@tintinweb/pi-subagents": "1.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
