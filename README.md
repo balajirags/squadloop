@@ -51,7 +51,14 @@ Configure team workflow modes, workspace layouts, security policies, and workspa
   "layout": "panes",
   "workspaceMode": "tmux",
   "destructiveCommandPolicy": "ask-human",
-  "customProtectedFiles": []
+  "customProtectedFiles": [],
+  "models": {
+    "orchestrator": "google/gemini-3.6-flash",
+    "ba": "ollama/gemma4:26b",
+    "developer": "anthropic/claude-3-7-sonnet-20250219",
+    "qa": "ollama/gemma4:26b",
+    "reviewer": "google/gemini-3.6-flash"
+  }
 }
 ```
 
@@ -69,33 +76,13 @@ Configure team workflow modes, workspace layouts, security policies, and workspa
   - **`"layout": "windows"`**: 5 full-screen windows within the same tmux session (`orchestrator`, `ba`, `developer`, `qa`, `reviewer`).
 - **`"workspaceMode": "regular"` (No Tmux Required)**:
   Runs SquadLoop in regular headless event-bus mode on any terminal (iTerm2 tabs, VS Code splits, CI/CD).
-  *(Note: If `"workspaceMode": "tmux"` is configured but `tmux` is missing from your system, SquadLoop halts and guides you to install `tmux` or switch to `"workspaceMode": "regular"`).*
+  *(Note: If `"workspaceMode": "tmux"` is configured but `tmux` is missing from your system, SquadLoop halts and prompts you with an installation guide or option to switch to `"workspaceMode": "regular"`).*
 
-### 🤖 LLM Model Customization & Custom Providers (`models.json`)
+### 🤖 Per-Agent Model Customization & Local Providers (`.pi/models.json`)
 You can customize models per agent role or connect local/custom LLM providers (Ollama, OpenRouter, Azure OpenAI, vLLM):
-1. **Per-Agent Model Overrides**: Edit the `model:` field in any agent definition file in `.pi/agents/*.md` (e.g. `.pi/agents/developer.md`):
-   ```yaml
-   ---
-   name: developer
-   description: Senior Fullstack Developer Persona
-   model: anthropic/claude-3-7-sonnet-20250219
-   ---
-   ```
-2. **Custom Providers & Local Models (`.pi/models.example.json`)**:
-   Copy `.pi/models.example.json` to `.pi/models.json` (or `~/.pi/agent/models.json`) to register local models (Ollama, vLLM, LM Studio) or custom proxies (OpenRouter, Azure OpenAI):
-   ```json
-   {
-     "providers": {
-       "ollama": {
-         "baseUrl": "http://localhost:11434/v1",
-         "api": "openai-completions",
-         "models": [
-           { "id": "qwen2.5-coder:32b", "name": "Qwen 2.5 Coder 32B" }
-         ]
-       }
-     }
-   }
-   ```
+1. **Per-Agent Model Overrides**: Set model IDs in `.pi/team-config.json` `"models"` or in `.pi/agents/<role>.md` frontmatter (`model: ...` - commented out by default).
+2. **Local & Custom Providers (`.pi/models.example.json`)**:
+   Copy `.pi/models.example.json` to `.pi/models.json` (or `~/.pi/agent/models.json`) to configure local Ollama, vLLM, LM Studio, or custom proxies. SquadLoop automatically syncs project `.pi/models.json` to the global Pi Agent provider table on launch.
 
 ---
 
@@ -121,7 +108,7 @@ SquadLoop uses the **Strategy Pattern** (`ITrackerAdapter` and `TrackerFactory`)
 * **`JiraAdapter`**: Uses `jira` CLI or REST API (`jira issue create`, `jira issue move`).
 * **`MarkdownStoryAdapter`**: Manages local markdown files in `docs/stories/<epic-slug>/`.
 
-*Auto-Detection*: `TrackerFactory` reads `Delivery Tracker` in `project-context.md` automatically. Anyone can add a new tracker (e.g. Linear, Azure DevOps, Trello) by creating a new adapter in `.pi/extensions/trackers/`.
+*Auto-Detection*: `TrackerFactory` reads `Delivery Tracker` in `project-context.md` automatically. Anyone can add a new tracker (e.g. Linear, Azure DevOps, Trello) by creating a new adapter in `.pi/extensions/trackers/` (see `.pi/extensions/trackers/README.md`).
 
 ---
 
@@ -129,7 +116,7 @@ SquadLoop uses the **Strategy Pattern** (`ITrackerAdapter` and `TrackerFactory`)
 
 | Command | Description |
 | :--- | :--- |
-| `squadloop start` | Starts a fresh SquadLoop session, resets active task log (`status: "awaiting-human-input"`), and opens the workspace. |
+| `squadloop start` | Starts a fresh SquadLoop session in < 1s, resets active task log, and opens the workspace. |
 | `squadloop resume` | Resumes an active SquadLoop session from `.pi/active-task.json` log. |
 | `squadloop init` | Bootstraps `.pi/`, `Agent.md`, `project-context.md`, and template folders into current directory. |
 | `squadloop attach` | Attaches directly to the `squadloop-workspace` tmux session. |
@@ -137,19 +124,22 @@ SquadLoop uses the **Strategy Pattern** (`ITrackerAdapter` and `TrackerFactory`)
 | `squadloop config` | Displays or updates `.pi/team-config.json` (`mode`, `layout`, `workspaceMode`, `destructiveCommandPolicy`). |
 | `squadloop help` | Displays the SquadLoop CLI usage guide and options. |
 
-### Slash Command Aliases (Inside Pi)
-- `/squadloop-start` (alias `/team-start`, `/team-dev`)
-- `/squadloop-resume` (alias `/team-resume`)
-- `/squadloop-recover` (alias `/team-recover`)
+### Slash Commands (Inside Pi)
+- `/squadloop-start` — Fresh session launch
+- `/squadloop-resume` — Session recovery from log
+- `/squadloop-recover` — Recovery for closed/crashed agent panes or windows
 
 ---
 
-## 📊 Telemetry, Audit Logs & Context Isolation
+## 📊 Telemetry, Audit Logs & Event Bus
 
+- **0.9s Instant Workspace Launch**: Workspace creation is constructed locally in Node.js without network/LLM API delays.
+- **100% Reliable Event Bus (`.pi/events.jsonl`)**: Persistent append-only event log with automatic 1,000-event log rotation cap.
+- **`get_team_events` Tool**: Allows Master Orchestrator in Pane 0 to query recent event log entries at any time.
 - **End-of-Story Summary Card**: Displays an end-to-end verification report in Pane 0 upon story completion (`done`) detailing branch name, PR merge commit ID, JaCoCo coverage %, QA HTTP probe result, total tokens used, and estimated USD cost.
 - **Rework Circuit Breaker**: If `reworkCount > 3`, auto-steering halts and emits an alert in Pane 0 for human guidance.
 - **JSON Audit Checkpoints**: Writes audit logs for every story at `docs/dev-checkpoints/<story-id>.json`.
-- **Targeted Context Clearing (`/clear`)**: Automatically issues `/clear` to target child agent panes ONLY when assigned a new story, preserving QA/Reviewer cold-read isolation without wiping mid-task rework notes.
+- **Targeted Context Clearing (`/clear`)**: Automatically issues `/clear` (with a 1.5s delay buffer) to target child agent panes ONLY when assigned a new story.
 - **Immune Persona Headers**: Custom `@persona` tmux properties lock titles on top of every pane, immune to terminal OSC title overrides.
 
 ---
