@@ -123,6 +123,7 @@ function handleInit() {
   console.log("  ✅ Created docs/brd/ and docs/stories/ template directories");
 
   console.log("\n🎉 SquadLoop initialization complete! Run 'squadloop start' to launch your team.");
+  syncProjectModelsJson();
 }
 
 function checkPiInstalled() {
@@ -151,8 +152,23 @@ After installation, run 'squadloop ${command}' again.
   }
 }
 
+function syncProjectModelsJson() {
+  const projectModelsPath = path.join(process.cwd(), ".pi", "models.json");
+  if (fs.existsSync(projectModelsPath)) {
+    try {
+      const globalPiDir = process.env.PI_CODING_AGENT_DIR || path.join(process.env.HOME || "", ".pi", "agent");
+      fs.mkdirSync(globalPiDir, { recursive: true });
+      const globalModelsPath = path.join(globalPiDir, "models.json");
+      fs.copyFileSync(projectModelsPath, globalModelsPath);
+    } catch {
+      // Non-fatal
+    }
+  }
+}
+
 async function handleStart() {
   ensurePiInstalled();
+  syncProjectModelsJson();
   printLogo();
   console.log("🚀 Launching SquadLoop workspace...");
 
@@ -201,6 +217,7 @@ async function handleStart() {
 
 async function handleResume() {
   ensurePiInstalled();
+  syncProjectModelsJson();
   printLogo();
   console.log("🔄 Resuming SquadLoop workspace...");
 
