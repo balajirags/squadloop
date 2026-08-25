@@ -150,3 +150,15 @@ Before running SquadLoop, ensure you have installed:
   brew install gh
   gh auth login
   ```
+
+---
+
+## 🙏 Acknowledgements & Credits
+
+SquadLoop bundles and integrates open-source agentic process skills and design frameworks. Special thanks and credit to the authors:
+
+| Component / Framework | Author & Canonical Source | Description |
+| :--- | :--- | :--- |
+| **Superpowers** | [obra/superpowers](https://github.com/obra/superpowers) | Process skills for agentic engineering workflows (brainstorming, TDD, plan writing, subagent execution). |
+| **Front-end Design & Taste** | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) | Design systems, visual hierarchy, anti-slop frontend taste skills. |
+| **Task Observer** | [rebelytics/one-skill-to-rule-them-all](https://github.com/rebelytics/one-skill-to-rule-them-all) | Continuous skill discovery and task observation engine ("One Skill to Rule Them All"). |
