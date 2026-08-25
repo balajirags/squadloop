@@ -59,7 +59,7 @@ function handleInit() {
   const targetPi = path.join(cwd, ".pi");
   if (fs.existsSync(sourcePi)) {
     fs.cpSync(sourcePi, targetPi, { recursive: true });
-    console.log("  ✅ Created .pi/ configuration, extensions, and agent personas");
+    console.log("  ✅ Created .pi/ configuration, extensions, agent personas, and models.example.json");
   }
 
   // Copy Agent.md

@@ -71,6 +71,32 @@ Configure team workflow modes, workspace layouts, security policies, and workspa
   Runs SquadLoop in regular headless event-bus mode on any terminal (iTerm2 tabs, VS Code splits, CI/CD).
   *(Note: If `"workspaceMode": "tmux"` is configured but `tmux` is missing from your system, SquadLoop halts and guides you to install `tmux` or switch to `"workspaceMode": "regular"`).*
 
+### 🤖 LLM Model Customization & Custom Providers (`models.json`)
+You can customize models per agent role or connect local/custom LLM providers (Ollama, OpenRouter, Azure OpenAI, vLLM):
+1. **Per-Agent Model Overrides**: Edit the `model:` field in any agent definition file in `.pi/agents/*.md` (e.g. `.pi/agents/developer.md`):
+   ```yaml
+   ---
+   name: developer
+   description: Senior Fullstack Developer Persona
+   model: anthropic/claude-3-7-sonnet-20250219
+   ---
+   ```
+2. **Custom Providers & Local Models (`.pi/models.example.json`)**:
+   Copy `.pi/models.example.json` to `.pi/models.json` (or `~/.pi/agent/models.json`) to register local models (Ollama, vLLM, LM Studio) or custom proxies (OpenRouter, Azure OpenAI):
+   ```json
+   {
+     "providers": {
+       "ollama": {
+         "baseUrl": "http://localhost:11434/v1",
+         "api": "openai-completions",
+         "models": [
+           { "id": "qwen2.5-coder:32b", "name": "Qwen 2.5 Coder 32B" }
+         ]
+       }
+     }
+   }
+   ```
+
 ---
 
 ## 🛡️ SquadLoop Security Guard
