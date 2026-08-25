@@ -132,7 +132,12 @@ function handleStart() {
   printLogo();
   console.log("🚀 Launching SquadLoop workspace...");
   spawnSync("pi", ["-p", "/squadloop-start"], { stdio: "inherit" });
-  waitForTmuxSession("squadloop-workspace");
+  const ready = waitForTmuxSession("squadloop-workspace");
+  if (!ready) {
+    console.error("❌ Failed to start 'squadloop-workspace' tmux session.");
+    console.error("   Ensure 'squadloop init' was run in this repository directory.");
+    process.exit(1);
+  }
   handleAttach();
 }
 
@@ -141,14 +146,23 @@ function handleResume() {
   printLogo();
   console.log("🔄 Resuming SquadLoop workspace...");
   spawnSync("pi", ["-p", "/squadloop-resume"], { stdio: "inherit" });
-  waitForTmuxSession("squadloop-workspace");
+  const ready = waitForTmuxSession("squadloop-workspace");
+  if (!ready) {
+    console.error("❌ Failed to find active 'squadloop-workspace' tmux session.");
+    process.exit(1);
+  }
   handleAttach();
 }
 
 function handleAttach() {
   console.log("🔌 Attaching to SquadLoop tmux workspace...");
-  const hasSquadLoop = spawnSync("tmux", ["has-session", "-t", "squadloop-workspace"], { stdio: "ignore" }).status === 0;
-  const targetSession = hasSquadLoop ? "squadloop-workspace" : "pi-team";
+  const targetSession = "squadloop-workspace";
+
+  const hasSession = spawnSync("tmux", ["has-session", "-t", targetSession], { stdio: "ignore" }).status === 0;
+  if (!hasSession) {
+    console.error(`❌ Session '${targetSession}' not found. Run 'squadloop start' first.`);
+    return;
+  }
 
   // Check if current terminal process is running inside an active tmux session
   const inTmux = Boolean(process.env.TMUX) || spawnSync("tmux", ["display-message"], { stdio: "ignore" }).status === 0;
@@ -167,7 +181,7 @@ function handleAttach() {
     delete env.TMUX;
     spawnSync("tmux", ["attach", "-t", targetSession], { stdio: "inherit", env });
   } catch {
-    console.error(`❌ Failed to attach: no active '${targetSession}' tmux workspace found.`);
+    console.error(`❌ Failed to attach to '${targetSession}' tmux workspace.`);
   }
 }
 
