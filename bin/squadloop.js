@@ -4,6 +4,7 @@ import { execSync, spawnSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { WorkspaceFactory } from "../dist/.pi/extensions/workspaces/workspace-factory.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +47,42 @@ Examples:
   squadloop attach
   squadloop config mode=loop layout=panes
   `);
+}
+
+function getConfig() {
+  const configPath = path.join(process.cwd(), ".pi", "team-config.json");
+  let config = {
+    mode: "loop-hitl",
+    layout: "panes",
+    workspaceMode: "tmux",
+    destructiveCommandPolicy: "ask-human",
+    customProtectedFiles: [],
+    panes: { orchestrator: "", ba: "", developer: "", qa: "", reviewer: "" }
+  };
+
+  if (fs.existsSync(configPath)) {
+    try {
+      const loaded = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      config = {
+        mode: loaded.mode || "loop-hitl",
+        layout: loaded.layout || "panes",
+        workspaceMode: loaded.workspaceMode || "tmux",
+        destructiveCommandPolicy: loaded.destructiveCommandPolicy || "ask-human",
+        customProtectedFiles: loaded.customProtectedFiles || [],
+        panes: loaded.panes || config.panes
+      };
+    } catch {
+      // Default
+    }
+  }
+
+  return config;
+}
+
+function saveConfig(config) {
+  const configPath = path.join(process.cwd(), ".pi", "team-config.json");
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
 }
 
 function handleInit() {
@@ -114,43 +151,95 @@ After installation, run 'squadloop ${command}' again.
   }
 }
 
-function waitForTmuxSession(sessionName = "squadloop-workspace", maxRetries = 10) {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      const res = spawnSync("tmux", ["has-session", "-t", sessionName], { stdio: "ignore" });
-      if (res.status === 0) return true;
-    } catch {
-      // Retry
-    }
-    spawnSync("sleep", ["0.5"]);
-  }
-  return false;
-}
-
-function handleStart() {
+async function handleStart() {
   ensurePiInstalled();
   printLogo();
   console.log("🚀 Launching SquadLoop workspace...");
-  spawnSync("pi", ["-p", "/squadloop-start"], { stdio: "inherit" });
-  const ready = waitForTmuxSession("squadloop-workspace");
-  if (!ready) {
-    console.error("❌ Failed to start 'squadloop-workspace' tmux session.");
-    console.error("   Ensure 'squadloop init' was run in this repository directory.");
+
+  const config = getConfig();
+  let workspace;
+  try {
+    workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
+  } catch (err) {
+    console.error(`\n${err.message}\n`);
     process.exit(1);
   }
+
+  // Setup layout locally in 0.3s without network/LLM API delays
+  const panes = workspace.setupLayout(config.layout);
+  config.panes = panes;
+  saveConfig(config);
+
+  // Reset active-task.json to clean idle state
+  const activeTaskPath = path.join(process.cwd(), ".pi", "active-task.json");
+  fs.mkdirSync(path.dirname(activeTaskPath), { recursive: true });
+  fs.writeFileSync(activeTaskPath, JSON.stringify({
+    activeIssueId: "",
+    status: "awaiting-human-input",
+    updatedBy: "system",
+    notes: "Fresh team session started. Awaiting human input in Pane 0.",
+    timestamp: new Date().toISOString()
+  }, null, 2), "utf-8");
+
+  // Send initial welcome prompt to Orchestrator Pane 0
+  const welcomePrompt =
+    `==============================================================\n` +
+    `🚀 SQUADLOOP ONLINE [--mode=${config.mode}, --layout=${config.layout}]\n` +
+    `==============================================================\n` +
+    `• BA (Pane 1)       : IDLE & READY\n` +
+    `• Developer (Pane 2): IDLE & READY\n` +
+    `• QA (Pane 3)       : IDLE & READY\n` +
+    `• Reviewer (Pane 4) : IDLE & READY\n` +
+    `==============================================================\n` +
+    `Print the welcome banner and options (1. Implement BRD/PRD, 2. Pick a specific Story/Issue, 3. Random Implementation, 4. Custom Task/Bug Fix).\n` +
+    `DO NOT call send_agent_message or start any work automatically. STOP IMMEDIATELY and wait for the human user in Pane 0 to enter their instruction.`;
+
+  await workspace.sendPrompt(panes.orchestrator, welcomePrompt, false);
+
   handleAttach();
 }
 
-function handleResume() {
+async function handleResume() {
   ensurePiInstalled();
   printLogo();
   console.log("🔄 Resuming SquadLoop workspace...");
-  spawnSync("pi", ["-p", "/squadloop-resume"], { stdio: "inherit" });
-  const ready = waitForTmuxSession("squadloop-workspace");
-  if (!ready) {
-    console.error("❌ Failed to find active 'squadloop-workspace' tmux session.");
+
+  const config = getConfig();
+  let workspace;
+  try {
+    workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
+  } catch (err) {
+    console.error(`\n${err.message}\n`);
     process.exit(1);
   }
+
+  // Read active-task.json if available
+  const activeTaskPath = path.join(process.cwd(), ".pi", "active-task.json");
+  let activeIssueId = "";
+  let activeStatus = "awaiting-human-input";
+  let activeNotes = "";
+
+  if (fs.existsSync(activeTaskPath)) {
+    try {
+      const taskState = JSON.parse(fs.readFileSync(activeTaskPath, "utf-8"));
+      activeIssueId = taskState.activeIssueId || "";
+      activeStatus = taskState.status || "awaiting-human-input";
+      activeNotes = taskState.notes || "";
+    } catch {
+      // Ignore
+    }
+  }
+
+  const panes = workspace.setupLayout(config.layout);
+  config.panes = panes;
+  saveConfig(config);
+
+  const resumePrompt = `Master Orchestrator RESUMED [--mode=${config.mode}, --layout=${config.layout}]! ` +
+    `Active task recovered from log: Issue #${activeIssueId || 'None'} (Status: '${activeStatus}'). Notes: '${activeNotes || 'N/A'}'. ` +
+    `Print session recovery banner to user, state active task status, and ask the human user in Pane 0 how to proceed or continue.`;
+
+  await workspace.sendPrompt(panes.orchestrator, resumePrompt, false);
+
   handleAttach();
 }
 
@@ -172,7 +261,7 @@ function handleAttach() {
       const res = spawnSync("tmux", ["switch-client", "-t", targetSession], { stdio: "inherit" });
       if (res.status === 0) return;
     } catch {
-      // Fallback to attach with un-set TMUX
+      // Fallback to attach
     }
   }
 

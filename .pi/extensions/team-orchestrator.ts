@@ -86,14 +86,10 @@ export default function (pi: ExtensionAPI) {
       timestamp: new Date().toISOString()
     }, null, 2), "utf-8");
 
-    // Squad Readiness Gate: Wait 3.5 seconds for all child agents (BA, Dev, QA, Reviewer) to finish loading personas and Agent.md context
-    ctx.ui.notify("Waiting for squad personas (BA, Dev, QA, Reviewer) to finish loading context...", "info");
-    await new Promise(resolve => setTimeout(resolve, 3500));
-
     // Initial greeting prompt in Orchestrator: Display welcome menu and STOP
     const welcomePrompt =
       `==============================================================\n` +
-      `🚀 ALL SQUAD PERSONAS ONLINE [--mode=${config.mode}, --layout=${config.layout}]\n` +
+      `🚀 SQUADLOOP ONLINE [--mode=${config.mode}, --layout=${config.layout}]\n` +
       `==============================================================\n` +
       `• BA (Pane 1)       : IDLE & READY\n` +
       `• Developer (Pane 2): IDLE & READY\n` +
@@ -103,7 +99,7 @@ export default function (pi: ExtensionAPI) {
       `Print the welcome banner and options (1. Implement BRD/PRD, 2. Pick a specific Story/Issue, 3. Random Implementation, 4. Custom Task/Bug Fix).\n` +
       `DO NOT call send_agent_message or start any work automatically. STOP IMMEDIATELY and wait for the human user in Pane 0 to enter their instruction.`;
 
-    await workspace.sendPrompt(panes.orchestrator, welcomePrompt, false);
+    workspace.sendPrompt(panes.orchestrator, welcomePrompt, false);
 
     ctx.ui.notify(`SquadLoop setup complete via '${workspace.name}' [--mode=${config.mode}, --layout=${config.layout}].`, "info");
   };
