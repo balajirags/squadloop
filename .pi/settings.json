@@ -1,3 +1,11 @@
 {
-  "description": "Pi Multi-Agent Team Project Settings"
+  "extensions": [
+    "./.pi/extensions/index.js"
+  ],
+  "skills": [
+    "./.pi/skills"
+  ],
+  "prompts": [
+    "./.pi/prompts"
+  ]
 }

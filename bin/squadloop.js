@@ -114,12 +114,25 @@ After installation, run 'squadloop ${command}' again.
   }
 }
 
+function waitForTmuxSession(sessionName = "squadloop-workspace", maxRetries = 10) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const res = spawnSync("tmux", ["has-session", "-t", sessionName], { stdio: "ignore" });
+      if (res.status === 0) return true;
+    } catch {
+      // Retry
+    }
+    spawnSync("sleep", ["0.5"]);
+  }
+  return false;
+}
+
 function handleStart() {
   ensurePiInstalled();
   printLogo();
   console.log("🚀 Launching SquadLoop workspace...");
-  // Run setup headlessly (-p) so pi initializes the workspace without leaving an extra interactive session behind
-  spawnSync("pi", ["-p", "/squadloop-start"], { stdio: "ignore" });
+  spawnSync("pi", ["-p", "/squadloop-start"], { stdio: "inherit" });
+  waitForTmuxSession("squadloop-workspace");
   handleAttach();
 }
 
@@ -127,7 +140,8 @@ function handleResume() {
   ensurePiInstalled();
   printLogo();
   console.log("🔄 Resuming SquadLoop workspace...");
-  spawnSync("pi", ["-p", "/squadloop-resume"], { stdio: "ignore" });
+  spawnSync("pi", ["-p", "/squadloop-resume"], { stdio: "inherit" });
+  waitForTmuxSession("squadloop-workspace");
   handleAttach();
 }
 
