@@ -155,10 +155,11 @@ Before running SquadLoop, ensure you have installed:
 
 ## 🙏 Acknowledgements & Credits
 
-SquadLoop bundles and integrates open-source agentic process skills and design frameworks. Special thanks and credit to the authors:
+SquadLoop is built on top of Pi Coding Agent and integrates open-source agentic process skills and design frameworks. Special thanks and credit to the authors:
 
 | Component / Framework | Author & Canonical Source | Description |
 | :--- | :--- | :--- |
+| **Pi Coding Agent** | [@earendil-works/pi-coding-agent](https://github.com/earendil-works/pi-coding-agent) | The core AI coding agent harness and extension engine powering SquadLoop. |
 | **Superpowers** | [obra/superpowers](https://github.com/obra/superpowers) | Process skills for agentic engineering workflows (brainstorming, TDD, plan writing, subagent execution). |
 | **Front-end Design & Taste** | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) | Design systems, visual hierarchy, anti-slop frontend taste skills. |
 | **Task Observer** | [rebelytics/one-skill-to-rule-them-all](https://github.com/rebelytics/one-skill-to-rule-them-all) | Continuous skill discovery and task observation engine ("One Skill to Rule Them All"). |
