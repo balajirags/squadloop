@@ -41,14 +41,40 @@ export class ITerm2Driver implements ITerminalDriver {
         tell newWindow
           set name to "squadloop-workspace"
           ${isWindows ? `
+            tell current tab
+              set name to "orchestrator"
+            end tell
             create tab with default profile
+            tell current tab
+              set name to "ba"
+            end tell
             create tab with default profile
+            tell current tab
+              set name to "developer"
+            end tell
             create tab with default profile
+            tell current tab
+              set name to "qa"
+            end tell
             create tab with default profile
+            tell current tab
+              set name to "reviewer"
+            end tell
           ` : `
-            tell current session of current tab
-              split vertically with default profile
-              split horizontally with default profile
+            tell current tab
+              set orchSession to current session
+              tell orchSession
+                set baSession to (split horizontally with default profile)
+              end tell
+              tell baSession
+                set devSession to (split vertically with default profile)
+              end tell
+              tell baSession
+                set qaSession to (split horizontally with default profile)
+              end tell
+              tell devSession
+                set revSession to (split horizontally with default profile)
+              end tell
             end tell
           `}
         end tell
