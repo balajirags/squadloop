@@ -1,7 +1,7 @@
 # Design Spec: SquadLoop — Simplified Model Configuration & Auto-Sync Engine
 
 **Date**: 2026-03-09  
-**Status**: Draft / Pending Approval  
+**Status**: Implemented  
 **Target Platform**: SquadLoop (`squadloop` CLI, `@earendil-works/pi-coding-agent`)
 
 ---
