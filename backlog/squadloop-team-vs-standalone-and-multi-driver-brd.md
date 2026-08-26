@@ -1,5 +1,8 @@
 # BRD: SquadLoop — Team vs. Standalone Modes & Multi-Driver Terminal Multiplexing Architecture
 
+**Status**: Implemented  
+**Date**: 2026-03-09  
+
 ## Executive Summary
 This specification defines the product and technical requirements for refactoring SquadLoop's execution model and terminal multiplexing architecture. 
 

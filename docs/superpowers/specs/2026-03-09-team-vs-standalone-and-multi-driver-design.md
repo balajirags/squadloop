@@ -1,7 +1,7 @@
 # Design Spec: SquadLoop — Team vs. Standalone Modes & Multi-Driver Architecture
 
 **Date**: 2026-03-09  
-**Status**: Approved / Draft  
+**Status**: Implemented  
 **Target Platform**: SquadLoop (`squadloop` CLI, `@earendil-works/pi-coding-agent`, tmux, herdr, iTerm2)
 
 ---
