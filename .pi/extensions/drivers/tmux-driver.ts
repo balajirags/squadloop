@@ -1,5 +1,6 @@
 import { execSync, spawnSync } from "child_process";
 import type { ITerminalDriver, WorkspacePanes } from "./terminal-driver-interface.js";
+import { ModelResolver } from "../models/model-resolver.js";
 
 function cleanPaneId(raw: string): string {
   const match = String(raw).match(/%[0-9]+/);
@@ -7,8 +8,10 @@ function cleanPaneId(raw: string): string {
 }
 
 function getAgentCommand(role: string): string {
+  const model = ModelResolver.getModel(role);
   const agentFile = `.pi/agents/${role}.md`;
-  return `pi --approve --append-system-prompt "${agentFile}"; exec bash`;
+  const modelFlag = model ? ` --model "${model}"` : "";
+  return `pi --approve --append-system-prompt "${agentFile}"${modelFlag}; exec bash`;
 }
 
 export class TmuxDriver implements ITerminalDriver {

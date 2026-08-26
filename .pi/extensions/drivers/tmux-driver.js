@@ -1,11 +1,14 @@
 import { execSync, spawnSync } from "child_process";
+import { ModelResolver } from "../models/model-resolver.js";
 function cleanPaneId(raw) {
     const match = String(raw).match(/%[0-9]+/);
     return match ? match[0] : String(raw).trim().split("\n")[0];
 }
 function getAgentCommand(role) {
+    const model = ModelResolver.getModel(role);
     const agentFile = `.pi/agents/${role}.md`;
-    return `pi --approve --append-system-prompt "${agentFile}"; exec bash`;
+    const modelFlag = model ? ` --model "${model}"` : "";
+    return `pi --approve --append-system-prompt "${agentFile}"${modelFlag}; exec bash`;
 }
 export class TmuxDriver {
     id = "tmux";

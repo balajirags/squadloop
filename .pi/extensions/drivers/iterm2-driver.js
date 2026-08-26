@@ -1,6 +1,9 @@
 import { execSync } from "child_process";
+import { ModelResolver } from "../models/model-resolver.js";
 function getAgentCommand(role) {
+    const model = ModelResolver.getModel(role);
     const agentFile = `.pi/agents/${role}.md`;
+    const modelFlag = model ? ` --model "${model}"` : "";
     return `pi --approve --append-system-prompt "${agentFile}"`;
 }
 export class ITerm2Driver {

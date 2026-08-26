@@ -1,44 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
 import type { IWorkspaceAdapter, WorkspacePanes } from "./workspace-interface.js";
-
-function cleanModelString(raw: string): string {
-  let val = raw.trim();
-  if (val.includes("#")) {
-    val = val.split("#")[0].trim();
-  }
-  return val.replace(/^["']|["']$/g, "").trim();
-}
+import { ModelResolver } from "../models/model-resolver.js";
 
 function resolveRoleModel(role: string): string | null {
-  const configPath = path.join(process.cwd(), ".pi", "team-config.json");
-  if (fs.existsSync(configPath)) {
-    try {
-      const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-      if (config.models?.[role]) {
-        const cleaned = cleanModelString(config.models[role]);
-        if (cleaned) return cleaned;
-      }
-    } catch {
-      // Ignore
-    }
-  }
-
-  const agentPath = path.join(process.cwd(), ".pi", "agents", `${role}.md`);
-  if (fs.existsSync(agentPath)) {
-    try {
-      const content = fs.readFileSync(agentPath, "utf-8");
-      const match = content.match(/^(?!\s*#)\s*model:\s*(.+)$/m);
-      if (match && match[1]) {
-        const cleaned = cleanModelString(match[1]);
-        if (cleaned) return cleaned;
-      }
-    } catch {
-      // Ignore
-    }
-  }
-
-  return null;
+  return ModelResolver.getModel(role);
 }
 
 export class HeadlessWorkspaceAdapter implements IWorkspaceAdapter {

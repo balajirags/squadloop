@@ -1,8 +1,11 @@
 import { execSync } from "child_process";
 import type { ITerminalDriver, WorkspacePanes } from "./terminal-driver-interface.js";
+import { ModelResolver } from "../models/model-resolver.js";
 
 function getAgentCommand(role: string): string {
+  const model = ModelResolver.getModel(role);
   const agentFile = `.pi/agents/${role}.md`;
+  const modelFlag = model ? ` --model "${model}"` : "";
   return `pi --approve --append-system-prompt "${agentFile}"`;
 }
 
