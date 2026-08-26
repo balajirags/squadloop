@@ -47,10 +47,12 @@ function parseCliContext() {
   const exModeArg = args.find(a => a.startsWith("--ex-mode=") || a.startsWith("exMode="));
   const driverArg = args.find(a => a.startsWith("--driver=") || a.startsWith("driver="));
   const layoutArg = args.find(a => a.startsWith("--layout=") || a.startsWith("layout="));
+  const modeArg = args.find(a => a.startsWith("--mode=") || a.startsWith("mode="));
 
   if (exModeArg) config.exMode = exModeArg.split("=")[1];
   if (driverArg) config.driver = driverArg.split("=")[1];
   if (layoutArg) config.layout = layoutArg.split("=")[1];
+  if (modeArg) config.mode = modeArg.split("=")[1];
 
   return config;
 }
