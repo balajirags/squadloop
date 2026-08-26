@@ -1,6 +1,11 @@
 import { execSync } from "child_process";
 import type { ITerminalDriver, WorkspacePanes } from "./terminal-driver-interface.js";
 
+function getAgentCommand(role: string): string {
+  const agentFile = `.pi/agents/${role}.md`;
+  return `pi --approve --append-system-prompt "${agentFile}"`;
+}
+
 export class ITerm2Driver implements ITerminalDriver {
   public readonly id = "iterm2";
   public readonly name = "iTerm2 Terminal Driver";
@@ -43,37 +48,75 @@ export class ITerm2Driver implements ITerminalDriver {
           ${isWindows ? `
             tell current tab
               set name to "orchestrator"
+              tell current session
+                set name to "orchestrator"
+                write text "${getAgentCommand("orchestrator")}"
+              end tell
             end tell
-            create tab with default profile
-            tell current tab
+            
+            set baTab to (create tab with default profile)
+            tell baTab
               set name to "ba"
+              tell current session
+                set name to "ba"
+                write text "${getAgentCommand("ba")}"
+              end tell
             end tell
-            create tab with default profile
-            tell current tab
+            
+            set devTab to (create tab with default profile)
+            tell devTab
               set name to "developer"
+              tell current session
+                set name to "developer"
+                write text "${getAgentCommand("developer")}"
+              end tell
             end tell
-            create tab with default profile
-            tell current tab
+            
+            set qaTab to (create tab with default profile)
+            tell qaTab
               set name to "qa"
+              tell current session
+                set name to "qa"
+                write text "${getAgentCommand("qa")}"
+              end tell
             end tell
-            create tab with default profile
-            tell current tab
+            
+            set revTab to (create tab with default profile)
+            tell revTab
               set name to "reviewer"
+              tell current session
+                set name to "reviewer"
+                write text "${getAgentCommand("reviewer")}"
+              end tell
             end tell
           ` : `
             tell current tab
               set orchSession to current session
               tell orchSession
+                set name to "orchestrator"
+                write text "${getAgentCommand("orchestrator")}"
                 set baSession to (split horizontally with default profile)
               end tell
               tell baSession
+                set name to "ba"
+                write text "${getAgentCommand("ba")}"
                 set devSession to (split vertically with default profile)
               end tell
               tell baSession
                 set qaSession to (split horizontally with default profile)
               end tell
               tell devSession
+                set name to "developer"
+                write text "${getAgentCommand("developer")}"
                 set revSession to (split horizontally with default profile)
+              end tell
+              tell qaSession
+                set name to "qa"
+                write text "${getAgentCommand("qa")}"
+              end tell
+              tell revSession
+                set name to "reviewer"
+                write text "${getAgentCommand("reviewer")}"
               end tell
             end tell
           `}
@@ -88,23 +131,32 @@ export class ITerm2Driver implements ITerminalDriver {
     }
 
     return {
-      orchestrator: "iterm-0",
-      ba: "iterm-1",
-      developer: "iterm-2",
-      qa: "iterm-3",
-      reviewer: "iterm-4"
+      orchestrator: "orchestrator",
+      ba: "ba",
+      developer: "developer",
+      qa: "qa",
+      reviewer: "reviewer"
     };
   }
 
   public async sendPrompt(paneTarget: string, promptText: string, clear = false): Promise<void> {
-    const escaped = promptText.replace(/"/g, '\\"');
+    const escaped = promptText.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    const target = paneTarget.toLowerCase();
     const script = `
       tell application "iTerm"
-        tell current window
-          tell current session
-            write text "${escaped}"
-          end tell
-        end tell
+        repeat with w in windows
+          if name of w contains "squadloop-workspace" then
+            tell w
+              repeat with t in tabs
+                repeat with s in sessions of t
+                  if name of s contains "${target}" or name of t contains "${target}" then
+                    tell s to write text "${escaped}"
+                  end if
+                end repeat
+              end repeat
+            end tell
+          end if
+        end repeat
       end tell
     `;
     try {
