@@ -114,15 +114,24 @@ SquadLoop uses the **Strategy Pattern** (`ITrackerAdapter` and `TrackerFactory`)
 
 ## 🛠️ CLI Commands (`squadloop`)
 
+```bash
+squadloop start [--ex-mode=team|standalone] [--hitl=loop|step|auto] [--driver=tmux|herdr|iterm2|regular] [--layout=panes|windows]
+squadloop resume [--ex-mode=team|standalone] [--hitl=loop|step|auto] [--driver=tmux|herdr|iterm2|regular] [--layout=panes|windows]
+squadloop config [ex-mode=team|standalone] [hitl=loop|step|auto] [driver=tmux|herdr|iterm2|regular] [layout=panes|windows]
+squadloop attach
+squadloop status
+squadloop init
+```
+
 | Command | Description |
 | :--- | :--- |
-| `squadloop start` | Starts a fresh SquadLoop session in < 1s, resets active task log, and opens the workspace. |
+| `squadloop start` | Launches a SquadLoop workspace session using config defaults or CLI flag overrides. |
 | `squadloop resume` | Resumes an active SquadLoop session from `.pi/active-task.json` log. |
-| `squadloop init` | Bootstraps `.pi/`, `Agent.md`, `project-context.md`, and template folders into current directory. |
-| `squadloop attach` | Attaches directly to the `squadloop-workspace` tmux session. |
+| `squadloop config` | Displays or updates persistent defaults in `.pi/team-config.json` (`exMode`, `hitl`, `driver`, `layout`). |
+| `squadloop attach` | Attaches directly to the active workspace session in the configured terminal driver (`tmux`, `herdr`, `iterm2`). |
 | `squadloop status` | Displays active task state, token usage, and estimated cost directly from terminal. |
-| `squadloop config` | Displays or updates `.pi/team-config.json` (`mode`, `layout`, `workspaceMode`, `destructiveCommandPolicy`). |
-| `squadloop help` | Displays the SquadLoop CLI usage guide and options. |
+| `squadloop init` | Bootstraps `.pi/` config defaults (`team-config.json`), `Agent.md`, `project-context.md`, and template folders into current directory. |
+| `squadloop help` | Displays the SquadLoop CLI usage guide and flag options. |
 
 ### Slash Commands (Inside Pi)
 - `/squadloop-start` — Fresh session launch
