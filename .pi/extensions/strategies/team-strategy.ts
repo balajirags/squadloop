@@ -20,7 +20,7 @@ export class TeamExecutionStrategy implements IExecutionStrategy {
 
     const welcomePrompt =
       `==============================================================\n` +
-      `🚀 SQUADLOOP ONLINE [--ex-mode=team, --driver=${driver.id}, --layout=${ctx.layout}]\n` +
+      `🚀 SQUADLOOP ONLINE [--ex-mode=team, --hitl=${ctx.hitl}, --driver=${driver.id}, --layout=${ctx.layout}]\n` +
       `==============================================================\n` +
       `Print the welcome banner and options (1. Implement BRD/PRD, 2. Pick Story, 3. Random, 4. Custom Task).\n` +
       `STOP IMMEDIATELY and wait for human instruction.`;
@@ -33,7 +33,7 @@ export class TeamExecutionStrategy implements IExecutionStrategy {
     const driver = DriverFactory.getDriver(ctx.driver);
     const panes = driver.setupTeamLayout(ctx.layout);
 
-    const resumePrompt = `Master Orchestrator RESUMED [--ex-mode=team, --driver=${driver.id}]! State active task status and wait for human input.`;
+    const resumePrompt = `Master Orchestrator RESUMED [--ex-mode=team, --hitl=${ctx.hitl}, --driver=${driver.id}]! State active task status and wait for human input.`;
     await driver.sendPrompt(panes.orchestrator, resumePrompt, false);
     driver.attachSession();
   }

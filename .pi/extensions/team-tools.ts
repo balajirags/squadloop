@@ -157,7 +157,8 @@ export function registerTeamTools(pi: ExtensionAPI) {
       if (fs.existsSync(configPath)) {
         try {
           const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-          const mode = config.mode || "step-hitl";
+          const rawHitl = config.hitl || config.mode || "loop";
+          const hitlMode = (rawHitl === "loop-hitl" ? "loop" : rawHitl === "step-hitl" ? "step" : rawHitl);
           const panes = config.panes;
 
           if (panes) {
@@ -194,7 +195,7 @@ export function registerTeamTools(pi: ExtensionAPI) {
             await WorkflowEngine.handleTransition(
               params.issueId,
               params.newStatus,
-              mode,
+              hitlMode,
               panes,
               params.notes,
               currentReworkCount,

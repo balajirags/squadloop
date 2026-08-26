@@ -125,7 +125,8 @@ export function registerTeamTools(pi) {
             if (fs.existsSync(configPath)) {
                 try {
                     const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-                    const mode = config.mode || "step-hitl";
+                    const rawHitl = config.hitl || config.mode || "loop";
+                    const hitlMode = (rawHitl === "loop-hitl" ? "loop" : rawHitl === "step-hitl" ? "step" : rawHitl);
                     const panes = config.panes;
                     if (panes) {
                         // Strategy-driven tracker closure using TrackerFactory when done
@@ -157,7 +158,7 @@ export function registerTeamTools(pi) {
                             }
                         }
                         // Delegate workflow transition steering to dedicated WorkflowEngine
-                        await WorkflowEngine.handleTransition(params.issueId, params.newStatus, mode, panes, params.notes, currentReworkCount, circuitBreakerTripped);
+                        await WorkflowEngine.handleTransition(params.issueId, params.newStatus, hitlMode, panes, params.notes, currentReworkCount, circuitBreakerTripped);
                     }
                 }
                 catch {

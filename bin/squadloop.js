@@ -28,15 +28,19 @@ function printLogo() {
 
 function parseCliContext() {
   const configPath = path.join(process.cwd(), ".pi", "team-config.json");
-  let config = { exMode: "team", driver: "tmux", mode: "loop-hitl", layout: "panes" };
+  let config = { exMode: "team", driver: "tmux", hitl: "loop", layout: "panes" };
 
   if (fs.existsSync(configPath)) {
     try {
       const loaded = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      let rawHitl = loaded.hitl || loaded.mode || "loop";
+      if (rawHitl === "loop-hitl") rawHitl = "loop";
+      if (rawHitl === "step-hitl") rawHitl = "step";
+
       config = {
         exMode: loaded.exMode || loaded.executionMode || "team",
         driver: loaded.driver || loaded.workspaceMode || "tmux",
-        mode: loaded.mode || "loop-hitl",
+        hitl: rawHitl,
         layout: loaded.layout || "panes"
       };
     } catch {
@@ -47,12 +51,23 @@ function parseCliContext() {
   const exModeArg = args.find(a => a.startsWith("--ex-mode=") || a.startsWith("exMode="));
   const driverArg = args.find(a => a.startsWith("--driver=") || a.startsWith("driver="));
   const layoutArg = args.find(a => a.startsWith("--layout=") || a.startsWith("layout="));
+  const hitlArg = args.find(a => a.startsWith("--hitl=") || a.startsWith("hitl="));
   const modeArg = args.find(a => a.startsWith("--mode=") || a.startsWith("mode="));
 
   if (exModeArg) config.exMode = exModeArg.split("=")[1];
   if (driverArg) config.driver = driverArg.split("=")[1];
   if (layoutArg) config.layout = layoutArg.split("=")[1];
-  if (modeArg) config.mode = modeArg.split("=")[1];
+  if (hitlArg) {
+    let val = hitlArg.split("=")[1];
+    if (val === "loop-hitl") val = "loop";
+    if (val === "step-hitl") val = "step";
+    config.hitl = val;
+  } else if (modeArg) {
+    let val = modeArg.split("=")[1];
+    if (val === "loop-hitl") val = "loop";
+    if (val === "step-hitl") val = "step";
+    config.hitl = val;
+  }
 
   return config;
 }

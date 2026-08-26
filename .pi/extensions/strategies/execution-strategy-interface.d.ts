@@ -1,8 +1,9 @@
 export interface ExecutionContext {
     exMode: "team" | "standalone";
     driver: string;
-    mode: string;
+    hitl: "loop" | "step" | "auto";
     layout: "panes" | "windows";
+    mode?: string;
 }
 export interface IExecutionStrategy {
     executeStart(ctx: ExecutionContext): Promise<void>;

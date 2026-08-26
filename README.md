@@ -43,13 +43,14 @@ squadloop attach
 
 ## ⚙️ Configuration (`.pi/team-config.json`)
 
-Configure team workflow modes, workspace layouts, security policies, and workspace adapters directly in `.pi/team-config.json`:
+Configure execution modes, human-in-the-loop steering, terminal drivers, and workspace layouts in `.pi/team-config.json` or via CLI flags:
 
 ```json
 {
-  "mode": "loop-hitl",
+  "exMode": "team",
+  "hitl": "loop",
+  "driver": "tmux",
   "layout": "panes",
-  "workspaceMode": "tmux",
   "destructiveCommandPolicy": "ask-human",
   "customProtectedFiles": [],
   "models": {
@@ -62,21 +63,20 @@ Configure team workflow modes, workspace layouts, security policies, and workspa
 }
 ```
 
-### 🎛️ Workflow Modes (`"mode"`)
-- **`"loop-hitl"` (Loop Human-In-The-Loop - Default)**:
-  Runs a single story end-to-end (BA → Dev → QA → Reviewer → Done), then halts at Master Orchestrator Pane 0 awaiting human instruction before picking up the next story.
-- **`"auto"` (Full Autonomous)**:
-  Processes all backlog stories sequentially end-to-end without pausing until no uncompleted stories remain.
-- **`"step-hitl"` (Step Human-In-The-Loop)**:
-  Pauses for human approval at EVERY stage transition (BA → HITL → Dev → HITL → QA → HITL → Reviewer → HITL).
+### 🚀 Execution Modes (`--ex-mode=team|standalone`)
+- **`"exMode": "team"` (Default)**: Spawns 5 predefined agents (Orchestrator, BA, Developer, QA, Reviewer) across split screens (panes) or multiple windows/tabs.
+- **`"exMode": "standalone"`**: Starts a single `pi` session directly in the active terminal window. Hot-swap agent personas dynamically via `/ba`, `/dev`, `/qa`, `/reviewer`, or `/*.agent.md` while leveraging internal subagents (`Agent(...)`).
 
-### 🖥️ Workspace Layouts & Modes
-- **`"workspaceMode": "tmux"` (Default)**: Runs SquadLoop inside tmux using split panes or full-screen windows.
-  - **`"layout": "panes"` (Default)**: 5 split panes within 1 window (`team`) for real-time visual collaboration.
-  - **`"layout": "windows"`**: 5 full-screen windows within the same tmux session (`orchestrator`, `ba`, `developer`, `qa`, `reviewer`).
-- **`"workspaceMode": "regular"` (No Tmux Required)**:
-  Runs SquadLoop in regular headless event-bus mode on any terminal (iTerm2 tabs, VS Code splits, CI/CD).
-  *(Note: If `"workspaceMode": "tmux"` is configured but `tmux` is missing from your system, SquadLoop halts and prompts you with an installation guide or option to switch to `"workspaceMode": "regular"`).*
+### 🎛️ Human-In-The-Loop Steering (`--hitl=loop|step|auto`)
+- **`"hitl": "loop"` (Default)**: Runs a story end-to-end (BA → Dev → QA → Reviewer → Done), then halts at Master Orchestrator awaiting human instruction before picking up the next story.
+- **`"hitl": "step"`**: Pauses for human approval at EVERY stage transition (BA → HITL → Dev → HITL → QA → HITL → Reviewer → HITL).
+- **`"hitl": "auto"`**: Processes all backlog stories sequentially end-to-end without pausing until no uncompleted stories remain.
+
+### 🖥️ Terminal Drivers (`--driver=tmux|herdr|iterm2|regular`) & Layouts (`--layout=panes|windows`)
+- **`"driver": "tmux"` (Default)**: Multi-pane split screen or 5-window tmux workspace.
+- **`"driver": "herdr"`**: Herdr CLI multi-process session manager.
+- **`"driver": "iterm2"`**: Native macOS iTerm2 split panes or tabbed window management via AppleScript.
+- **`"driver": "regular"`**: Standalone or CI/CD direct terminal runner.
 
 ### 🤖 Per-Agent Model Customization & Local Providers (`.pi/models.json`)
 You can customize models per agent role or connect local/custom LLM providers (Ollama, OpenRouter, Azure OpenAI, vLLM):
