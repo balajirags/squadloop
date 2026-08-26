@@ -1,4 +1,4 @@
-import { WorkspaceFactory } from "./workspaces/workspace-factory.js";
+import { DriverFactory } from "./drivers/driver-factory.js";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -14,8 +14,18 @@ export type WorkflowStage =
 
 export class WorkflowEngine {
   private static async sendPromptAsync(paneTarget: string, promptText: string, clear = true): Promise<void> {
-    const workspace = WorkspaceFactory.getAdapter();
-    await workspace.sendPrompt(paneTarget, promptText, clear);
+    const configPath = path.join(process.cwd(), ".pi", "team-config.json");
+    let driverName = "tmux";
+    if (fs.existsSync(configPath)) {
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+        driverName = config.driver || "tmux";
+      } catch {
+        // Ignore
+      }
+    }
+    const driver = DriverFactory.getDriver(driverName);
+    await driver.sendPrompt(paneTarget, promptText, clear);
   }
 
   public static async handleTransition(

@@ -1,8 +1,21 @@
-import { WorkspaceFactory } from "./workspaces/workspace-factory.js";
+import { DriverFactory } from "./drivers/driver-factory.js";
+import * as fs from "fs";
+import * as path from "path";
 export class WorkflowEngine {
     static async sendPromptAsync(paneTarget, promptText, clear = true) {
-        const workspace = WorkspaceFactory.getAdapter();
-        await workspace.sendPrompt(paneTarget, promptText, clear);
+        const configPath = path.join(process.cwd(), ".pi", "team-config.json");
+        let driverName = "tmux";
+        if (fs.existsSync(configPath)) {
+            try {
+                const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+                driverName = config.driver || "tmux";
+            }
+            catch {
+                // Ignore
+            }
+        }
+        const driver = DriverFactory.getDriver(driverName);
+        await driver.sendPrompt(paneTarget, promptText, clear);
     }
     static async handleTransition(issueId, newStatus, hitlMode, panes, notes, reworkCount = 0, circuitBreakerTripped = false) {
         if (!panes)

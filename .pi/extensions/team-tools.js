@@ -1,10 +1,9 @@
 import { Type } from "@sinclair/typebox";
-import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { TrackerFactory } from "./trackers/tracker-factory.js";
 import { WorkflowEngine } from "./workflow.js";
-import { WorkspaceFactory } from "./workspaces/workspace-factory.js";
+import { DriverFactory } from "./drivers/driver-factory.js";
 function appendEventLog(eventRecord) {
     try {
         const eventsPath = path.join(process.cwd(), ".pi", "events.jsonl");
@@ -150,8 +149,8 @@ export function registerTeamTools(pi) {
                                 `• Audit Log         : docs/dev-checkpoints/${params.issueId}.json\n` +
                                 `==============================================================\n`;
                             try {
-                                const escaped = summaryCard.replace(/"/g, '\\"');
-                                execSync(`tmux send-keys -t ${panes.orchestrator} "${escaped}" Enter`, { stdio: "ignore" });
+                                const driver = DriverFactory.getDriver(config.driver);
+                                await driver.sendPrompt(panes.orchestrator, summaryCard, false);
                             }
                             catch {
                                 // Ignore
@@ -197,38 +196,11 @@ export function registerTeamTools(pi) {
             }
             try {
                 const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-                let targetPane = config.panes?.[params.targetRole];
+                const driver = DriverFactory.getDriver(config.driver);
+                let targetPane = config.panes?.[params.targetRole] || params.targetRole;
                 const shouldClear = params.clearContext === true;
-                try {
-                    if (shouldClear) {
-                        execSync(`tmux send-keys -t ${targetPane} "/clear" Enter`, { stdio: "ignore" });
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                    }
-                    const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
-                    execSync(`tmux send-keys -t ${targetPane} "${formatted.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
-                }
-                catch {
-                    // Auto-recover missing pane on the fly if target pane crashed/closed
-                    try {
-                        const workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
-                        const recoveredPanes = workspace.recoverMissingPanes(config.panes);
-                        config.panes = recoveredPanes;
-                        fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
-                        targetPane = config.panes[params.targetRole];
-                        if (shouldClear) {
-                            try {
-                                execSync(`tmux send-keys -t ${targetPane} "/clear" Enter`, { stdio: "ignore" });
-                            }
-                            catch { }
-                            await new Promise(resolve => setTimeout(resolve, 1500));
-                        }
-                        const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
-                        execSync(`tmux send-keys -t ${targetPane} "${formatted.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
-                    }
-                    catch {
-                        // Non-fatal
-                    }
-                }
+                const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
+                await driver.sendPrompt(targetPane, formatted, shouldClear);
                 // Log direct message to .pi/events.jsonl with auto-truncation cap
                 appendEventLog({
                     eventId: `evt_${Date.now()}`,
@@ -238,7 +210,7 @@ export function registerTeamTools(pi) {
                     timestamp: new Date().toISOString()
                 });
                 return {
-                    content: [{ type: "text", text: `Sent direct message to ${params.targetRole.toUpperCase()} pane (${targetPane})${shouldClear ? " [context cleared]" : ""}.` }],
+                    content: [{ type: "text", text: `Sent direct message to ${params.targetRole.toUpperCase()} (${targetPane})${shouldClear ? " [context cleared]" : ""}.` }],
                     details: { success: true, targetPane, message: params.message, clearedContext: shouldClear }
                 };
             }

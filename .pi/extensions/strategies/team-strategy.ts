@@ -3,10 +3,24 @@ import * as path from "path";
 import type { IExecutionStrategy, ExecutionContext } from "./execution-strategy-interface.js";
 import { DriverFactory } from "../drivers/driver-factory.js";
 
+function savePanesToConfig(panes: any): void {
+  const configPath = path.join(process.cwd(), ".pi", "team-config.json");
+  if (fs.existsSync(configPath)) {
+    try {
+      const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      config.panes = panes;
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+    } catch {
+      // Ignore
+    }
+  }
+}
+
 export class TeamExecutionStrategy implements IExecutionStrategy {
   public async executeStart(ctx: ExecutionContext): Promise<void> {
     const driver = DriverFactory.getDriver(ctx.driver);
     const panes = driver.setupTeamLayout(ctx.layout);
+    savePanesToConfig(panes);
 
     const activeTaskPath = path.join(process.cwd(), ".pi", "active-task.json");
     fs.mkdirSync(path.dirname(activeTaskPath), { recursive: true });
@@ -32,6 +46,7 @@ export class TeamExecutionStrategy implements IExecutionStrategy {
   public async executeResume(ctx: ExecutionContext): Promise<void> {
     const driver = DriverFactory.getDriver(ctx.driver);
     const panes = driver.setupTeamLayout(ctx.layout);
+    savePanesToConfig(panes);
 
     const resumePrompt = `Master Orchestrator RESUMED [--ex-mode=team, --hitl=${ctx.hitl}, --driver=${driver.id}]! State active task status and wait for human input.`;
     await driver.sendPrompt(panes.orchestrator, resumePrompt, false);
