@@ -6,6 +6,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { ExecutionStrategyFactory } from "../dist/.pi/extensions/strategies/execution-factory.js";
 import { DriverFactory } from "../dist/.pi/extensions/drivers/driver-factory.js";
+import { PromptSyncEngine } from "../dist/.pi/extensions/models/prompt-sync.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,6 +39,7 @@ function parseCliContext() {
       if (rawHitl === "step-hitl") rawHitl = "step";
 
       config = {
+        ...loaded,
         exMode: loaded.exMode || loaded.executionMode || "team",
         driver: loaded.driver || loaded.workspaceMode || "tmux",
         hitl: rawHitl,
@@ -81,6 +83,7 @@ function saveConfig(config) {
 async function handleStart() {
   const ctx = parseCliContext();
   printLogo();
+  PromptSyncEngine.syncAllPrompts();
   const strategy = ExecutionStrategyFactory.getStrategy(ctx.exMode);
   await strategy.executeStart(ctx);
 }
@@ -88,6 +91,7 @@ async function handleStart() {
 async function handleResume() {
   const ctx = parseCliContext();
   printLogo();
+  PromptSyncEngine.syncAllPrompts();
   const strategy = ExecutionStrategyFactory.getStrategy(ctx.exMode);
   await strategy.executeResume(ctx);
 }
@@ -105,21 +109,49 @@ function handleInit() {
     exMode: "team",
     driver: "tmux",
     hitl: "loop",
-    layout: "panes"
+    layout: "panes",
+    _modelExamples: {
+      anthropic: "anthropic/claude-3-7-sonnet",
+      google: "google/gemini-2.5-flash",
+      openai: "openai/gpt-4o",
+      deepseek: "deepseek/deepseek-reasoner",
+      openrouter: "openrouter/anthropic/claude-3.7-sonnet",
+      ollama: "ollama/gemma4"
+    },
+    models: {
+      orchestrator: "",
+      ba: "",
+      developer: "",
+      qa: "",
+      reviewer: ""
+    }
   };
+
   const configPath = path.join(process.cwd(), ".pi", "team-config.json");
   if (!fs.existsSync(configPath)) {
     saveConfig(defaultConfig);
-    console.log("  ✅ Created .pi/team-config.json defaults.");
+    console.log("  ✅ Created .pi/team-config.json with model hints.");
   } else {
     console.log("  ℹ️  .pi/team-config.json already exists.");
   }
+
+  // Auto-copy models.example.json to models.json if missing
+  const modelsExamplePath = path.join(process.cwd(), ".pi", "models.example.json");
+  const modelsJsonPath = path.join(process.cwd(), ".pi", "models.json");
+  if (fs.existsSync(modelsExamplePath) && !fs.existsSync(modelsJsonPath)) {
+    fs.copyFileSync(modelsExamplePath, modelsJsonPath);
+    console.log("  ✅ Auto-created .pi/models.json from template.");
+  }
+
+  PromptSyncEngine.syncAllPrompts();
+  console.log("  ✅ Synced .pi/prompts/ persona templates.");
   console.log("🎉 SquadLoop initialization complete!");
 }
 
 function handleConfig() {
   const ctx = parseCliContext();
   saveConfig(ctx);
+  PromptSyncEngine.syncAllPrompts();
   console.log("⚙️  Updated .pi/team-config.json defaults:");
   console.log(JSON.stringify(ctx, null, 2));
 }
