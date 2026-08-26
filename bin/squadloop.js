@@ -104,7 +104,42 @@ function handleAttach() {
 
 function handleInit() {
   printLogo();
-  console.log("📦 Bootstrapping SquadLoop configuration and template files...");
+  console.log("📦 Bootstrapping SquadLoop configuration, extensions, and templates into current directory...\n");
+
+  const cwd = process.cwd();
+
+  // 1. Copy .pi directory (extensions, agent definitions, templates, skills) from package root
+  const sourcePi = path.join(packageRoot, ".pi");
+  const targetPi = path.join(cwd, ".pi");
+  if (fs.existsSync(sourcePi)) {
+    fs.cpSync(sourcePi, targetPi, { recursive: true });
+    console.log("  ✅ Created .pi/ configuration, extensions, agent personas, and templates.");
+  }
+
+  // 2. Copy Agent.md operational mandate
+  const sourceAgent = path.join(packageRoot, "Agent.md");
+  const targetAgent = path.join(cwd, "Agent.md");
+  if (fs.existsSync(sourceAgent) && !fs.existsSync(targetAgent)) {
+    fs.copyFileSync(sourceAgent, targetAgent);
+    console.log("  ✅ Created Agent.md operational mandate.");
+  }
+
+  // 3. Copy project-context.md template if not present
+  const targetContext = path.join(cwd, "project-context.md");
+  if (!fs.existsSync(targetContext)) {
+    const sourceTemplate = path.join(packageRoot, ".pi", "templates", "project-context.template.md");
+    if (fs.existsSync(sourceTemplate)) {
+      fs.copyFileSync(sourceTemplate, targetContext);
+      console.log("  ✅ Created project-context.md template.");
+    }
+  }
+
+  // 4. Create docs/brd/ and docs/stories/ template directories
+  fs.mkdirSync(path.join(cwd, "docs", "brd"), { recursive: true });
+  fs.mkdirSync(path.join(cwd, "docs", "stories"), { recursive: true });
+  console.log("  ✅ Created docs/brd/ and docs/stories/ directories.");
+
+  // 5. Ensure .pi/team-config.json exists with defaults & model hints
   const defaultConfig = {
     exMode: "team",
     driver: "tmux",
@@ -127,25 +162,25 @@ function handleInit() {
     }
   };
 
-  const configPath = path.join(process.cwd(), ".pi", "team-config.json");
+  const configPath = path.join(cwd, ".pi", "team-config.json");
   if (!fs.existsSync(configPath)) {
     saveConfig(defaultConfig);
     console.log("  ✅ Created .pi/team-config.json with model hints.");
-  } else {
-    console.log("  ℹ️  .pi/team-config.json already exists.");
   }
 
-  // Auto-copy models.example.json to models.json if missing
-  const modelsExamplePath = path.join(process.cwd(), ".pi", "models.example.json");
-  const modelsJsonPath = path.join(process.cwd(), ".pi", "models.json");
+  // 6. Auto-copy models.example.json to models.json if missing
+  const modelsExamplePath = path.join(cwd, ".pi", "models.example.json");
+  const modelsJsonPath = path.join(cwd, ".pi", "models.json");
   if (fs.existsSync(modelsExamplePath) && !fs.existsSync(modelsJsonPath)) {
     fs.copyFileSync(modelsExamplePath, modelsJsonPath);
     console.log("  ✅ Auto-created .pi/models.json from template.");
   }
 
+  // 7. Sync prompt templates
   PromptSyncEngine.syncAllPrompts();
   console.log("  ✅ Synced .pi/prompts/ persona templates.");
-  console.log("🎉 SquadLoop initialization complete!");
+
+  console.log("\n🎉 SquadLoop initialization complete! Run 'squadloop start' to launch your team.");
 }
 
 function handleConfig() {
