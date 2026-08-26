@@ -6,7 +6,7 @@ function getAgentCommand(role: string): string {
   const model = ModelResolver.getModel(role);
   const agentFile = `.pi/agents/${role}.md`;
   const modelFlag = model ? ` --model "${model}"` : "";
-  return `pi --approve --append-system-prompt "${agentFile}"`;
+  return `pi --approve --append-system-prompt "${agentFile}"${modelFlag}`;
 }
 
 export class ITerm2Driver implements ITerminalDriver {
