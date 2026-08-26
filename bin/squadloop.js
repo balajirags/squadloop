@@ -80,7 +80,6 @@ function saveConfig(config) {
 
 async function handleStart() {
   const ctx = parseCliContext();
-  saveConfig(ctx);
   printLogo();
   const strategy = ExecutionStrategyFactory.getStrategy(ctx.exMode);
   await strategy.executeStart(ctx);
@@ -99,10 +98,29 @@ function handleAttach() {
   driver.attachSession();
 }
 
+function handleInit() {
+  printLogo();
+  console.log("📦 Bootstrapping SquadLoop configuration and template files...");
+  const defaultConfig = {
+    exMode: "team",
+    driver: "tmux",
+    hitl: "loop",
+    layout: "panes"
+  };
+  const configPath = path.join(process.cwd(), ".pi", "team-config.json");
+  if (!fs.existsSync(configPath)) {
+    saveConfig(defaultConfig);
+    console.log("  ✅ Created .pi/team-config.json defaults.");
+  } else {
+    console.log("  ℹ️  .pi/team-config.json already exists.");
+  }
+  console.log("🎉 SquadLoop initialization complete!");
+}
+
 function handleConfig() {
   const ctx = parseCliContext();
   saveConfig(ctx);
-  console.log("⚙️  Updated .pi/team-config.json:");
+  console.log("⚙️  Updated .pi/team-config.json defaults:");
   console.log(JSON.stringify(ctx, null, 2));
 }
 
@@ -115,6 +133,9 @@ switch (command) {
     break;
   case "attach":
     handleAttach();
+    break;
+  case "init":
+    handleInit();
     break;
   case "config":
     handleConfig();
