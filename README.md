@@ -53,12 +53,20 @@ Configure execution modes, human-in-the-loop steering, terminal drivers, and wor
   "layout": "panes",
   "destructiveCommandPolicy": "ask-human",
   "customProtectedFiles": [],
+  "_modelExamples": {
+    "anthropic": "anthropic/claude-3-7-sonnet",
+    "google": "google/gemini-2.5-flash",
+    "openai": "openai/gpt-4o",
+    "deepseek": "deepseek/deepseek-reasoner",
+    "openrouter": "openrouter/anthropic/claude-3.7-sonnet",
+    "ollama": "ollama/gemma4"
+  },
   "models": {
-    "orchestrator": "google/gemini-3.6-flash",
-    "ba": "ollama/gemma4:26b",
-    "developer": "anthropic/claude-3-7-sonnet-20250219",
-    "qa": "ollama/gemma4:26b",
-    "reviewer": "google/gemini-3.6-flash"
+    "orchestrator": "",
+    "ba": "",
+    "developer": "",
+    "qa": "",
+    "reviewer": ""
   }
 }
 ```
@@ -78,10 +86,12 @@ Configure execution modes, human-in-the-loop steering, terminal drivers, and wor
 - **`"driver": "iterm2"`**: Native macOS iTerm2 split panes or tabbed window management via AppleScript.
 - **`"driver": "regular"`**: Standalone or CI/CD direct terminal runner.
 
-### 🤖 Per-Agent Model Customization & Local Providers (`.pi/models.json`)
-You can customize models per agent role or connect local/custom LLM providers (Ollama, OpenRouter, Azure OpenAI, vLLM):
-1. **Per-Agent Model Overrides**: Set model IDs in `.pi/team-config.json` `"models"` or in `.pi/agents/<role>.md` frontmatter (`model: ...` - commented out by default).
-2. **Local & Custom Providers (`.pi/models.example.json`)**:
+### 🤖 Per-Agent Model Customization & Local Providers
+
+You can customize models per agent role directly in `.pi/team-config.json` or connect local/custom LLM providers:
+1. **Per-Agent Model Overrides (`.pi/team-config.json`)**: Configure explicit model IDs per role under `"models"` (e.g. `"developer": "anthropic/claude-3-7-sonnet"`). If left empty (`""`), agents fall back to the active environment default model. Refer to `"_modelExamples"` in `.pi/team-config.json` for copy-paste model format examples across major providers.
+2. **Standard Cloud Providers (Zero-Copy)**: Standard cloud providers (Anthropic, OpenAI, Google Gemini, DeepSeek, OpenRouter) work out of the box with zero additional setup when standard API keys (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) are present in your environment.
+3. **Local & Custom Providers (`.pi/models.json`)**:
    Copy `.pi/models.example.json` to `.pi/models.json` (or `~/.pi/agent/models.json`) to configure local Ollama, vLLM, LM Studio, or custom proxies. SquadLoop automatically syncs project `.pi/models.json` to the global Pi Agent provider table on launch.
 
 ---

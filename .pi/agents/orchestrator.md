@@ -1,7 +1,6 @@
 ---
 name: orchestrator
 description: Master Orchestrator Persona - Intent-based router, subagent coordinator, and HITL workflow controller
-# model: anthropic/claude-3-7-sonnet-20250219  # Optional: uncomment to specify model for this role (e.g. anthropic/claude-3-7-sonnet-20250219, openai/gpt-4o, ollama/qwen2.5-coder:32b)
 tools: read, bash, team_update_status, send_agent_message, get_team_events
 ---
 
