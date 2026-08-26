@@ -23,7 +23,8 @@ Furthermore, SquadLoop will support four **Terminal Drivers** (`--driver`):
 - **CLI Flag Override**: `--ex-mode=team` or `--ex-mode=standalone`.
 
 ### 1.2 Team Mode Specifications
-- Spawns predefined agent personas in a multi-pane or multi-window grid using the selected terminal driver.
+- Spawns predefined agent personas in a multi-pane grid (1 window with 5 split panes) or a multi-window layout (5 separate windows/tabs within the session) using the selected terminal driver (`tmux`, `herdr`, or `iTerm2`).
+- Supports `"layout": "panes" | "windows"` seamlessly across `tmux` (split panes vs windows), `herdr` (split panes vs tabs/sessions), and `iTerm2` (split panes vs tabs/windows).
 - Configures persona titles, status banners, and inter-agent message routing (`send_agent_message`, `team_update_status`).
 - Managed by `TeamExecutionStrategy`.
 
@@ -62,9 +63,9 @@ export interface ITerminalDriver {
 ```
 
 ### 2.3 Driver Implementations
-1. **`TmuxDriver`**: Uses native `tmux` commands (`new-session`, `split-window`, `send-keys`, `switch-client` / `attach`).
-2. **`HerdrDriver`**: Uses `herdr` CLI commands to spawn agent panes/tabs and route commands.
-3. **`ITerm2Driver`**: Uses AppleScript (`osascript`) to create split panes or tabs in macOS iTerm2 and send keystrokes.
+1. **`TmuxDriver`**: Uses native `tmux` commands to create either split panes within 1 window (`layout: "panes"`) or 5 full-screen windows (`layout: "windows"`).
+2. **`HerdrDriver`**: Uses `herdr` CLI commands to create either split panes in 1 window/workspace (`layout: "panes"`) or separate tabs/windows (`layout: "windows"`).
+3. **`ITerm2Driver`**: Uses AppleScript (`osascript`) to create either split panes within 1 window (`layout: "panes"`) or 5 separate tabs/windows (`layout: "windows"`) in macOS iTerm2.
 4. **`RegularDriver`**: Direct standard output/input stream runner without layout management.
 
 ---

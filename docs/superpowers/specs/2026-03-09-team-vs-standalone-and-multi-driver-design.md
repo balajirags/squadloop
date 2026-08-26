@@ -80,13 +80,15 @@ export interface ITerminalDriver {
 ```
 
 ### 3.2 iTerm2 AppleScript Integration (`ITerm2Driver`)
-For `iTerm2Driver`, SquadLoop uses `osascript` to drive iTerm2 split panes or tabs:
-- Creates a new iTerm2 window named `squadloop-workspace`.
-- Splits the window into 5 panes (or 5 tabs if `layout: "windows"`).
+For `ITerm2Driver`, SquadLoop uses `osascript` to drive iTerm2 layout options:
+- **`layout: "panes"`**: Creates a new iTerm2 window named `squadloop-workspace` and splits it into 5 panes (Orchestrator, BA, Developer, QA, Reviewer).
+- **`layout: "windows"`**: Creates a new iTerm2 window with 5 tabs, one for each agent persona.
 - Executes agent start commands (`pi --approve --append-system-prompt .pi/agents/<role>.md`).
 
 ### 3.3 Herdr Integration (`HerdrDriver`)
-For `HerdrDriver`, SquadLoop executes `herdr` commands to manage panes/processes and send stdin inputs.
+For `HerdrDriver`, SquadLoop executes `herdr` commands:
+- **`layout: "panes"`**: Spawns 5 split panes within a single Herdr session window.
+- **`layout: "windows"`**: Spawns 5 separate Herdr workspace tabs/windows.
 
 ---
 
