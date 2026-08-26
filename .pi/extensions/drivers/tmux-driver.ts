@@ -1,6 +1,4 @@
 import { execSync, spawnSync } from "child_process";
-import * as fs from "fs";
-import * as path from "path";
 import type { ITerminalDriver, WorkspacePanes } from "./terminal-driver-interface.js";
 
 function cleanPaneId(raw: string): string {
@@ -111,11 +109,10 @@ export class TmuxDriver implements ITerminalDriver {
   public async sendPrompt(paneTarget: string, promptText: string, clear = true): Promise<void> {
     try {
       if (clear) {
-        execSync(`tmux send-keys -t ${paneTarget} "/clear" Enter`, { stdio: "ignore" });
+        spawnSync("tmux", ["send-keys", "-t", paneTarget, "/clear", "Enter"]);
         await new Promise(resolve => setTimeout(resolve, 500));
       }
-      const escaped = promptText.replace(/"/g, '\\"');
-      execSync(`tmux send-keys -t ${paneTarget} "${escaped}" Enter`, { stdio: "ignore" });
+      spawnSync("tmux", ["send-keys", "-t", paneTarget, promptText, "Enter"]);
     } catch {
       // Ignore
     }

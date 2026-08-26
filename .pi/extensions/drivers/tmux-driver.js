@@ -70,11 +70,10 @@ export class TmuxDriver {
     async sendPrompt(paneTarget, promptText, clear = true) {
         try {
             if (clear) {
-                execSync(`tmux send-keys -t ${paneTarget} "/clear" Enter`, { stdio: "ignore" });
+                spawnSync("tmux", ["send-keys", "-t", paneTarget, "/clear", "Enter"]);
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
-            const escaped = promptText.replace(/"/g, '\\"');
-            execSync(`tmux send-keys -t ${paneTarget} "${escaped}" Enter`, { stdio: "ignore" });
+            spawnSync("tmux", ["send-keys", "-t", paneTarget, promptText, "Enter"]);
         }
         catch {
             // Ignore
