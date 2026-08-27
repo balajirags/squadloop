@@ -80,9 +80,37 @@ function saveConfig(config) {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
 }
 
+function syncProjectModelsJson() {
+  const cwd = process.cwd();
+  const modelsExamplePath = path.join(cwd, ".pi", "models.example.json");
+  const modelsJsonPath = path.join(cwd, ".pi", "models.json");
+
+  // 1. Auto-create project .pi/models.json from template if missing
+  if (!fs.existsSync(modelsJsonPath) && fs.existsSync(modelsExamplePath)) {
+    try {
+      fs.copyFileSync(modelsExamplePath, modelsJsonPath);
+    } catch {
+      // Ignore
+    }
+  }
+
+  // 2. Sync project .pi/models.json to global ~/.pi/agent/models.json
+  if (fs.existsSync(modelsJsonPath)) {
+    try {
+      const globalPiDir = process.env.PI_CODING_AGENT_DIR || path.join(process.env.HOME || "", ".pi", "agent");
+      fs.mkdirSync(globalPiDir, { recursive: true });
+      const globalModelsPath = path.join(globalPiDir, "models.json");
+      fs.copyFileSync(modelsJsonPath, globalModelsPath);
+    } catch {
+      // Non-fatal
+    }
+  }
+}
+
 async function handleStart() {
   const ctx = parseCliContext();
   printLogo();
+  syncProjectModelsJson();
   PromptSyncEngine.syncAllPrompts();
   const strategy = ExecutionStrategyFactory.getStrategy(ctx.exMode);
   await strategy.executeStart(ctx);
@@ -91,6 +119,7 @@ async function handleStart() {
 async function handleResume() {
   const ctx = parseCliContext();
   printLogo();
+  syncProjectModelsJson();
   PromptSyncEngine.syncAllPrompts();
   const strategy = ExecutionStrategyFactory.getStrategy(ctx.exMode);
   await strategy.executeResume(ctx);
@@ -168,13 +197,9 @@ function handleInit() {
     console.log("  ✅ Created .pi/team-config.json with model hints.");
   }
 
-  // 6. Auto-copy models.example.json to models.json if missing
-  const modelsExamplePath = path.join(cwd, ".pi", "models.example.json");
-  const modelsJsonPath = path.join(cwd, ".pi", "models.json");
-  if (fs.existsSync(modelsExamplePath) && !fs.existsSync(modelsJsonPath)) {
-    fs.copyFileSync(modelsExamplePath, modelsJsonPath);
-    console.log("  ✅ Auto-created .pi/models.json from template.");
-  }
+  // 6. Auto-copy models.example.json to models.json if missing & sync globally
+  syncProjectModelsJson();
+  console.log("  ✅ Auto-created and synced .pi/models.json from template.");
 
   // 7. Sync prompt templates
   PromptSyncEngine.syncAllPrompts();
@@ -186,6 +211,7 @@ function handleInit() {
 function handleConfig() {
   const ctx = parseCliContext();
   saveConfig(ctx);
+  syncProjectModelsJson();
   PromptSyncEngine.syncAllPrompts();
   console.log("⚙️  Updated .pi/team-config.json defaults:");
   console.log(JSON.stringify(ctx, null, 2));
