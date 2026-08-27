@@ -131,6 +131,28 @@
         }
       ]
     },
+    "nvidia": {
+      "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "api": "openai-completions",
+      "apiKey": "$NVIDIA_API_KEY",
+      "models": [
+        {
+          "id": "nvidia/nemotron-3-ultra-550b-a55b",
+          "name": "NVIDIA Nemotron 3 Ultra 550B",
+          "contextWindow": 128000
+        },
+        {
+          "id": "nvidia/nemotron-4-340b-instruct",
+          "name": "NVIDIA Nemotron 4 340B Instruct",
+          "contextWindow": 128000
+        },
+        {
+          "id": "meta/llama-3.3-70b-instruct",
+          "name": "Llama 3.3 70B Instruct (NVIDIA NIM)",
+          "contextWindow": 128000
+        }
+      ]
+    },
     "lmstudio": {
       "baseUrl": "http://localhost:1234/v1",
       "api": "openai-completions",

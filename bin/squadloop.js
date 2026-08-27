@@ -191,6 +191,7 @@ function handleInit() {
       google: "google/gemini-2.5-flash",
       openai: "openai/gpt-4o",
       deepseek: "deepseek/deepseek-reasoner",
+      nvidia: "nvidia/nemotron-3-ultra-550b-a55b",
       openrouter: "openrouter/anthropic/claude-3.7-sonnet",
       ollama: "ollama/gemma4"
     },
