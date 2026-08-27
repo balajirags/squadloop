@@ -71,6 +71,18 @@ function parseCliContext() {
     config.hitl = val;
   }
 
+  // Parse per-role model CLI parameters (e.g. developer=ollama/gemma4:26b or --ba=google/gemini-2.5-flash)
+  const roles = ["orchestrator", "ba", "developer", "qa", "reviewer"];
+  for (const role of roles) {
+    const roleArg = args.find(a => a.startsWith(`--${role}=`) || a.startsWith(`${role}=`));
+    if (roleArg) {
+      if (!config.models) {
+        config.models = { orchestrator: "", ba: "", developer: "", qa: "", reviewer: "" };
+      }
+      config.models[role] = roleArg.substring(roleArg.indexOf("=") + 1);
+    }
+  }
+
   return config;
 }
 
