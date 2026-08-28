@@ -35,12 +35,37 @@ SquadLoop extensions will subscribe to Pi Agent's `before_agent_start` lifecycle
 - **Context Tools Enabled**: `search_confluence`, `query_vector_db`, `inspect_db_schema`
 ```
 
-### 1.4 Pillar 4: `squadloop ingest` CLI Command
-`squadloop` CLI will provide an ingestion subcommand:
-```bash
-# Sync Confluence space or Vector DB collection into local .pi/context/
-squadloop ingest confluence --space=PAYMENTS
-squadloop ingest vectordb --collection=payment-specs
+### 1.5 Pillar 5: Model Context Protocol (MCP) Server Registry (`.pi/mcp.json`)
+SquadLoop will provide a native MCP Client Extension (`.pi/extensions/mcp-registry.ts`):
+- Reads MCP server definitions from `.pi/mcp.json` or `.pi/team-config.json` `"mcpServers"`.
+- Connects to stdio and HTTP SSE MCP servers (Confluence MCP, Postgres MCP, Qdrant MCP, Snowflake MCP, GitHub MCP, Slack MCP, Jira MCP).
+- Dynamically discovers tools exported by MCP servers (`mcp.listTools()`) and registers them as native tools (`pi.registerTool()`) accessible to all 5 agent personas.
+
+```json
+// .pi/mcp.json
+{
+  "mcpServers": {
+    "confluence": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-confluence"],
+      "env": {
+        "CONFLUENCE_URL": "https://company.atlassian.net/wiki",
+        "CONFLUENCE_USERNAME": "$CONFLUENCE_USER",
+        "CONFLUENCE_API_TOKEN": "$CONFLUENCE_TOKEN"
+      }
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://db.internal:5432/payments"],
+      "env": {}
+    },
+    "qdrant": {
+      "command": "uvx",
+      "args": ["mcp-server-qdrant", "--url", "http://qdrant.internal:6333"],
+      "env": {}
+    }
+  }
+}
 ```
 
 ---
@@ -53,3 +78,4 @@ squadloop ingest vectordb --collection=payment-specs
 | **SL-CTX-02** | Dynamic RAG Prompt Hook | Subscribe to `before_agent_start` event to auto-query Vector DB and enrich agent turn context. |
 | **SL-CTX-03** | Context Configuration Pointers | Update `project-context.md` template and `.pi/team-config.json` schema to declare enterprise knowledge endpoints. |
 | **SL-CTX-04** | Knowledge Ingestion CLI | Implement `squadloop ingest` CLI subcommand for caching enterprise knowledge artifacts locally. |
+| **SL-CTX-05** | MCP Server Registry Extension | Implement `.pi/extensions/mcp-registry.ts` to spawn stdio/SSE MCP servers from `.pi/mcp.json` and register tools dynamically. |

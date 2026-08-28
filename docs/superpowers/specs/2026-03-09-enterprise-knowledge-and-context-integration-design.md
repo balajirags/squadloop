@@ -12,9 +12,10 @@ This design specification details the enterprise knowledge and context integrati
 
 SquadLoop will connect to external enterprise knowledge sources (Confluence, Vector DBs, Database DDL Schemas, Document Hubs) through:
 1. On-Demand Custom Tools (`search_confluence`, `query_vector_db`, `inspect_db_schema`, `search_enterprise_docs`).
-2. Dynamic RAG Prompt Enrichment Hook (`before_agent_start`).
-3. Enterprise Pointers in `project-context.md` and `.pi/team-config.json`.
-4. Local Ingestion CLI Command (`squadloop ingest`).
+2. Model Context Protocol (MCP) Server Registry (`.pi/mcp.json` & `.pi/extensions/mcp-registry.ts`).
+3. Dynamic RAG Prompt Enrichment Hook (`before_agent_start`).
+4. Enterprise Pointers in `project-context.md` and `.pi/team-config.json`.
+5. Local Ingestion CLI Command (`squadloop ingest`).
 
 ---
 
@@ -22,7 +23,10 @@ SquadLoop will connect to external enterprise knowledge sources (Confluence, Vec
 
 ```
 .pi/extensions/
-└── enterprise-context.ts      # Confluence, Vector DB, DB schema custom tools & RAG hook
+├── enterprise-context.ts      # Confluence, Vector DB, DB schema custom tools & RAG hook
+└── mcp-registry.ts            # MCP client extension auto-registering stdio/SSE MCP tools
+.pi/
+└── mcp.json                   # MCP server definitions (Confluence, Postgres, Qdrant, Slack, Jira)
 bin/
 └── squadloop.js                # squadloop ingest CLI subcommand handler
 ```
