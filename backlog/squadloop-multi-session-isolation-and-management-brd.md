@@ -12,12 +12,13 @@ SquadLoop will isolate terminal multiplexer sessions, active task states, event 
 
 ## 1. Multi-Session Isolation Architecture
 
-### 1.1 Named Sessions (`--name=<id>` / `--session=<id>`)
-- **CLI Flag**: `squadloop start [--name=<session-id>]` (or `--session=<session-id>`).
-- **Default Session Name**: `default` (multiplexer session `squadloop-default`).
+### 1.1 Auto-Generated Unique Sessions & Optional `--name` Flag
+- **Default Auto-Generation**: Running `squadloop start` without flags automatically generates a unique human-friendly session ID (e.g. `session-8b1a` or `session-2`) so multiple terminals running `squadloop start` in the same repo never collide!
+- **Optional `--name` Override**: Users can optionally specify an explicit label via `squadloop start --name=feature-auth` (or `--session=feature-auth`).
 - **Examples**:
-  - Terminal 1: `squadloop start --name=feature-auth`
-  - Terminal 2: `squadloop start --name=bugfix-npe`
+  - Terminal 1: `squadloop start` → Auto-generates `squadloop-session-8b1a`
+  - Terminal 2: `squadloop start` → Auto-generates `squadloop-session-3c4f`
+  - Terminal 3: `squadloop start --name=feature-auth` → Spawns `squadloop-feature-auth`
 
 ### 1.2 Driver Session Naming Isolation
 All terminal drivers (`TmuxDriver`, `HerdrDriver`, `ITerm2Driver`) will scope their session names to `squadloop-<session-id>`:

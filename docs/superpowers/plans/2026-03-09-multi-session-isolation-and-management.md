@@ -11,7 +11,7 @@
 **Spec:** `docs/superpowers/specs/2026-03-09-multi-session-isolation-and-management-design.md`
 
 ## Global Constraints
-- Default session name: `"default"` (`squadloop-default`)
+- Default session name: Auto-generated unique session ID (e.g. `session-8b1a`), or explicit `--name=<id>` when provided
 - Session state directory: `.pi/sessions/<session-id>/`
 - CLI subcommand: `squadloop list`, `squadloop attach [--name=<id>]`, `squadloop stop [--name=<id>]`
 

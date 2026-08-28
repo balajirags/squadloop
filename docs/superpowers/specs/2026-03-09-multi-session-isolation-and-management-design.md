@@ -11,7 +11,7 @@
 This design specification details the multi-session isolation framework for SquadLoop.
 
 SquadLoop will support multiple concurrent team sessions per repository through:
-1. Session Name CLI Flag (`squadloop start --name=<id>`).
+1. Auto-Generated Unique Session IDs (e.g. `squadloop-session-8b1a`) by default, with optional `--name=<label>` overrides.
 2. Per-Session State Isolation (`.pi/sessions/<id>/active-task.json` and `events.jsonl`).
 3. Driver Session Scope Isolation (`squadloop-<session-id>`).
 4. Session Management CLI (`squadloop list`, `squadloop attach`, `squadloop stop`).
@@ -40,6 +40,11 @@ import * as fs from "fs";
 import * as path from "path";
 
 export class SquadLoopSessionManager {
+  public static generateSessionId(): string {
+    const randomHex = Math.random().toString(36).substring(2, 6);
+    return `session-${randomHex}`;
+  }
+
   public static getSessionDir(sessionId = "default"): string {
     const dir = path.join(process.cwd(), ".pi", "sessions", sessionId);
     fs.mkdirSync(dir, { recursive: true });
