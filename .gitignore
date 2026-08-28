@@ -18,3 +18,4 @@ docs/dev-checkpoints/*.json
 # Temp build outputs
 build/
 .gradle/
+.priority.md
