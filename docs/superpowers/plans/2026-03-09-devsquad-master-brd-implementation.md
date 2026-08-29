@@ -37,7 +37,7 @@ Add `"bin": { "devsquad": "./bin/devsquad.js" }` to `package.json`.
 Create `bin/devsquad.js` supporting:
 - `devsquad start [--mode=...] [--layout=...]` -> Runs `pi "/devsquad-start"`.
 - `devsquad resume` -> Runs `pi "/devsquad-resume"`.
-- `devsquad init` -> Bootstraps `.pi/`, `Agent.md`, `project-context.md`, and template folders into current directory.
+- `devsquad init` -> Bootstraps `.pi/`, `AGENTS.md`, `project-context.md`, and template folders into current directory.
 - `devsquad attach` -> Executes `tmux attach -t devsquad-workspace`.
 - `devsquad status` -> Reads `.pi/active-task.json` and prints current state.
 - `devsquad config` -> Reads/updates `.pi/team-config.json`.
@@ -215,11 +215,11 @@ git commit -m "feat: add end-of-story verification summary card trigger"
 ### Task 6: Sync to `../testing-pi-team` and Build Verification
 
 **Files:**
-- Sync `.pi/`, `bin/`, `Agent.md`, `package.json` to `../testing-pi-team/`.
+- Sync `.pi/`, `bin/`, `AGENTS.md`, `package.json` to `../testing-pi-team/`.
 
 - [ ] **Step 1: Sync files to `../testing-pi-team`**
 
-Run: `cp -r .pi/ bin/ Agent.md package.json ../testing-pi-team/`
+Run: `cp -r .pi/ bin/ AGENTS.md package.json ../testing-pi-team/`
 
 - [ ] **Step 2: Build `pi-team` and `testing-pi-team`**
 

@@ -5,9 +5,9 @@ dist/
 *.log
 
 # DevSquad AI Local Session State & Logs
-.pi/active-task.json
-.pi/events.jsonl
-.pi/team-config.json
+.squadloop/active-task.json
+.squadloop/events.jsonl
+.squadloop/config.json
 docs/dev-checkpoints/*.json
 
 # OS & IDE Files

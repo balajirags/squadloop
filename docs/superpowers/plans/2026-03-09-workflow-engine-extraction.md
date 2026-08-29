@@ -108,11 +108,11 @@ git commit -m "refactor: delegate team_update_status transitions to WorkflowEngi
 ### Task 3: Sync to `../testing-pi-team` and Build Verification
 
 **Files:**
-- Sync `.pi/`, `Agent.md`, `package.json`, `README.md`, `RELEASE.md`, `backlog/` to `../testing-pi-team/`
+- Sync `.pi/`, `AGENTS.md`, `package.json`, `README.md`, `RELEASE.md`, `backlog/` to `../testing-pi-team/`
 
 - [ ] **Step 1: Copy updated files to `../testing-pi-team`**
 
-Run: `cp -r .pi/ Agent.md package.json README.md RELEASE.md backlog/ ../testing-pi-team/`
+Run: `cp -r .pi/ AGENTS.md package.json README.md RELEASE.md backlog/ ../testing-pi-team/`
 
 - [ ] **Step 2: Build `pi-team` and `testing-pi-team`**
 

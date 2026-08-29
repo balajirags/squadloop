@@ -32,7 +32,7 @@ target-repository/
 │           ├── active-task.json
 │           └── events.jsonl
 ├── project-context.md              # Target application build/test boundaries
-└── Agent.md                        # SquadLoop operational mandate
+└── AGENTS.md                       # Project-specific agent guide
 ```
 
 ### 1.2 Environment Variable Overrides

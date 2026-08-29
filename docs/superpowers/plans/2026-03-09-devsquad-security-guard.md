@@ -4,7 +4,7 @@
 
 **Goal:** Implement the DevSquad Security Guard extension to hard-block reading protected files (`.env`, `.bashrc`, `.zshrc`, SSH/AWS credentials, plus configurable `customProtectedFiles`) and enforce `destructiveCommandPolicy` (`"ask-human"` | `"block"` | `"allow"`) for `rm` and `git push --force` commands.
 
-**Architecture:** Create `.pi/extensions/security-guard.ts`, register in `.pi/extensions/index.ts`, update `.pi/team-config.json` schema, and update `Agent.md` and `README.md`.
+**Architecture:** Create `.pi/extensions/security-guard.ts`, register in `.pi/extensions/index.ts`, update `.pi/team-config.json` schema, and update `AGENTS.md` and `README.md`.
 
 **Tech Stack:** TypeScript, Node.js Regex, Pi Extension Tool Hooks.
 
@@ -65,7 +65,7 @@ git commit -m "feat: implement DevSquad Security Guard for protected files and d
 **Files:**
 - Modify: `.pi/extensions/team-orchestrator.ts`
 - Modify: `backlog/devsquad-master-brd.md`
-- Modify: `Agent.md`
+- Modify: `AGENTS.md`
 - Modify: `README.md`
 - Modify: `RELEASE.md`
 
@@ -86,7 +86,7 @@ export interface TeamConfig {
 }
 ```
 
-- [ ] **Step 2: Update `backlog/devsquad-master-brd.md`, `Agent.md`, `README.md`, and `RELEASE.md`**
+- [ ] **Step 2: Update `backlog/devsquad-master-brd.md`, `AGENTS.md`, `README.md`, and `RELEASE.md`**
 
 Document Security Guard, non-negotiable protected files, `customProtectedFiles`, and `destructiveCommandPolicy`.
 
@@ -98,7 +98,7 @@ Expected: 0 errors.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add .pi/extensions/team-orchestrator.ts backlog/devsquad-master-brd.md Agent.md README.md RELEASE.md
+git add .pi/extensions/team-orchestrator.ts backlog/devsquad-master-brd.md AGENTS.md README.md RELEASE.md
 git commit -m "docs: update Security Guard configuration schema and master documentation"
 ```
 
@@ -107,11 +107,11 @@ git commit -m "docs: update Security Guard configuration schema and master docum
 ### Task 3: Sync to `../testing-pi-team` and Build Verification
 
 **Files:**
-- Sync `.pi/`, `Agent.md`, `package.json`, `README.md`, `RELEASE.md`, `backlog/` to `../testing-pi-team/`
+- Sync `.pi/`, `AGENTS.md`, `package.json`, `README.md`, `RELEASE.md`, `backlog/` to `../testing-pi-team/`
 
 - [ ] **Step 1: Copy updated files to `../testing-pi-team`**
 
-Run: `cp -r .pi/ Agent.md package.json README.md RELEASE.md backlog/ ../testing-pi-team/`
+Run: `cp -r .pi/ AGENTS.md package.json README.md RELEASE.md backlog/ ../testing-pi-team/`
 
 - [ ] **Step 2: Build `pi-team` and `testing-pi-team`**
 

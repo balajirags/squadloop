@@ -1,0 +1,181 @@
+{
+  "$schema": "https://raw.githubusercontent.com/earendil-works/pi-coding-agent/main/docs/models.schema.json",
+  "_comment": "Copy or rename this file to .squadloop/models.json (project-level) or ~/.squadloop/agent/models.json (global) to configure custom LLM providers and local models.",
+  "providers": {
+    "anthropic": {
+      "baseUrl": "https://api.anthropic.com/v1",
+      "api": "anthropic-messages",
+      "apiKey": "$ANTHROPIC_API_KEY",
+      "models": [
+        {
+          "id": "claude-3-7-sonnet-20250219",
+          "name": "Claude 3.7 Sonnet",
+          "contextWindow": 200000
+        },
+        {
+          "id": "claude-3-5-haiku-20241022",
+          "name": "Claude 3.5 Haiku",
+          "contextWindow": 200000
+        },
+        {
+          "id": "claude-3-opus-20240229",
+          "name": "Claude 3 Opus",
+          "contextWindow": 200000
+        }
+      ]
+    },
+    "openai": {
+      "baseUrl": "https://api.openai.com/v1",
+      "api": "openai-completions",
+      "apiKey": "$OPENAI_API_KEY",
+      "models": [
+        {
+          "id": "gpt-4o",
+          "name": "GPT-4o",
+          "contextWindow": 128000
+        },
+        {
+          "id": "gpt-4o-mini",
+          "name": "GPT-4o Mini",
+          "contextWindow": 128000
+        },
+        {
+          "id": "o1",
+          "name": "OpenAI o1",
+          "contextWindow": 200000
+        },
+        {
+          "id": "o3-mini",
+          "name": "OpenAI o3-mini",
+          "contextWindow": 200000
+        }
+      ]
+    },
+    "google": {
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "api": "google-generative-ai",
+      "apiKey": "$GEMINI_API_KEY",
+      "models": [
+        {
+          "id": "gemini-2.5-pro",
+          "name": "Gemini 2.5 Pro",
+          "contextWindow": 1000000
+        },
+        {
+          "id": "gemini-2.5-flash",
+          "name": "Gemini 2.5 Flash",
+          "contextWindow": 1000000
+        }
+      ]
+    },
+    "openrouter": {
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "api": "openai-completions",
+      "apiKey": "$OPENROUTER_API_KEY",
+      "models": [
+        {
+          "id": "anthropic/claude-3.7-sonnet",
+          "name": "Claude 3.7 Sonnet (OpenRouter)",
+          "contextWindow": 200000
+        },
+        {
+          "id": "deepseek/deepseek-r1",
+          "name": "DeepSeek R1 (OpenRouter)",
+          "contextWindow": 64000
+        },
+        {
+          "id": "meta-llama/llama-3.3-70b-instruct",
+          "name": "Llama 3.3 70B Instruct (OpenRouter)",
+          "contextWindow": 128000
+        }
+      ]
+    },
+    "ollama": {
+      "baseUrl": "http://localhost:11434/v1",
+      "api": "openai-completions",
+      "apiKey": "ollama",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "gemma4",
+          "name": "Gemma 4 (Local)",
+          "contextWindow": 128000
+        },
+        {
+          "id": "gemma4:26b",
+          "name": "Gemma 4 26B (Local)",
+          "contextWindow": 128000
+        },
+        {
+          "id": "qwen2.5-coder:32b",
+          "name": "Qwen 2.5 Coder 32B (Local)",
+          "contextWindow": 32768
+        },
+        {
+          "id": "llama3.3:70b",
+          "name": "Llama 3.3 70B (Local)",
+          "contextWindow": 32768
+        },
+        {
+          "id": "llama3.2",
+          "name": "Llama 3.2 (Local)",
+          "contextWindow": 128000
+        },
+        {
+          "id": "deepseek-r1:14b",
+          "name": "DeepSeek R1 14B (Local)",
+          "contextWindow": 16384
+        }
+      ]
+    },
+    "nvidia": {
+      "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "api": "openai-completions",
+      "apiKey": "$NVIDIA_API_KEY",
+      "models": [
+        {
+          "id": "nvidia/nemotron-3-ultra-550b-a55b",
+          "name": "NVIDIA Nemotron 3 Ultra 550B",
+          "contextWindow": 128000
+        },
+        {
+          "id": "nvidia/nemotron-4-340b-instruct",
+          "name": "NVIDIA Nemotron 4 340B Instruct",
+          "contextWindow": 128000
+        },
+        {
+          "id": "meta/llama-3.3-70b-instruct",
+          "name": "Llama 3.3 70B Instruct (NVIDIA NIM)",
+          "contextWindow": 128000
+        }
+      ]
+    },
+    "lmstudio": {
+      "baseUrl": "http://localhost:1234/v1",
+      "api": "openai-completions",
+      "apiKey": "lm-studio",
+      "models": [
+        {
+          "id": "qwen2.5-coder-32b-instruct",
+          "name": "LM Studio Local Model",
+          "contextWindow": 32768
+        }
+      ]
+    },
+    "vllm": {
+      "baseUrl": "http://localhost:8000/v1",
+      "api": "openai-completions",
+      "apiKey": "none",
+      "models": [
+        {
+          "id": "Qwen/Qwen2.5-Coder-32B-Instruct",
+          "name": "vLLM Qwen Coder",
+          "contextWindow": 32768
+        }
+      ]
+    }
+  }
+}

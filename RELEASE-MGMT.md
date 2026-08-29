@@ -41,10 +41,10 @@ npm pack
 
 ### What Is Included in `squadloop-1.0.0.tgz`?
 - `bin/squadloop.js` — Executable CLI binary with ASCII art logo.
-- `.pi/agents/` — All 5 agent personas (`orchestrator`, `ba`, `developer`, `qa`, `reviewer`).
-- `.pi/extensions/` — `WorkflowEngine`, `SecurityGuard`, `TrackerFactory`, `WorkspaceFactory`, `team-tools`.
-- `.pi/skills/` & `.pi/templates/` — All domain skills and document templates.
-- `Agent.md` — Operational mandate and workspace rules.
+- `.squadloop/agents/` — All 5 agent personas (`orchestrator`, `ba`, `developer`, `qa`, `reviewer`).
+- `.squadloop/extensions/` — `WorkflowEngine`, `SecurityGuard`, `TrackerFactory`, `WorkspaceFactory`, `team-tools`.
+- `.squadloop/skills/` & `.squadloop/templates/` — All domain skills and document templates.
+- `AGENTS.md` — Project-specific agent guidance copied by `squadloop init`.
 - `package.json` — Package configuration and CLI binary declaration.
 
 ---
@@ -94,8 +94,8 @@ squadloop start
 If they want SquadLoop fully self-contained inside a single project folder without installing globally:
 
 Copy 3 items into their project root:
-1. `.pi/` directory
-2. `Agent.md` file
+1. `.squadloop/` directory
+2. `AGENTS.md` file
 3. `bin/` directory
 
 Then inside their project folder, run:
@@ -164,7 +164,7 @@ gh release create v1.0.0 --title "SquadLoop v1.0.0" --notes "Initial release of 
 | :--- | :--- | :--- |
 | **NPM Registry (Public / Private)** | External teams, company-wide adoption | `npm install -g squadloop` → `squadloop init` |
 | **`npx` On-Demand** | Zero-install trial runs, CI/CD pipelines | `npx squadloop init` → `npx squadloop start` |
-| **Monorepo / Local Share** | Shared internal repository copy | `cp -r /path/to/squadloop/.pi .` → `squadloop start` |
+| **Monorepo / Local Share** | Shared internal repository copy | `cp -r /path/to/squadloop/.squadloop .` → `squadloop start` |
 | **Tarball Share (`.tgz`)** | Direct peer sharing without registry | `npm install -g squadloop-1.0.0.tgz` |
 
 ---

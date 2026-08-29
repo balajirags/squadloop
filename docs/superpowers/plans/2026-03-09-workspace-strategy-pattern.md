@@ -116,7 +116,7 @@ git commit -m "refactor: integrate WorkspaceFactory across team-orchestrator.ts 
 ### Task 3: Update Documentation & Sync to `../testing-pi-team`
 
 **Files:**
-- Modify: `Agent.md`
+- Modify: `AGENTS.md`
 - Modify: `README.md`
 - Modify: `RELEASE.md`
 - Modify: `backlog/devsquad-master-brd.md`
@@ -126,7 +126,7 @@ git commit -m "refactor: integrate WorkspaceFactory across team-orchestrator.ts 
 
 - [ ] **Step 2: Sync updated files to `../testing-pi-team`**
 
-Run: `cp -r .pi/ Agent.md package.json README.md RELEASE.md backlog/ ../testing-pi-team/`
+Run: `cp -r .pi/ AGENTS.md package.json README.md RELEASE.md backlog/ ../testing-pi-team/`
 
 - [ ] **Step 3: Build `pi-team` and `testing-pi-team`**
 

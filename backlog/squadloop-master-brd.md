@@ -12,7 +12,7 @@ This document consolidates all product requirements for **SquadLoop — Your aut
 - **Commands**:
   - `squadloop start`: Starts fresh session, resets active-task log (`activeIssueId=""`, `status="awaiting-human-input"`), launches layout (`panes` or `windows`).
   - `squadloop resume`: Recovers active session from `.pi/active-task.json` log.
-  - `squadloop init`: Bootstraps `.pi/` extensions, `Agent.md`, `project-context.md`, and BRD/story template directories into any target repository.
+  - `squadloop init`: Bootstraps `.squadloop/` extensions, `AGENTS.md`, `project-context.md`, and BRD/story template directories into any target repository.
   - `squadloop attach`: Attaches directly to the `squadloop-workspace` tmux session.
   - `squadloop status`: Displays current active task state from terminal.
   - `squadloop config`: Displays or updates `.pi/team-config.json` (`mode` and `layout`).

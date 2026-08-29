@@ -4,7 +4,7 @@
 
 **Goal:** Implement `.pi/team-config.json` mode/layout configuration, `/team-start` (fresh active-log reset) & `/team-resume` (active-log recovery) commands, and dual layout support (`"panes"` vs `"windows"` inside the same tmux session).
 
-**Architecture:** Extend `TmuxManager` (`.pi/extensions/tmux-manager.ts`) with `setupLayout(layout)`, update `/team-start` and `/team-resume` in `team-orchestrator.ts`, update `backlog-tool.ts` for active-log recovery, and document in `Agent.md`.
+**Architecture:** Extend `TmuxManager` (`.pi/extensions/tmux-manager.ts`) with `setupLayout(layout)`, update `/team-start` and `/team-resume` in `team-orchestrator.ts`, update `backlog-tool.ts` for active-log recovery, and document in `AGENTS.md`.
 
 **Tech Stack:** TypeScript, Markdown, Pi Coding Agent Extension API, tmux CLI.
 
@@ -105,25 +105,25 @@ git commit -m "feat: implement /team-start and /team-resume commands with team-c
 
 ---
 
-### Task 3: Update `Agent.md` and Agent Personas
+### Task 3: Update `AGENTS.md` and Agent Personas
 
 **Files:**
-- Modify: `Agent.md`
+- Modify: `AGENTS.md`
 - Modify: `.pi/agents/orchestrator.md`
 
 **Interfaces:**
 - Consumes: Config and command design specs.
 - Produces: Updated team documentation for `.pi/team-config.json`, `/team-start`, `/team-resume`, and layout choices.
 
-- [ ] **Step 1: Document `team-config.json`, `/team-start`, `/team-resume`, and layouts in `Agent.md`**
+- [ ] **Step 1: Document `team-config.json`, `/team-start`, `/team-resume`, and layouts in `AGENTS.md`**
 
 - [ ] **Step 2: Update `.pi/agents/orchestrator.md` for session resume handling**
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add Agent.md .pi/agents/orchestrator.md
-git commit -m "docs: update Agent.md and orchestrator persona for team-config.json, team-start/resume, and layout choices"
+git add AGENTS.md .pi/agents/orchestrator.md
+git commit -m "docs: update AGENTS.md and orchestrator persona for team-config.json, team-start/resume, and layout choices"
 ```
 
 ---
@@ -131,11 +131,11 @@ git commit -m "docs: update Agent.md and orchestrator persona for team-config.js
 ### Task 4: Sync Files to `../testing-pi-team` and Build Verification
 
 **Files:**
-- Sync: `.pi/`, `Agent.md` to `../testing-pi-team`
+- Sync: `.pi/`, `AGENTS.md` to `../testing-pi-team`
 
 - [ ] **Step 1: Copy files to `../testing-pi-team`**
 
-Run: `cp -r .pi/ ../testing-pi-team/.pi/ && cp Agent.md ../testing-pi-team/Agent.md`
+Run: `cp -r .pi/ ../testing-pi-team/.pi/ && cp AGENTS.md ../testing-pi-team/AGENTS.md`
 
 - [ ] **Step 2: Build `pi-team` and `testing-pi-team`**
 

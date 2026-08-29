@@ -75,9 +75,9 @@ Child agents execute their tasks and call `team_update_status`:
 
 ---
 
-## 4. Persistent Project Context (`Agent.md`)
+## 4. Persistent Project Context (`AGENTS.md`)
 
-A root `Agent.md` file is established at the project root to ensure every agent session loaded in this workspace receives full context on:
+A root `AGENTS.md` file is established at the project root to ensure every agent session loaded in this workspace receives full context on:
 1. **Team Architecture**: 5-pane tmux session structure and agent persona roles.
 2. **Control Model**: Orchestrator Pane 0 entry point, intent menu, task allocation rules.
 3. **Workflow Modes**: Definitions and behaviors for `--team-mode=loop-hitl`, `--team-mode=auto`, and `--team-mode=step-hitl`.
@@ -91,4 +91,4 @@ A root `Agent.md` file is established at the project root to ensure every agent 
 3. **BRD Grooming Flow**: Send a BRD command in Pane 0, verify Orchestrator delegates to BA in Pane 1.
 4. **Story Implementation Flow**: Send a specific story command, verify Orchestrator delegates to Dev in Pane 2.
 5. **Random Implementation Flow**: Send "random task" command, verify Orchestrator selects an uncompleted task or feature recommendation and delegates appropriately.
-6. **Context Alignment**: Verify `Agent.md` is present at the project root and readable by all agent sessions.
+6. **Context Alignment**: Verify `AGENTS.md` is present at the project root and readable by all agent sessions.

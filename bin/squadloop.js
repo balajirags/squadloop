@@ -1,16 +1,20 @@
 #!/usr/bin/env node
 
-import { execSync, spawnSync } from "child_process";
+import { spawnSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { ExecutionStrategyFactory } from "../dist/.pi/extensions/strategies/execution-factory.js";
-import { DriverFactory } from "../dist/.pi/extensions/drivers/driver-factory.js";
-import { PromptSyncEngine } from "../dist/.pi/extensions/models/prompt-sync.js";
+import { ExecutionStrategyFactory } from "../dist/.squadloop/extensions/strategies/execution-factory.js";
+import { DriverFactory } from "../dist/.squadloop/extensions/drivers/driver-factory.js";
+import { PromptSyncEngine } from "../dist/.squadloop/extensions/models/prompt-sync.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const packageRoot = path.resolve(__dirname, "..");
+const CONFIG_DIR_NAME = ".squadloop";
+const GLOBAL_AGENT_DIR = path.join(process.env.HOME || "", CONFIG_DIR_NAME, "agent");
+const PROTECTED_RUNTIME_FILES = new Set(["config.json", "models.json", "active-task.json", "events.jsonl"]);
+const SETTINGS_KEYS = ["extensions", "skills", "prompts", "packages"];
 
 const args = process.argv.slice(2);
 const command = args[0]?.toLowerCase() || "help";
@@ -27,8 +31,94 @@ function printLogo() {
   `);
 }
 
+function projectPath(...segments) {
+  return path.join(process.cwd(), CONFIG_DIR_NAME, ...segments);
+}
+
+function packagePath(...segments) {
+  return path.join(packageRoot, CONFIG_DIR_NAME, ...segments);
+}
+
+function ensureProjectDir() {
+  fs.mkdirSync(projectPath(), { recursive: true });
+}
+
+function copyEntry(sourcePath, targetPath, { overwrite = false, skip = PROTECTED_RUNTIME_FILES } = {}) {
+  const stat = fs.statSync(sourcePath);
+
+  if (stat.isDirectory()) {
+    fs.mkdirSync(targetPath, { recursive: true });
+    for (const entry of fs.readdirSync(sourcePath, { withFileTypes: true })) {
+      if (skip.has(entry.name)) continue;
+      copyEntry(path.join(sourcePath, entry.name), path.join(targetPath, entry.name), { overwrite, skip });
+    }
+    return;
+  }
+
+  if (!overwrite && fs.existsSync(targetPath)) return;
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.copyFileSync(sourcePath, targetPath);
+}
+
+function syncRuntimeAssets({ overwrite = false } = {}) {
+  const sourceRoot = path.join(packageRoot, CONFIG_DIR_NAME);
+  const targetRoot = path.join(process.cwd(), CONFIG_DIR_NAME);
+
+  if (!fs.existsSync(sourceRoot)) return;
+
+  fs.mkdirSync(targetRoot, { recursive: true });
+  for (const entry of fs.readdirSync(sourceRoot, { withFileTypes: true })) {
+    if (PROTECTED_RUNTIME_FILES.has(entry.name)) continue;
+    copyEntry(path.join(sourceRoot, entry.name), path.join(targetRoot, entry.name), { overwrite });
+  }
+}
+
+function mergeSettingsArrays(templateValue, existingValue) {
+  const merged = new Set();
+  for (const value of [...(Array.isArray(templateValue) ? templateValue : []), ...(Array.isArray(existingValue) ? existingValue : [])]) {
+    if (typeof value === "string" && value.trim()) merged.add(value.trim());
+  }
+  return [...merged];
+}
+
+function syncProjectSettingsJson() {
+  const templatePath = packagePath("settings.json");
+  const targetPath = projectPath("settings.json");
+
+  if (!fs.existsSync(templatePath)) return;
+
+  let template = {};
+  try {
+    template = JSON.parse(fs.readFileSync(templatePath, "utf-8"));
+  } catch {
+    template = {};
+  }
+
+  if (!fs.existsSync(targetPath)) {
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.writeFileSync(targetPath, JSON.stringify(template, null, 2), "utf-8");
+    return;
+  }
+
+  let existing = {};
+  try {
+    existing = JSON.parse(fs.readFileSync(targetPath, "utf-8"));
+  } catch {
+    existing = {};
+  }
+
+  const merged = { ...template, ...existing };
+  for (const key of SETTINGS_KEYS) {
+    merged[key] = mergeSettingsArrays(template[key], existing[key]);
+  }
+
+  fs.writeFileSync(targetPath, JSON.stringify(merged, null, 2), "utf-8");
+}
+
 function parseCliContext() {
-  const configPath = path.join(process.cwd(), ".pi", "team-config.json");
+  ensureProjectDir();
+
+  const configPath = projectPath("config.json");
   let config = { exMode: "team", driver: "tmux", hitl: "loop", layout: "panes" };
 
   if (fs.existsSync(configPath)) {
@@ -71,7 +161,6 @@ function parseCliContext() {
     config.hitl = val;
   }
 
-  // Parse per-role model CLI parameters (e.g. developer=ollama/gemma4:26b or --ba=google/gemini-2.5-flash)
   const roles = ["orchestrator", "ba", "developer", "qa", "reviewer"];
   for (const role of roles) {
     const roleArg = args.find(a => a.startsWith(`--${role}=`) || a.startsWith(`${role}=`));
@@ -87,17 +176,15 @@ function parseCliContext() {
 }
 
 function saveConfig(config) {
-  const configPath = path.join(process.cwd(), ".pi", "team-config.json");
+  const configPath = projectPath("config.json");
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
 }
 
 function syncProjectModelsJson() {
-  const cwd = process.cwd();
-  const modelsExamplePath = path.join(cwd, ".pi", "models.example.json");
-  const modelsJsonPath = path.join(cwd, ".pi", "models.json");
+  const modelsExamplePath = projectPath("models.example.json");
+  const modelsJsonPath = projectPath("models.json");
 
-  // 1. Auto-create project .pi/models.json from template if missing
   if (!fs.existsSync(modelsJsonPath) && fs.existsSync(modelsExamplePath)) {
     try {
       fs.copyFileSync(modelsExamplePath, modelsJsonPath);
@@ -106,22 +193,63 @@ function syncProjectModelsJson() {
     }
   }
 
-  // 2. Sync project .pi/models.json to global ~/.pi/agent/models.json
   if (fs.existsSync(modelsJsonPath)) {
     try {
-      const globalPiDir = process.env.PI_CODING_AGENT_DIR || path.join(process.env.HOME || "", ".pi", "agent");
-      fs.mkdirSync(globalPiDir, { recursive: true });
-      const globalModelsPath = path.join(globalPiDir, "models.json");
-      fs.copyFileSync(modelsJsonPath, globalModelsPath);
+      fs.mkdirSync(GLOBAL_AGENT_DIR, { recursive: true });
+      fs.copyFileSync(modelsJsonPath, path.join(GLOBAL_AGENT_DIR, "models.json"));
     } catch {
       // Non-fatal
     }
   }
 }
 
+function readPackageMetadata() {
+  const packageJsonPath = path.join(packageRoot, "package.json");
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+  return {
+    cliVersion: packageJson.version || "unknown",
+    engineVersion: packageJson.dependencies?.["@earendil-works/pi-coding-agent"] || "unknown"
+  };
+}
+
+function getLatestNpmVersion(pkgName) {
+  const result = spawnSync("npm", ["view", pkgName, "version", "--json"], { encoding: "utf-8" });
+  if (result.status !== 0 || !result.stdout) return null;
+
+  try {
+    const parsed = JSON.parse(result.stdout.trim());
+    return Array.isArray(parsed) ? parsed.at(-1) ?? null : parsed;
+  } catch {
+    return result.stdout.trim() || null;
+  }
+}
+
+function runPiProjectCommand(piArgs) {
+  return spawnSync("pi", piArgs, {
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      CONFIG_DIR_NAME: ".squadloop",
+      PI_CODING_AGENT_DIR: GLOBAL_AGENT_DIR
+    }
+  });
+}
+
+function readProjectSettings() {
+  const settingsPath = projectPath("settings.json");
+  if (!fs.existsSync(settingsPath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(settingsPath, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
 async function handleStart() {
   const ctx = parseCliContext();
   printLogo();
+  syncRuntimeAssets({ overwrite: false });
+  syncProjectSettingsJson();
   syncProjectModelsJson();
   PromptSyncEngine.syncAllPrompts();
   const strategy = ExecutionStrategyFactory.getStrategy(ctx.exMode);
@@ -131,6 +259,8 @@ async function handleStart() {
 async function handleResume() {
   const ctx = parseCliContext();
   printLogo();
+  syncRuntimeAssets({ overwrite: false });
+  syncProjectSettingsJson();
   syncProjectModelsJson();
   PromptSyncEngine.syncAllPrompts();
   const strategy = ExecutionStrategyFactory.getStrategy(ctx.exMode);
@@ -147,40 +277,31 @@ function handleInit() {
   printLogo();
   console.log("📦 Bootstrapping SquadLoop configuration, extensions, and templates into current directory...\n");
 
+  ensureProjectDir();
+  syncRuntimeAssets({ overwrite: false });
+  syncProjectSettingsJson();
+
   const cwd = process.cwd();
-
-  // 1. Copy .pi directory (extensions, agent definitions, templates, skills) from package root
-  const sourcePi = path.join(packageRoot, ".pi");
-  const targetPi = path.join(cwd, ".pi");
-  if (fs.existsSync(sourcePi)) {
-    fs.cpSync(sourcePi, targetPi, { recursive: true });
-    console.log("  ✅ Created .pi/ configuration, extensions, agent personas, and templates.");
-  }
-
-  // 2. Copy Agent.md operational mandate
-  const sourceAgent = path.join(packageRoot, "Agent.md");
-  const targetAgent = path.join(cwd, "Agent.md");
+  const sourceAgent = path.join(packageRoot, CONFIG_DIR_NAME, "templates", "Agent.md");
+  const targetAgent = path.join(cwd, "AGENTS.md");
   if (fs.existsSync(sourceAgent) && !fs.existsSync(targetAgent)) {
     fs.copyFileSync(sourceAgent, targetAgent);
-    console.log("  ✅ Created Agent.md operational mandate.");
+    console.log("  ✅ Created AGENTS.md operational mandate.");
   }
 
-  // 3. Copy project-context.md template if not present
   const targetContext = path.join(cwd, "project-context.md");
   if (!fs.existsSync(targetContext)) {
-    const sourceTemplate = path.join(packageRoot, ".pi", "templates", "project-context.template.md");
+    const sourceTemplate = packagePath("templates", "project-context.template.md");
     if (fs.existsSync(sourceTemplate)) {
       fs.copyFileSync(sourceTemplate, targetContext);
       console.log("  ✅ Created project-context.md template.");
     }
   }
 
-  // 4. Create docs/brd/ and docs/stories/ template directories
   fs.mkdirSync(path.join(cwd, "docs", "brd"), { recursive: true });
   fs.mkdirSync(path.join(cwd, "docs", "stories"), { recursive: true });
   console.log("  ✅ Created docs/brd/ and docs/stories/ directories.");
 
-  // 5. Ensure .pi/team-config.json exists with defaults & model hints
   const defaultConfig = {
     exMode: "team",
     driver: "tmux",
@@ -204,19 +325,17 @@ function handleInit() {
     }
   };
 
-  const configPath = path.join(cwd, ".pi", "team-config.json");
+  const configPath = projectPath("config.json");
   if (!fs.existsSync(configPath)) {
     saveConfig(defaultConfig);
-    console.log("  ✅ Created .pi/team-config.json with model hints.");
+    console.log("  ✅ Created .squadloop/config.json with model hints.");
   }
 
-  // 6. Auto-copy models.example.json to models.json if missing & sync globally
   syncProjectModelsJson();
-  console.log("  ✅ Auto-created and synced .pi/models.json from template.");
+  console.log("  ✅ Auto-created and synced .squadloop/models.json from template.");
 
-  // 7. Sync prompt templates
   PromptSyncEngine.syncAllPrompts();
-  console.log("  ✅ Synced .pi/prompts/ persona templates.");
+  console.log("  ✅ Synced .squadloop/prompts/ persona templates.");
 
   console.log("\n🎉 SquadLoop initialization complete! Run 'squadloop start' to launch your team.");
 }
@@ -224,10 +343,125 @@ function handleInit() {
 function handleConfig() {
   const ctx = parseCliContext();
   saveConfig(ctx);
+  syncRuntimeAssets({ overwrite: false });
+  syncProjectSettingsJson();
   syncProjectModelsJson();
   PromptSyncEngine.syncAllPrompts();
-  console.log("⚙️  Updated .pi/team-config.json defaults:");
+  console.log("⚙️  Updated .squadloop/config.json defaults:");
   console.log(JSON.stringify(ctx, null, 2));
+}
+
+function handleUpdate() {
+  printLogo();
+  console.log("🔄 Updating SquadLoop global binaries and refreshing local .squadloop/ runtime assets...\n");
+
+  ensureProjectDir();
+  const install = spawnSync("npm", ["install", "-g", "squadloop", "@earendil-works/pi-coding-agent"], {
+    stdio: "inherit"
+  });
+
+  if (install.status !== 0) {
+    console.log("⚠️  Global package refresh failed or was skipped; continuing with local runtime sync.");
+  }
+
+  syncRuntimeAssets({ overwrite: true });
+  syncProjectSettingsJson();
+  syncProjectModelsJson();
+  PromptSyncEngine.syncAllPrompts();
+
+  console.log("✅ SquadLoop update complete. Runtime assets refreshed under .squadloop/.");
+}
+
+function handleDoctor() {
+  const { cliVersion, engineVersion } = readPackageMetadata();
+  const latestCliVersion = getLatestNpmVersion("squadloop");
+  const latestEngineVersion = getLatestNpmVersion("@earendil-works/pi-coding-agent");
+  const configPath = projectPath("config.json");
+  const modelsPath = projectPath("models.json");
+  const projectDirExists = fs.existsSync(path.join(process.cwd(), CONFIG_DIR_NAME));
+  const extensionsSynced = fs.existsSync(projectPath("extensions"));
+  const promptsSynced = fs.existsSync(projectPath("prompts"));
+  const skillsSynced = fs.existsSync(projectPath("skills"));
+  console.log("🚀 SquadLoop Diagnostic Report:");
+  console.log(`  • SquadLoop CLI    : v${cliVersion}${latestCliVersion && latestCliVersion !== cliVersion ? ` (latest v${latestCliVersion})` : " (Up to date)"}`);
+  console.log(`  • Pi Agent Engine  : v${engineVersion}${latestEngineVersion && latestEngineVersion !== engineVersion ? ` (latest v${latestEngineVersion})` : " (Up to date)"}`);
+  console.log(`  • Config Directory : .squadloop/ ${projectDirExists ? "(Verified)" : "(Missing)"}`);
+  console.log(`  • Config File      : ${fs.existsSync(configPath) ? "config.json present" : "config.json missing"}`);
+  console.log(`  • Models File      : ${fs.existsSync(modelsPath) ? "models.json present" : "models.json missing"}`);
+  console.log(`  • Extensions       : ${extensionsSynced && promptsSynced && skillsSynced ? "Synchronized" : "Needs sync"}`);
+  console.log(`  • Bundled Packages  : ${fs.existsSync(projectPath("settings.json")) ? "Declared in settings.json" : "Missing"}`);
+}
+
+function handleStatus() {
+  const activeTaskPath = projectPath("active-task.json");
+  const modelsPath = projectPath("models.json");
+  const configPath = projectPath("config.json");
+
+  console.log("📊 SquadLoop Status:");
+  console.log(`  • Config Directory : ${fs.existsSync(projectPath()) ? "Verified" : "Missing"}`);
+  console.log(`  • Config File      : ${fs.existsSync(configPath) ? "config.json present" : "config.json missing"}`);
+  console.log(`  • Models File      : ${fs.existsSync(modelsPath) ? "models.json present" : "models.json missing"}`);
+
+  if (fs.existsSync(activeTaskPath)) {
+    try {
+      const activeTask = JSON.parse(fs.readFileSync(activeTaskPath, "utf-8"));
+      console.log(`  • Active Issue     : ${activeTask.activeIssueId || "none"}`);
+      console.log(`  • Status           : ${activeTask.status || "unknown"}`);
+      console.log(`  • Notes            : ${activeTask.notes || "n/a"}`);
+    } catch {
+      console.log("  • Active Task      : unreadable");
+    }
+  } else {
+    console.log("  • Active Task      : none");
+  }
+}
+
+function handlePackages() {
+  const subcommand = (args[0] || "list").toLowerCase();
+  const target = args[1];
+
+  ensureProjectDir();
+
+  if (subcommand === "install") {
+    if (!target) {
+      console.log("Usage: squadloop install <npm:package|git:url|./path>");
+      return;
+    }
+
+    const result = runPiProjectCommand(["install", target, "-l"]);
+    if (result.status === 0) {
+      syncProjectSettingsJson();
+      console.log(`✅ Installed package into .squadloop/settings.json: ${target}`);
+    }
+    return;
+  }
+
+  if (subcommand === "remove" || subcommand === "rm") {
+    if (!target) {
+      console.log("Usage: squadloop remove <npm:package|git:url|./path>");
+      return;
+    }
+
+    const result = runPiProjectCommand(["remove", target, "-l"]);
+    if (result.status === 0) {
+      syncProjectSettingsJson();
+      console.log(`✅ Removed package from .squadloop/settings.json: ${target}`);
+    }
+    return;
+  }
+
+  const settings = readProjectSettings();
+  const packages = Array.isArray(settings?.packages) ? settings.packages : [];
+  console.log("📦 SquadLoop Packages:");
+  if (packages.length === 0) {
+    console.log("  • No local packages installed.");
+    console.log("  • Use: squadloop install npm:pi-web-access");
+    return;
+  }
+
+  for (const pkg of packages) {
+    console.log(`  • ${pkg}`);
+  }
 }
 
 switch (command) {
@@ -246,7 +480,22 @@ switch (command) {
   case "config":
     handleConfig();
     break;
+  case "update":
+    handleUpdate();
+    break;
+  case "doctor":
+    handleDoctor();
+    break;
+  case "status":
+    handleStatus();
+    break;
+  case "install":
+  case "remove":
+  case "rm":
+  case "list":
+    handlePackages();
+    break;
   default:
-    console.log("SquadLoop CLI — Run squadloop start [--ex-mode=team|standalone] [--driver=tmux|herdr|iterm2|regular]");
+    console.log("SquadLoop CLI — Run squadloop start|resume|status|config|attach|init|update|doctor|install|remove|list [--ex-mode=team|standalone] [--driver=tmux|herdr|iterm2|regular]");
     break;
 }

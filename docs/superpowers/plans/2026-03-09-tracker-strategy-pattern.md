@@ -108,22 +108,22 @@ git commit -m "refactor: integrate TrackerFactory in backlog-tool.ts for extensi
 
 ---
 
-### Task 3: Update `Agent.md` and Master BRD Documentation
+### Task 3: Update `AGENTS.md` and Master BRD Documentation
 
 **Files:**
-- Modify: `Agent.md`
+- Modify: `AGENTS.md`
 - Modify: `backlog/devsquad-master-brd.md`
 - Modify: `README.md`
 - Modify: `RELEASE.md`
 
-- [ ] **Step 1: Document Tracker Strategy Pattern in `Agent.md` and `README.md`**
+- [ ] **Step 1: Document Tracker Strategy Pattern in `AGENTS.md` and `README.md`**
 
 Explain `ITrackerAdapter`, how `TrackerFactory` selects adapters from `project-context.md`, and how developers can add new tracker adapters in the future.
 
 - [ ] **Step 2: Commit**
 
 ```bash
-git add Agent.md backlog/devsquad-master-brd.md README.md RELEASE.md
+git add AGENTS.md backlog/devsquad-master-brd.md README.md RELEASE.md
 git commit -m "docs: document ITrackerAdapter Strategy Pattern and tracker extensibility guide"
 ```
 
@@ -132,11 +132,11 @@ git commit -m "docs: document ITrackerAdapter Strategy Pattern and tracker exten
 ### Task 4: Sync to `../testing-pi-team` and Build Verification
 
 **Files:**
-- Sync `.pi/`, `Agent.md`, `package.json`, `README.md`, `RELEASE.md`, `backlog/` to `../testing-pi-team/`
+- Sync `.pi/`, `AGENTS.md`, `package.json`, `README.md`, `RELEASE.md`, `backlog/` to `../testing-pi-team/`
 
 - [ ] **Step 1: Copy updated files to `../testing-pi-team`**
 
-Run: `cp -r .pi/ Agent.md package.json README.md RELEASE.md backlog/ ../testing-pi-team/`
+Run: `cp -r .pi/ AGENTS.md package.json README.md RELEASE.md backlog/ ../testing-pi-team/`
 
 - [ ] **Step 2: Build `pi-team` and `testing-pi-team`**
 

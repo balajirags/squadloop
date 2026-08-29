@@ -1,0 +1,15 @@
+{
+  "extensions": [
+    "./.squadloop/extensions/index.js"
+  ],
+  "skills": [
+    "./.squadloop/skills"
+  ],
+  "prompts": [
+    "./.squadloop/prompts"
+  ],
+  "packages": [
+    "npm:pi-subagents@0.56.0",
+    "npm:pi-web-access@0.25.0"
+  ]
+}

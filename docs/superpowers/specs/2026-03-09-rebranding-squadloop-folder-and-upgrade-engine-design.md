@@ -29,7 +29,7 @@ target-repository/
 │   ├── extensions/                 # squadloop drivers, strategies, tools
 │   └── sessions/                   # isolated session state
 ├── project-context.md              # build/test boundaries
-└── Agent.md                        # squadloop operational mandate
+└── AGENTS.md                        # squadloop operational mandate
 ```
 
 ---

@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Establish Master Orchestrator (Pane 0) as the primary control center on `pi-team` startup, supporting human requests for BRD implementation, specific story picking, random implementation, or custom bug fixes, delegating to child agents via `send_agent_message`, and creating a root `Agent.md` context file.
+**Goal:** Establish Master Orchestrator (Pane 0) as the primary control center on `pi-team` startup, supporting human requests for BRD implementation, specific story picking, random implementation, or custom bug fixes, delegating to child agents via `send_agent_message`, and creating a root `AGENTS.md` context file.
 
-**Architecture:** Update Orchestrator's agent definition (`.pi/agents/orchestrator.md`) to include `send_agent_message`, refine `/team-dev` launch prompt in `.pi/extensions/team-orchestrator.ts`, and create root `Agent.md` for workspace context loading across sessions.
+**Architecture:** Update Orchestrator's agent definition (`.pi/agents/orchestrator.md`) to include `send_agent_message`, refine `/team-dev` launch prompt in `.pi/extensions/team-orchestrator.ts`, and create root `AGENTS.md` for workspace context loading across sessions.
 
 **Tech Stack:** TypeScript, Markdown, Pi Coding Agent Extension API, tmux CLI.
 
@@ -13,22 +13,22 @@
 ## Global Constraints
 - **Agent Roles**: Orchestrator (Pane 0), BA (Pane 1), Developer (Pane 2), QA (Pane 3), Reviewer (Pane 4).
 - **Communication Tool**: Inter-agent messaging uses `send_agent_message(targetRole, message)`.
-- **Root Files**: `Agent.md` must live at the project root (`/Users/gbalaji/projects/personal/pi-team/Agent.md`).
+- **Root Files**: `AGENTS.md` must live at the project root (`/Users/gbalaji/projects/personal/pi-team/AGENTS.md`).
 
 ---
 
-### Task 1: Create Root `Agent.md` Context File
+### Task 1: Create Root `AGENTS.md` Context File
 
 **Files:**
-- Create: `Agent.md`
+- Create: `AGENTS.md`
 
 **Interfaces:**
 - Consumes: Design spec requirements for workspace context loading.
 - Produces: Project-wide context documentation automatically read by agent sessions.
 
-- [ ] **Step 1: Write `Agent.md` with full project context**
+- [ ] **Step 1: Write `AGENTS.md` with full project context**
 
-Write `Agent.md` at project root containing:
+Write `AGENTS.md` at project root containing:
 - pi-team overview & 5-pane tmux layout.
 - Master Orchestrator (Pane 0) ownership & interactive menu.
 - Task allocation rules (BRD, Specific Story, Random Implementation, Custom Task).
@@ -36,16 +36,16 @@ Write `Agent.md` at project root containing:
 - Workflow control modes (`--team-mode=loop-hitl`, `--team-mode=auto`, `--team-mode=step-hitl`).
 - Project boundaries & quality gates (`backend/`, `frontend/`, JaCoCo coverage inspection, live app server QA checks, P1/P2 code reviews, mandatory PR merges before `done`).
 
-- [ ] **Step 2: Verify `Agent.md` exists and is readable**
+- [ ] **Step 2: Verify `AGENTS.md` exists and is readable**
 
-Run: `ls -la Agent.md`
-Expected: `Agent.md` is present at project root.
+Run: `ls -la AGENTS.md`
+Expected: `AGENTS.md` is present at project root.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add Agent.md
-git commit -m "feat: add Agent.md project context file"
+git add AGENTS.md
+git commit -m "feat: add AGENTS.md project context file"
 ```
 
 ---

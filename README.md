@@ -28,10 +28,13 @@ Navigate to your project repository and run `squadloop init`:
 cd ~/projects/my-company-app
 squadloop init
 ```
-*`squadloop init` automatically bootstraps `.pi/` extensions, `Agent.md`, `project-context.md`, and `docs/` template folders.*
+*`squadloop init` automatically bootstraps `.squadloop/` extensions, `AGENTS.md`, `project-context.md`, and `docs/brd` + `docs/stories` directories.*
 
-### Step 3: Configure `project-context.md` & `.pi/team-config.json`
-Set your build/test commands and source boundaries in `project-context.md`. Set your workflow mode and workspace preference in `.pi/team-config.json`.
+In the SquadLoop repo itself, the local guide lives in `AGENTS.md`. The shipped template lives at `.squadloop/templates/Agent.md` and is copied into target repositories as `AGENTS.md`.
+
+### Step 3: Configure `project-context.md` & `.squadloop/config.json`
+Set your build/test commands and source boundaries in `project-context.md`. Set your workflow mode and workspace preference in `.squadloop/config.json`.
+
 
 ### Step 4: Launch & Attach
 ```bash
@@ -39,11 +42,18 @@ squadloop start
 squadloop attach
 ```
 
+### Step 5: Manage Packages
+```bash
+squadloop install npm:pi-web-access
+squadloop remove npm:pi-web-access
+squadloop list
+```
+
 ---
 
-## ⚙️ Configuration (`.pi/team-config.json`)
+## ⚙️ Configuration (`.squadloop/config.json`)
 
-Configure execution modes, human-in-the-loop steering, terminal drivers, and workspace layouts in `.pi/team-config.json` or via CLI flags:
+Configure execution modes, human-in-the-loop steering, terminal drivers, and workspace layouts in `.squadloop/config.json` or via CLI flags:
 
 ```json
 {
@@ -88,22 +98,30 @@ Configure execution modes, human-in-the-loop steering, terminal drivers, and wor
 
 ### 🤖 Per-Agent Model Customization & Local Providers
 
-You can customize models per agent role directly in `.pi/team-config.json` or connect local/custom LLM providers:
-1. **Per-Agent Model Overrides (`.pi/team-config.json`)**: Configure explicit model IDs per role under `"models"` (e.g. `"developer": "anthropic/claude-3-7-sonnet"`). If left empty (`""`), agents fall back to the active environment default model. Refer to `"_modelExamples"` in `.pi/team-config.json` for copy-paste model format examples across major providers.
+You can customize models per agent role directly in `.squadloop/config.json` or connect local/custom LLM providers:
+1. **Per-Agent Model Overrides (`.squadloop/config.json`)**: Configure explicit model IDs per role under `"models"` (e.g. `"developer": "anthropic/claude-3-7-sonnet"`). If left empty (`""`), agents fall back to the active environment default model. Refer to `"_modelExamples"` in `.squadloop/config.json` for copy-paste model format examples across major providers.
 2. **Standard Cloud Providers (Zero-Copy)**: Standard cloud providers (Anthropic, OpenAI, Google Gemini, DeepSeek, OpenRouter) work out of the box with zero additional setup when standard API keys (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) are present in your environment.
-3. **Local & Custom Providers (`.pi/models.json`)**:
-   Copy `.pi/models.example.json` to `.pi/models.json` (or `~/.pi/agent/models.json`) to configure local Ollama, vLLM, LM Studio, or custom proxies. SquadLoop automatically syncs project `.pi/models.json` to the global Pi Agent provider table on launch.
+3. **Local & Custom Providers (`.squadloop/models.json`)**:
+   Copy `.squadloop/models.example.json` to `.squadloop/models.json` (or `~/.squadloop/agent/models.json`) to configure local Ollama, vLLM, LM Studio, or custom proxies. SquadLoop automatically syncs project `.squadloop/models.json` to the global Pi Agent provider table on launch.
+4. **Bundled Pi Packages (`.squadloop/settings.json`)**:
+   SquadLoop ships a curated `packages` list (for example `pi-subagents` and `pi-web-access`) so Pi auto-installs them on trusted project startup. Users do not install packages manually.
+
+### 🔌 Package Commands
+- `squadloop install <source>` installs a Pi package into the current project with `pi install <source> -l`.
+- `squadloop remove <source>` removes a project-local package with `pi remove <source> -l`.
+- `squadloop list` lists the packages declared in `.squadloop/settings.json`.
+- Packages install into the current project’s `.squadloop/settings.json` and are loaded on the next `squadloop start`.
 
 ---
 
 ## 🛡️ SquadLoop Security Guard
 
-SquadLoop includes an automated pre-execution security guard extension (`.pi/extensions/security-guard.ts`):
+SquadLoop includes an automated pre-execution security guard extension (`.squadloop/extensions/security-guard.ts`):
 
 1. **Non-Negotiable Protected Files**:
    - Reading `.env`, `.env.*`, `.bashrc`, `.zshrc`, `~/.ssh/` keys, `~/.aws/credentials`, and any paths listed in `"customProtectedFiles"` is **strictly hard-blocked by default** for all agents.
 2. **Destructive Command Interception (`rm` & `git push --force`)**:
-   - Governed by `"destructiveCommandPolicy"` in `.pi/team-config.json`:
+   - Governed by `"destructiveCommandPolicy"` in `.squadloop/config.json`:
      - **`"ask-human"` (Default)**: Intercepts `rm`, `git push --force`, or `git reset --hard` and requests human approval in Pane 0 (`yes` / `no`).
      - **`"block"`**: Automatically blocks all destructive commands with a security rejection error.
      - **`"allow"`**: Permits destructive commands without asking.
@@ -118,7 +136,7 @@ SquadLoop uses the **Strategy Pattern** (`ITrackerAdapter` and `TrackerFactory`)
 * **`JiraAdapter`**: Uses `jira` CLI or REST API (`jira issue create`, `jira issue move`).
 * **`MarkdownStoryAdapter`**: Manages local markdown files in `docs/stories/<epic-slug>/`.
 
-*Auto-Detection*: `TrackerFactory` reads `Delivery Tracker` in `project-context.md` automatically. Anyone can add a new tracker (e.g. Linear, Azure DevOps, Trello) by creating a new adapter in `.pi/extensions/trackers/` (see `.pi/extensions/trackers/README.md`).
+*Auto-Detection*: `TrackerFactory` reads `Delivery Tracker` in `project-context.md` automatically. Anyone can add a new tracker (e.g. Linear, Azure DevOps, Trello) by creating a new adapter in `.squadloop/extensions/trackers/` (see `.squadloop/extensions/trackers/README.md`).
 
 ---
 
@@ -131,16 +149,19 @@ squadloop config [ex-mode=team|standalone] [hitl=loop|step|auto] [driver=tmux|he
 squadloop attach
 squadloop status
 squadloop init
+squadloop update
+squadloop doctor
 ```
 
 | Command | Description |
 | :--- | :--- |
 | `squadloop start` | Launches a SquadLoop workspace session using config defaults or CLI flag overrides. |
-| `squadloop resume` | Resumes an active SquadLoop session from `.pi/active-task.json` log. |
-| `squadloop config` | Displays or updates persistent defaults in `.pi/team-config.json` (`exMode`, `hitl`, `driver`, `layout`). |
+| `squadloop resume` | Resumes an active SquadLoop session from `.squadloop/active-task.json` log. |
+| `squadloop config` | Displays or updates persistent defaults in `.squadloop/config.json` (`exMode`, `hitl`, `driver`, `layout`). |
 | `squadloop attach` | Attaches directly to the active workspace session in the configured terminal driver (`tmux`, `herdr`, `iterm2`). |
 | `squadloop status` | Displays active task state, token usage, and estimated cost directly from terminal. |
-| `squadloop init` | Bootstraps `.pi/` config defaults (`team-config.json`), `Agent.md`, `project-context.md`, and template folders into current directory. |
+| `squadloop init` | Bootstraps `.squadloop/` config defaults (`config.json`), `AGENTS.md`, `project-context.md`, and docs/story directories into current directory. |
+| `squadloop install` / `remove` / `list` | Adds/removes/lists project-local Pi packages in `.squadloop/settings.json`. |
 | `squadloop help` | Displays the SquadLoop CLI usage guide and flag options. |
 
 ### Slash Commands (Inside Pi)
@@ -153,7 +174,7 @@ squadloop init
 ## 📊 Telemetry, Audit Logs & Event Bus
 
 - **0.9s Instant Workspace Launch**: Workspace creation is constructed locally in Node.js without network/LLM API delays.
-- **100% Reliable Event Bus (`.pi/events.jsonl`)**: Persistent append-only event log with automatic 1,000-event log rotation cap.
+- **100% Reliable Event Bus (`.squadloop/events.jsonl`)**: Persistent append-only event log with automatic 1,000-event log rotation cap.
 - **`get_team_events` Tool**: Allows Master Orchestrator in Pane 0 to query recent event log entries at any time.
 - **End-of-Story Summary Card**: Displays an end-to-end verification report in Pane 0 upon story completion (`done`) detailing branch name, PR merge commit ID, JaCoCo coverage %, QA HTTP probe result, total tokens used, and estimated USD cost.
 - **Rework Circuit Breaker**: If `reworkCount > 3`, auto-steering halts and emits an alert in Pane 0 for human guidance.

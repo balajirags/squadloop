@@ -101,7 +101,7 @@ git commit -m "feat: display token usage and estimated cost in summary cards and
 ### Task 3: Update Documentation & Sync to `../testing-pi-team`
 
 **Files:**
-- Modify: `Agent.md`
+- Modify: `AGENTS.md`
 - Modify: `README.md`
 - Modify: `RELEASE.md`
 - Modify: `backlog/devsquad-master-brd.md`
@@ -111,7 +111,7 @@ git commit -m "feat: display token usage and estimated cost in summary cards and
 
 - [ ] **Step 2: Sync all updated files to `../testing-pi-team`**
 
-Run: `cp -r .pi/ bin/ Agent.md package.json README.md RELEASE.md backlog/ ../testing-pi-team/`
+Run: `cp -r .pi/ bin/ AGENTS.md package.json README.md RELEASE.md backlog/ ../testing-pi-team/`
 
 - [ ] **Step 3: Build `pi-team` and `testing-pi-team`**
 
