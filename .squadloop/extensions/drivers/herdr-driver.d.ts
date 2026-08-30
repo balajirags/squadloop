@@ -3,9 +3,10 @@ export declare class HerdrDriver implements ITerminalDriver {
     readonly id = "herdr";
     readonly name = "Herdr Terminal Driver";
     isAvailable(): boolean;
-    hasActiveSession(): boolean;
-    setupTeamLayout(layout?: "panes" | "windows"): WorkspacePanes;
+    hasActiveSession(sessionId?: string): boolean;
+    setupTeamLayout(layout?: "panes" | "windows", sessionId?: string): WorkspacePanes;
     sendPrompt(paneTarget: string, promptText: string, clear?: boolean): Promise<void>;
-    attachSession(): void;
+    attachSession(sessionId?: string): void;
+    stopSession(sessionId?: string): void;
     recoverMissingPanes(currentPanes: WorkspacePanes): WorkspacePanes;
 }

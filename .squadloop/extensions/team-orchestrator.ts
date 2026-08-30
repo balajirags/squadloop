@@ -4,6 +4,7 @@ import { registerStatusBanner } from "./status-banner.js";
 import { WorkspaceFactory } from "./workspaces/workspace-factory.js";
 import * as fs from "fs";
 import * as path from "path";
+import { getRuntimeSessionId, readActiveTask, writeActiveTask } from "./sessions/session-manager.js";
 
 export interface TeamConfig {
   mode: "step-hitl" | "loop-hitl" | "auto";
@@ -53,13 +54,23 @@ function saveConfig(config: TeamConfig): void {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
 }
 
+function syncSessionConfig(sessionId: string, panes: TeamConfig["panes"]): void {
+  const activeTask = readActiveTask(sessionId);
+  if (!activeTask) return;
+  writeActiveTask(sessionId, {
+    ...activeTask,
+    panes,
+    timestamp: new Date().toISOString()
+  });
+}
+
 export default function (pi: ExtensionAPI) {
   registerTeamTools(pi);
   registerStatusBanner(pi);
 
-  // Handler for fresh start
   const handleTeamStart = async (ctx: any) => {
     const config = getOrCreateConfig();
+    const sessionId = getRuntimeSessionId();
     let workspace;
     try {
       workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
@@ -69,27 +80,25 @@ export default function (pi: ExtensionAPI) {
       return;
     }
 
-    ctx.ui.notify(`Initializing SquadLoop [--mode=${config.mode}, --layout=${config.layout}, --workspace=${workspace.name}]...`, "info");
+    ctx.ui.notify(`Initializing SquadLoop [session=${sessionId}, --mode=${config.mode}, --layout=${config.layout}, --workspace=${workspace.name}]...`, "info");
 
-    const panes = workspace.setupLayout(config.layout);
+    const panes = workspace.setupLayout(config.layout, sessionId);
     config.panes = panes;
     saveConfig(config);
 
-    // Reset active-task.json to clean idle state
-    const activeTaskPath = path.join(process.cwd(), ".squadloop", "active-task.json");
-    fs.mkdirSync(path.dirname(activeTaskPath), { recursive: true });
-    fs.writeFileSync(activeTaskPath, JSON.stringify({
+    writeActiveTask(sessionId, {
       activeIssueId: "",
       status: "awaiting-human-input",
       updatedBy: "system",
       notes: "Fresh team session started. Awaiting human input in Pane 0.",
-      timestamp: new Date().toISOString()
-    }, null, 2), "utf-8");
+      timestamp: new Date().toISOString(),
+      driver: config.workspaceMode || "tmux",
+      panes
+    });
 
-    // Initial greeting prompt in Orchestrator: Display welcome menu and STOP
     const welcomePrompt =
       `==============================================================\n` +
-      `🚀 SQUADLOOP ONLINE [--mode=${config.mode}, --layout=${config.layout}]\n` +
+      `🚀 SQUADLOOP ONLINE [session=${sessionId}, --mode=${config.mode}, --layout=${config.layout}]\n` +
       `==============================================================\n` +
       `• BA (Pane 1)       : IDLE & READY\n` +
       `• Developer (Pane 2): IDLE & READY\n` +
@@ -99,14 +108,15 @@ export default function (pi: ExtensionAPI) {
       `Print the welcome banner and options (1. Implement BRD/PRD, 2. Pick a specific Story/Issue, 3. Random Implementation, 4. Custom Task/Bug Fix).\n` +
       `DO NOT call send_agent_message or start any work automatically. STOP IMMEDIATELY and wait for the human user in Pane 0 to enter their instruction.`;
 
-    workspace.sendPrompt(panes.orchestrator, welcomePrompt, false);
+    await workspace.sendPrompt(panes.orchestrator, welcomePrompt, false);
+    syncSessionConfig(sessionId, panes);
 
-    ctx.ui.notify(`SquadLoop setup complete via '${workspace.name}' [--mode=${config.mode}, --layout=${config.layout}].`, "info");
+    ctx.ui.notify(`SquadLoop setup complete via '${workspace.name}' [session=${sessionId}, --mode=${config.mode}, --layout=${config.layout}].`, "info");
   };
 
-  // Handler for session resume
   const handleTeamResume = async (ctx: any) => {
     const config = getOrCreateConfig();
+    const sessionId = getRuntimeSessionId();
     let workspace;
     try {
       workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
@@ -116,40 +126,44 @@ export default function (pi: ExtensionAPI) {
       return;
     }
 
-    // Read active-task.json if available
-    const activeTaskPath = path.join(process.cwd(), ".squadloop", "active-task.json");
-    let activeIssueId = "";
-    let activeStatus = "awaiting-human-input";
-    let activeNotes = "";
+    const taskState = readActiveTask(sessionId);
+    const activeIssueId = taskState?.activeIssueId || "";
+    const activeStatus = taskState?.status || "awaiting-human-input";
+    const activeNotes = taskState?.notes || "";
 
-    if (fs.existsSync(activeTaskPath)) {
-      try {
-        const taskState = JSON.parse(fs.readFileSync(activeTaskPath, "utf-8"));
-        activeIssueId = taskState.activeIssueId || "";
-        activeStatus = taskState.status || "awaiting-human-input";
-        activeNotes = taskState.notes || "";
-      } catch {
-        // Ignore parse error
-      }
-    }
+    ctx.ui.notify(`Resuming SquadLoop [session=${sessionId}, --mode=${config.mode}, --layout=${config.layout}, activeIssue=#${activeIssueId}]...`, "info");
 
-    ctx.ui.notify(`Resuming SquadLoop [--mode=${config.mode}, --layout=${config.layout}, activeIssue=#${activeIssueId}]...`, "info");
-
-    const panes = workspace.setupLayout(config.layout);
+    const panes = workspace.setupLayout(config.layout, sessionId);
     config.panes = panes;
     saveConfig(config);
 
-    // Resume prompt in Orchestrator Pane 0
-    const resumePrompt = `Master Orchestrator RESUMED [--mode=${config.mode}, --layout=${config.layout}, --workspace=${workspace.name}]! ` +
+    if (taskState) {
+      writeActiveTask(sessionId, {
+        ...taskState,
+        panes,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      writeActiveTask(sessionId, {
+        activeIssueId: "",
+        status: "awaiting-human-input",
+        updatedBy: "system",
+        notes: "Resumed team session.",
+        timestamp: new Date().toISOString(),
+        driver: config.workspaceMode || "tmux",
+        panes
+      });
+    }
+
+    const resumePrompt = `Master Orchestrator RESUMED [session=${sessionId}, --mode=${config.mode}, --layout=${config.layout}, --workspace=${workspace.name}]! ` +
       `Active task recovered from log: Issue #${activeIssueId || 'None'} (Status: '${activeStatus}'). Notes: '${activeNotes || 'N/A'}'. ` +
       `Print session recovery banner to user, state active task status, and ask the human user in Pane 0 how to proceed or continue.`;
 
     await workspace.sendPrompt(panes.orchestrator, resumePrompt, false);
 
-    ctx.ui.notify(`SquadLoop session resumed via '${workspace.name}' [Issue #${activeIssueId || 'None'}, Status: ${activeStatus}].`, "info");
+    ctx.ui.notify(`SquadLoop session resumed via '${workspace.name}' [session=${sessionId}, Issue #${activeIssueId || 'None'}, Status: ${activeStatus}].`, "info");
   };
 
-  // Command 1: /squadloop-start
   pi.registerCommand("squadloop-start", {
     description: "Start a fresh SquadLoop session in tmux based on .squadloop/config.json",
     handler: async (_args, ctx) => {
@@ -157,7 +171,6 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
-  // Command 2: /squadloop-resume
   pi.registerCommand("squadloop-resume", {
     description: "Resume active SquadLoop session from .squadloop/active-task.json log",
     handler: async (_args, ctx) => {
@@ -165,7 +178,6 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
-  // Command 3: /squadloop-recover
   pi.registerCommand("squadloop-recover", {
     description: "Recover any closed agent pane or window in the active SquadLoop workspace",
     handler: async (_args, ctx) => {
@@ -177,10 +189,12 @@ export default function (pi: ExtensionAPI) {
 
       try {
         const config: TeamConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+        const sessionId = getRuntimeSessionId();
         const workspace = WorkspaceFactory.getAdapter(config.workspaceMode);
-        const recoveredPanes = workspace.recoverMissingPanes(config.panes);
+        const recoveredPanes = workspace.recoverMissingPanes(config.panes, sessionId);
         config.panes = recoveredPanes;
         saveConfig(config);
+        syncSessionConfig(sessionId, recoveredPanes);
         ctx.ui.notify("Pane recovery check complete!", "info");
       } catch (err: any) {
         ctx.ui.notify(`Recovery failed: ${err.message}`, "error");

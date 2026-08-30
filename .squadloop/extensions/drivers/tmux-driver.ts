@@ -1,24 +1,28 @@
 import { execSync, spawnSync } from "child_process";
 import type { ITerminalDriver, WorkspacePanes } from "./terminal-driver-interface.js";
 import { ModelResolver } from "../models/model-resolver.js";
+import { getSessionName, normalizeSessionId } from "../sessions/session-manager.js";
 
 function cleanPaneId(raw: string): string {
   const match = String(raw).match(/%[0-9]+/);
   return match ? match[0] : String(raw).trim().split("\n")[0];
 }
 
-function getAgentCommand(role: string): string {
+function getAgentCommand(role: string, sessionId?: string): string {
   const model = ModelResolver.getModel(role);
   const agentFile = `.squadloop/agents/${role}.md`;
   const modelFlag = model ? ` --model "${model}"` : "";
-  const agentEnv = `env CONFIG_DIR_NAME=.squadloop PI_CODING_AGENT_DIR="$HOME/.squadloop/agent"`;
+  const agentEnv = `env CONFIG_DIR_NAME=.squadloop PI_CODING_AGENT_DIR="$HOME/.squadloop/agent" SQUADLOOP_SESSION_ID="${normalizeSessionId(sessionId || process.env.SQUADLOOP_SESSION_ID || "default")}"`;
   return `${agentEnv} pi --approve --append-system-prompt "${agentFile}"${modelFlag}; exec bash`;
+}
+
+function resolveSessionName(sessionId?: string): string {
+  return getSessionName(sessionId || process.env.SQUADLOOP_SESSION_ID || "default");
 }
 
 export class TmuxDriver implements ITerminalDriver {
   public readonly id = "tmux";
   public readonly name = "Tmux Terminal Driver";
-  private sessionName = "squadloop-workspace";
 
   public isAvailable(): boolean {
     try {
@@ -29,42 +33,44 @@ export class TmuxDriver implements ITerminalDriver {
     }
   }
 
-  public hasActiveSession(): boolean {
-    return spawnSync("tmux", ["has-session", "-t", this.sessionName], { stdio: "ignore" }).status === 0;
+  public hasActiveSession(sessionId?: string): boolean {
+    const sessionName = resolveSessionName(sessionId);
+    return spawnSync("tmux", ["has-session", "-t", sessionName], { stdio: "ignore" }).status === 0;
   }
 
-  public setupTeamLayout(layout: "panes" | "windows" = "panes"): WorkspacePanes {
+  public setupTeamLayout(layout: "panes" | "windows" = "panes", sessionId?: string): WorkspacePanes {
     if (layout === "windows") {
-      return this.setup5WindowLayout();
+      return this.setup5WindowLayout(sessionId);
     }
-    return this.setup5PaneLayout();
+    return this.setup5PaneLayout(sessionId);
   }
 
-  private setup5PaneLayout(): WorkspacePanes {
+  private setup5PaneLayout(sessionId?: string): WorkspacePanes {
+    const sessionName = resolveSessionName(sessionId);
     try {
-      execSync(`tmux kill-session -t ${this.sessionName} 2>/dev/null`, { stdio: "ignore" });
+      execSync(`tmux kill-session -t ${sessionName} 2>/dev/null`, { stdio: "ignore" });
     } catch {
       // Ignore
     }
 
     const orchestratorPane = cleanPaneId(execSync(
-      `tmux new-session -d -s ${this.sessionName} -n team -P -F "#{pane_id}" "${getAgentCommand("orchestrator")}"`
+      `tmux new-session -d -s ${sessionName} -n team -P -F "#{pane_id}" "${getAgentCommand("orchestrator", sessionId)}"`
     ).toString());
 
     const baPane = cleanPaneId(execSync(
-      `tmux split-window -v -t ${orchestratorPane} -P -F "#{pane_id}" "${getAgentCommand("ba")}"`
+      `tmux split-window -v -t ${orchestratorPane} -P -F "#{pane_id}" "${getAgentCommand("ba", sessionId)}"`
     ).toString());
 
     const devPane = cleanPaneId(execSync(
-      `tmux split-window -h -t ${baPane} -P -F "#{pane_id}" "${getAgentCommand("developer")}"`
+      `tmux split-window -h -t ${baPane} -P -F "#{pane_id}" "${getAgentCommand("developer", sessionId)}"`
     ).toString());
 
     const qaPane = cleanPaneId(execSync(
-      `tmux split-window -v -t ${baPane} -P -F "#{pane_id}" "${getAgentCommand("qa")}"`
+      `tmux split-window -v -t ${baPane} -P -F "#{pane_id}" "${getAgentCommand("qa", sessionId)}"`
     ).toString());
 
     const reviewerPane = cleanPaneId(execSync(
-      `tmux split-window -v -t ${devPane} -P -F "#{pane_id}" "${getAgentCommand("reviewer")}"`
+      `tmux split-window -v -t ${devPane} -P -F "#{pane_id}" "${getAgentCommand("reviewer", sessionId)}"`
     ).toString());
 
     try {
@@ -80,31 +86,32 @@ export class TmuxDriver implements ITerminalDriver {
     return { orchestrator: orchestratorPane, ba: baPane, developer: devPane, qa: qaPane, reviewer: reviewerPane };
   }
 
-  private setup5WindowLayout(): WorkspacePanes {
+  private setup5WindowLayout(sessionId?: string): WorkspacePanes {
+    const sessionName = resolveSessionName(sessionId);
     try {
-      execSync(`tmux kill-session -t ${this.sessionName} 2>/dev/null`, { stdio: "ignore" });
+      execSync(`tmux kill-session -t ${sessionName} 2>/dev/null`, { stdio: "ignore" });
     } catch {
       // Ignore
     }
 
     const orchestratorPane = cleanPaneId(execSync(
-      `tmux new-session -d -s ${this.sessionName} -n orchestrator -P -F "#{pane_id}" "${getAgentCommand("orchestrator")}"`
+      `tmux new-session -d -s ${sessionName} -n orchestrator -P -F "#{pane_id}" "${getAgentCommand("orchestrator", sessionId)}"`
     ).toString());
 
     const baPane = cleanPaneId(execSync(
-      `tmux new-window -t ${this.sessionName} -n ba -P -F "#{pane_id}" "${getAgentCommand("ba")}"`
+      `tmux new-window -t ${sessionName} -n ba -P -F "#{pane_id}" "${getAgentCommand("ba", sessionId)}"`
     ).toString());
 
     const devPane = cleanPaneId(execSync(
-      `tmux new-window -t ${this.sessionName} -n developer -P -F "#{pane_id}" "${getAgentCommand("developer")}"`
+      `tmux new-window -t ${sessionName} -n developer -P -F "#{pane_id}" "${getAgentCommand("developer", sessionId)}"`
     ).toString());
 
     const qaPane = cleanPaneId(execSync(
-      `tmux new-window -t ${this.sessionName} -n qa -P -F "#{pane_id}" "${getAgentCommand("qa")}"`
+      `tmux new-window -t ${sessionName} -n qa -P -F "#{pane_id}" "${getAgentCommand("qa", sessionId)}"`
     ).toString());
 
     const reviewerPane = cleanPaneId(execSync(
-      `tmux new-window -t ${this.sessionName} -n reviewer -P -F "#{pane_id}" "${getAgentCommand("reviewer")}"`
+      `tmux new-window -t ${sessionName} -n reviewer -P -F "#{pane_id}" "${getAgentCommand("reviewer", sessionId)}"`
     ).toString());
 
     return { orchestrator: orchestratorPane, ba: baPane, developer: devPane, qa: qaPane, reviewer: reviewerPane };
@@ -122,11 +129,12 @@ export class TmuxDriver implements ITerminalDriver {
     }
   }
 
-  public attachSession(): void {
+  public attachSession(sessionId?: string): void {
+    const sessionName = resolveSessionName(sessionId);
     const inTmux = Boolean(process.env.TMUX) || spawnSync("tmux", ["display-message"], { stdio: "ignore" }).status === 0;
     if (inTmux) {
       try {
-        spawnSync("tmux", ["switch-client", "-t", this.sessionName], { stdio: "inherit" });
+        spawnSync("tmux", ["switch-client", "-t", sessionName], { stdio: "inherit" });
         return;
       } catch {
         // Fallback
@@ -134,7 +142,12 @@ export class TmuxDriver implements ITerminalDriver {
     }
     const env = { ...process.env };
     delete env.TMUX;
-    spawnSync("tmux", ["attach", "-t", this.sessionName], { stdio: "inherit", env });
+    spawnSync("tmux", ["attach", "-t", sessionName], { stdio: "inherit", env });
+  }
+
+  public stopSession(sessionId?: string): void {
+    const sessionName = resolveSessionName(sessionId);
+    spawnSync("tmux", ["kill-session", "-t", sessionName], { stdio: "inherit" });
   }
 
   public recoverMissingPanes(currentPanes: WorkspacePanes): WorkspacePanes {

@@ -1,4 +1,8 @@
 import { execSync, spawnSync } from "child_process";
+import { getSessionName } from "../sessions/session-manager.js";
+function resolveSessionName(sessionId) {
+    return getSessionName(sessionId || process.env.SQUADLOOP_SESSION_ID || "default");
+}
 export class HerdrDriver {
     id = "herdr";
     name = "Herdr Terminal Driver";
@@ -11,29 +15,30 @@ export class HerdrDriver {
             return false;
         }
     }
-    hasActiveSession() {
+    hasActiveSession(sessionId) {
         try {
             const res = execSync("herdr status 2>/dev/null").toString();
-            return res.includes("squadloop");
+            return res.includes(resolveSessionName(sessionId));
         }
         catch {
             return false;
         }
     }
-    setupTeamLayout(layout = "panes") {
+    setupTeamLayout(layout = "panes", sessionId) {
         const modeFlag = layout === "windows" ? "--tabs" : "--panes";
+        const sessionName = resolveSessionName(sessionId);
         try {
-            execSync(`herdr spawn squadloop ${modeFlag} --roles orchestrator,ba,developer,qa,reviewer`, { stdio: "ignore" });
+            execSync(`herdr spawn ${sessionName} ${modeFlag} --roles orchestrator,ba,developer,qa,reviewer`, { stdio: "ignore" });
         }
         catch {
             // Fallback log
         }
         return {
-            orchestrator: "herdr-orch",
-            ba: "herdr-ba",
-            developer: "herdr-dev",
-            qa: "herdr-qa",
-            reviewer: "herdr-rev"
+            orchestrator: `${sessionName}-orch`,
+            ba: `${sessionName}-ba`,
+            developer: `${sessionName}-dev`,
+            qa: `${sessionName}-qa`,
+            reviewer: `${sessionName}-rev`
         };
     }
     async sendPrompt(paneTarget, promptText, clear = false) {
@@ -45,8 +50,11 @@ export class HerdrDriver {
             // Ignore
         }
     }
-    attachSession() {
-        spawnSync("herdr", ["attach", "squadloop"], { stdio: "inherit" });
+    attachSession(sessionId) {
+        spawnSync("herdr", ["attach", resolveSessionName(sessionId)], { stdio: "inherit" });
+    }
+    stopSession(sessionId) {
+        spawnSync("herdr", ["stop", resolveSessionName(sessionId)], { stdio: "inherit" });
     }
     recoverMissingPanes(currentPanes) {
         return currentPanes;

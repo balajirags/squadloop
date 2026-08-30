@@ -8,8 +8,8 @@ export interface WorkspacePanes {
 export interface IWorkspaceAdapter {
     readonly name: string;
     isAvailable(): boolean;
-    setupLayout(layout: "panes" | "windows"): WorkspacePanes;
-    recoverMissingPanes(currentPanes: WorkspacePanes): WorkspacePanes;
+    setupLayout(layout: "panes" | "windows", sessionId?: string): WorkspacePanes;
+    recoverMissingPanes(currentPanes: WorkspacePanes, sessionId?: string): WorkspacePanes;
     sendPrompt(targetPane: string, promptText: string, clear?: boolean): Promise<void>;
     startAppServerWindow(startCommand?: string): string;
 }

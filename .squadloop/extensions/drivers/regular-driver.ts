@@ -8,11 +8,11 @@ export class RegularDriver implements ITerminalDriver {
     return true;
   }
 
-  public hasActiveSession(): boolean {
+  public hasActiveSession(_sessionId?: string): boolean {
     return true;
   }
 
-  public setupTeamLayout(layout: "panes" | "windows" = "panes"): WorkspacePanes {
+  public setupTeamLayout(layout: "panes" | "windows" = "panes", _sessionId?: string): WorkspacePanes {
     return {
       orchestrator: "orchestrator",
       ba: "ba",
@@ -26,8 +26,12 @@ export class RegularDriver implements ITerminalDriver {
     console.log(`[${paneTarget.toUpperCase()}] ${promptText}`);
   }
 
-  public attachSession(): void {
+  public attachSession(_sessionId?: string): void {
     // Direct terminal session, no attachment required
+  }
+
+  public stopSession(_sessionId?: string): void {
+    // No-op in standalone mode
   }
 
   public recoverMissingPanes(currentPanes: WorkspacePanes): WorkspacePanes {

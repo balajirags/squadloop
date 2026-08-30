@@ -7,6 +7,16 @@ import { fileURLToPath } from "url";
 import { ExecutionStrategyFactory } from "../dist/.squadloop/extensions/strategies/execution-factory.js";
 import { DriverFactory } from "../dist/.squadloop/extensions/drivers/driver-factory.js";
 import { PromptSyncEngine } from "../dist/.squadloop/extensions/models/prompt-sync.js";
+import {
+  createSessionId,
+  getSessionName,
+  listSessions,
+  normalizeSessionId,
+  readActiveTask,
+  resolveLastActiveSession,
+  resolveSessionId,
+  writeActiveTask
+} from "../dist/.squadloop/extensions/sessions/session-manager.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -175,53 +185,26 @@ function parseCliContext() {
   return config;
 }
 
-function saveConfig(config) {
-  const configPath = projectPath("config.json");
-  fs.mkdirSync(path.dirname(configPath), { recursive: true });
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+function getArgValue(...names) {
+  for (const name of names) {
+    const match = args.find((a) => a.startsWith(`--${name}=`) || a.startsWith(`${name}=`));
+    if (match) return match.substring(match.indexOf("=") + 1);
+  }
+  return null;
 }
 
-function syncProjectModelsJson() {
-  const modelsExamplePath = projectPath("models.example.json");
-  const modelsJsonPath = projectPath("models.json");
+function getRequestedSessionId({ generateIfMissing = false } = {}) {
+  const explicit = getArgValue("name", "session");
+  if (explicit) return normalizeSessionId(explicit);
 
-  if (!fs.existsSync(modelsJsonPath) && fs.existsSync(modelsExamplePath)) {
-    try {
-      fs.copyFileSync(modelsExamplePath, modelsJsonPath);
-    } catch {
-      // Ignore
-    }
-  }
+  const envSession = process.env.SQUADLOOP_SESSION_ID;
+  if (envSession) return normalizeSessionId(envSession);
 
-  if (fs.existsSync(modelsJsonPath)) {
-    try {
-      fs.mkdirSync(GLOBAL_AGENT_DIR, { recursive: true });
-      fs.copyFileSync(modelsJsonPath, path.join(GLOBAL_AGENT_DIR, "models.json"));
-    } catch {
-      // Non-fatal
-    }
-  }
-}
+  const lastActive = resolveLastActiveSession();
+  if (lastActive) return lastActive.sessionId;
 
-function readPackageMetadata() {
-  const packageJsonPath = path.join(packageRoot, "package.json");
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
-  return {
-    cliVersion: packageJson.version || "unknown",
-    engineVersion: packageJson.dependencies?.["@earendil-works/pi-coding-agent"] || "unknown"
-  };
-}
-
-function getLatestNpmVersion(pkgName) {
-  const result = spawnSync("npm", ["view", pkgName, "version", "--json"], { encoding: "utf-8" });
-  if (result.status !== 0 || !result.stdout) return null;
-
-  try {
-    const parsed = JSON.parse(result.stdout.trim());
-    return Array.isArray(parsed) ? parsed.at(-1) ?? null : parsed;
-  } catch {
-    return result.stdout.trim() || null;
-  }
+  if (generateIfMissing) return createSessionId();
+  return null;
 }
 
 function runPiProjectCommand(piArgs) {
@@ -247,30 +230,96 @@ function readProjectSettings() {
 
 async function handleStart() {
   const ctx = parseCliContext();
+  const sessionId = getRequestedSessionId({ generateIfMissing: true });
+  process.env.SQUADLOOP_SESSION_ID = sessionId;
   printLogo();
   syncRuntimeAssets({ overwrite: false });
   syncProjectSettingsJson();
   syncProjectModelsJson();
   PromptSyncEngine.syncAllPrompts();
   const strategy = ExecutionStrategyFactory.getStrategy(ctx.exMode);
-  await strategy.executeStart(ctx);
+  await strategy.executeStart({ ...ctx, sessionId });
 }
 
 async function handleResume() {
   const ctx = parseCliContext();
+  const sessionId = getRequestedSessionId({ generateIfMissing: false });
+  if (!sessionId) {
+    console.log("No active SquadLoop sessions found. Run 'squadloop start' first.");
+    return;
+  }
+  process.env.SQUADLOOP_SESSION_ID = sessionId;
   printLogo();
   syncRuntimeAssets({ overwrite: false });
   syncProjectSettingsJson();
   syncProjectModelsJson();
   PromptSyncEngine.syncAllPrompts();
   const strategy = ExecutionStrategyFactory.getStrategy(ctx.exMode);
-  await strategy.executeResume(ctx);
+  await strategy.executeResume({ ...ctx, sessionId });
+}
+
+function resolveDriverForSession(sessionId) {
+  const task = readActiveTask(sessionId);
+  const configPath = projectPath("config.json");
+  let driverId = task?.driver || "tmux";
+  if (!task && fs.existsSync(configPath)) {
+    try {
+      const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      driverId = config.driver || config.workspaceMode || driverId;
+    } catch {
+      // ignore
+    }
+  }
+  return DriverFactory.getDriver(driverId);
 }
 
 function handleAttach() {
-  const ctx = parseCliContext();
-  const driver = DriverFactory.getDriver(ctx.driver);
-  driver.attachSession();
+  const sessionId = getRequestedSessionId({ generateIfMissing: false });
+  if (!sessionId) {
+    console.log("No active SquadLoop sessions found.");
+    return;
+  }
+  const driver = resolveDriverForSession(sessionId);
+  driver.attachSession(sessionId);
+}
+
+function handleStop() {
+  const sessionId = getRequestedSessionId({ generateIfMissing: false });
+  if (!sessionId) {
+    console.log("No active SquadLoop sessions found.");
+    return;
+  }
+  const driver = resolveDriverForSession(sessionId);
+  driver.stopSession(sessionId);
+}
+
+function handleSessionList() {
+  const sessions = listSessions();
+  console.log("📚 SquadLoop Sessions:");
+  if (sessions.length === 0) {
+    console.log("  • No saved sessions found.");
+    console.log("  • Run: squadloop start");
+    return;
+  }
+
+  console.table(sessions.map((s) => ({
+    Session: s.sessionId,
+    Driver: s.driver,
+    "Active Task": s.activeIssueId || "none",
+    Status: s.status,
+    Updated: s.timestamp
+  })));
+}
+
+function handleStatus() {
+  const sessionId = getRequestedSessionId({ generateIfMissing: false });
+  const summary = sessionId ? readActiveTask(sessionId) : null;
+  console.log("📊 SquadLoop Status:");
+  console.log(`  • Session          : ${sessionId || (resolveLastActiveSession()?.sessionId || "none")}`);
+  console.log(`  • Config Directory : ${fs.existsSync(projectPath()) ? "Verified" : "Missing"}`);
+  console.log(`  • Session State    : ${summary ? summary.status : "none"}`);
+  console.log(`  • Active Issue     : ${summary?.activeIssueId || "none"}`);
+  console.log(`  • Notes            : ${summary?.notes || "n/a"}`);
 }
 
 function handleInit() {
@@ -327,7 +376,7 @@ function handleInit() {
 
   const configPath = projectPath("config.json");
   if (!fs.existsSync(configPath)) {
-    saveConfig(defaultConfig);
+    fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), "utf-8");
     console.log("  ✅ Created .squadloop/config.json with model hints.");
   }
 
@@ -342,7 +391,7 @@ function handleInit() {
 
 function handleConfig() {
   const ctx = parseCliContext();
-  saveConfig(ctx);
+  fs.writeFileSync(projectPath("config.json"), JSON.stringify(ctx, null, 2), "utf-8");
   syncRuntimeAssets({ overwrite: false });
   syncProjectSettingsJson();
   syncProjectModelsJson();
@@ -373,9 +422,10 @@ function handleUpdate() {
 }
 
 function handleDoctor() {
-  const { cliVersion, engineVersion } = readPackageMetadata();
-  const latestCliVersion = getLatestNpmVersion("squadloop");
-  const latestEngineVersion = getLatestNpmVersion("@earendil-works/pi-coding-agent");
+  const packageJsonPath = path.join(packageRoot, "package.json");
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+  const cliVersion = packageJson.version || "unknown";
+  const engineVersion = packageJson.dependencies?.["@earendil-works/pi-coding-agent"] || "unknown";
   const configPath = projectPath("config.json");
   const modelsPath = projectPath("models.json");
   const projectDirExists = fs.existsSync(path.join(process.cwd(), CONFIG_DIR_NAME));
@@ -383,8 +433,8 @@ function handleDoctor() {
   const promptsSynced = fs.existsSync(projectPath("prompts"));
   const skillsSynced = fs.existsSync(projectPath("skills"));
   console.log("🚀 SquadLoop Diagnostic Report:");
-  console.log(`  • SquadLoop CLI    : v${cliVersion}${latestCliVersion && latestCliVersion !== cliVersion ? ` (latest v${latestCliVersion})` : " (Up to date)"}`);
-  console.log(`  • Pi Agent Engine  : v${engineVersion}${latestEngineVersion && latestEngineVersion !== engineVersion ? ` (latest v${latestEngineVersion})` : " (Up to date)"}`);
+  console.log(`  • SquadLoop CLI    : v${cliVersion} (Up to date)`);
+  console.log(`  • Pi Agent Engine  : v${engineVersion} (Up to date)`);
   console.log(`  • Config Directory : .squadloop/ ${projectDirExists ? "(Verified)" : "(Missing)"}`);
   console.log(`  • Config File      : ${fs.existsSync(configPath) ? "config.json present" : "config.json missing"}`);
   console.log(`  • Models File      : ${fs.existsSync(modelsPath) ? "models.json present" : "models.json missing"}`);
@@ -392,39 +442,15 @@ function handleDoctor() {
   console.log(`  • Bundled Packages  : ${fs.existsSync(projectPath("settings.json")) ? "Declared in settings.json" : "Missing"}`);
 }
 
-function handleStatus() {
-  const activeTaskPath = projectPath("active-task.json");
-  const modelsPath = projectPath("models.json");
-  const configPath = projectPath("config.json");
-
-  console.log("📊 SquadLoop Status:");
-  console.log(`  • Config Directory : ${fs.existsSync(projectPath()) ? "Verified" : "Missing"}`);
-  console.log(`  • Config File      : ${fs.existsSync(configPath) ? "config.json present" : "config.json missing"}`);
-  console.log(`  • Models File      : ${fs.existsSync(modelsPath) ? "models.json present" : "models.json missing"}`);
-
-  if (fs.existsSync(activeTaskPath)) {
-    try {
-      const activeTask = JSON.parse(fs.readFileSync(activeTaskPath, "utf-8"));
-      console.log(`  • Active Issue     : ${activeTask.activeIssueId || "none"}`);
-      console.log(`  • Status           : ${activeTask.status || "unknown"}`);
-      console.log(`  • Notes            : ${activeTask.notes || "n/a"}`);
-    } catch {
-      console.log("  • Active Task      : unreadable");
-    }
-  } else {
-    console.log("  • Active Task      : none");
-  }
-}
-
 function handlePackages() {
-  const subcommand = (args[0] || "list").toLowerCase();
-  const target = args[1];
+  const subcommand = (args[1] || "list").toLowerCase();
+  const target = args[2];
 
   ensureProjectDir();
 
   if (subcommand === "install") {
     if (!target) {
-      console.log("Usage: squadloop install <npm:package|git:url|./path>");
+      console.log("Usage: squadloop packages install <npm:package|git:url|./path>");
       return;
     }
 
@@ -438,7 +464,7 @@ function handlePackages() {
 
   if (subcommand === "remove" || subcommand === "rm") {
     if (!target) {
-      console.log("Usage: squadloop remove <npm:package|git:url|./path>");
+      console.log("Usage: squadloop packages remove <npm:package|git:url|./path>");
       return;
     }
 
@@ -455,7 +481,7 @@ function handlePackages() {
   console.log("📦 SquadLoop Packages:");
   if (packages.length === 0) {
     console.log("  • No local packages installed.");
-    console.log("  • Use: squadloop install npm:pi-web-access");
+    console.log("  • Use: squadloop packages install npm:pi-web-access");
     return;
   }
 
@@ -474,6 +500,15 @@ switch (command) {
   case "attach":
     handleAttach();
     break;
+  case "stop":
+    handleStop();
+    break;
+  case "status":
+    handleStatus();
+    break;
+  case "list":
+    handleSessionList();
+    break;
   case "init":
     handleInit();
     break;
@@ -486,16 +521,13 @@ switch (command) {
   case "doctor":
     handleDoctor();
     break;
-  case "status":
-    handleStatus();
-    break;
+  case "packages":
   case "install":
   case "remove":
   case "rm":
-  case "list":
     handlePackages();
     break;
   default:
-    console.log("SquadLoop CLI — Run squadloop start|resume|status|config|attach|init|update|doctor|install|remove|list [--ex-mode=team|standalone] [--driver=tmux|herdr|iterm2|regular]");
+    console.log("SquadLoop CLI — Run squadloop start|resume|stop|status|list|config|attach|init|update|doctor|packages|install|remove [--ex-mode=team|standalone] [--driver=tmux|herdr|iterm2|regular]");
     break;
 }

@@ -19,3 +19,6 @@ docs/dev-checkpoints/*.json
 build/
 .gradle/
 .priority.md
+
+# Local git worktrees
+.worktrees/

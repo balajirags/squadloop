@@ -4,27 +4,15 @@ import * as path from "path";
 import { TrackerFactory } from "./trackers/tracker-factory.js";
 import { WorkflowEngine } from "./workflow.js";
 import { DriverFactory } from "./drivers/driver-factory.js";
+import { appendSessionEvent, getRuntimeSessionId, readActiveTask, readSessionEvents, resolveSessionId, writeActiveTask } from "./sessions/session-manager.js";
 function appendEventLog(eventRecord) {
-    try {
-        const eventsPath = path.join(process.cwd(), ".squadloop", "events.jsonl");
-        fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
-        let lines = [];
-        if (fs.existsSync(eventsPath)) {
-            lines = fs.readFileSync(eventsPath, "utf-8").trim().split("\n").filter(Boolean);
-        }
-        lines.push(JSON.stringify(eventRecord));
-        // Cap at 1000 events max (auto-truncation log rotation) to prevent file bloat
-        if (lines.length > 1000) {
-            lines = lines.slice(-1000);
-        }
-        fs.writeFileSync(eventsPath, lines.join("\n") + "\n", "utf-8");
-    }
-    catch {
-        // Ignore log write error
-    }
+    const sessionId = getRuntimeSessionId();
+    appendSessionEvent(sessionId, eventRecord);
+}
+function loadSessionPanes(sessionId) {
+    return readActiveTask(sessionId)?.panes;
 }
 export function registerTeamTools(pi) {
-    // Tool 1: team_update_status
     pi.registerTool({
         name: "team_update_status",
         label: "Team Update Status",
@@ -45,28 +33,15 @@ export function registerTeamTools(pi) {
             }))
         }),
         async execute(toolCallId, params, signal, onUpdate, ctx) {
-            const activeTaskPath = path.join(process.cwd(), ".squadloop", "active-task.json");
-            fs.mkdirSync(path.dirname(activeTaskPath), { recursive: true });
-            // Read previous active-task state to track reworkCount and cumulative tokens
-            let previousReworkCount = 0;
+            const sessionId = getRuntimeSessionId();
+            const existing = readActiveTask(sessionId);
+            let previousReworkCount = existing?.activeIssueId === params.issueId ? existing.reworkCount || 0 : 0;
             let promptTokens = params.tokens?.promptTokens || 0;
             let completionTokens = params.tokens?.completionTokens || 0;
-            if (fs.existsSync(activeTaskPath)) {
-                try {
-                    const prevState = JSON.parse(fs.readFileSync(activeTaskPath, "utf-8"));
-                    if (prevState.activeIssueId === params.issueId) {
-                        previousReworkCount = prevState.reworkCount || 0;
-                        if (prevState.tokenStats) {
-                            promptTokens += prevState.tokenStats.promptTokens || 0;
-                            completionTokens += prevState.tokenStats.completionTokens || 0;
-                        }
-                    }
-                }
-                catch {
-                    // Ignore
-                }
+            if (existing?.activeIssueId === params.issueId && existing.tokenStats) {
+                promptTokens += existing.tokenStats.promptTokens || 0;
+                completionTokens += existing.tokenStats.completionTokens || 0;
             }
-            // Estimate tokens if not provided (based on payload / prompt heuristic)
             if (promptTokens === 0 && completionTokens === 0) {
                 const payloadLength = (params.notes?.length || 100) + (params.issueId?.length || 10);
                 promptTokens = Math.ceil(payloadLength / 4) + 1800;
@@ -91,16 +66,16 @@ export function registerTeamTools(pi) {
                 notes: params.notes,
                 reworkCount: currentReworkCount,
                 tokenStats,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                driver: existing?.driver || DriverFactory.getDriver().id,
+                panes: existing?.panes
             };
-            // Check circuit breaker
             let circuitBreakerTripped = false;
             if (currentReworkCount > 3) {
                 state.status = "circuit-breaker-tripped";
                 circuitBreakerTripped = true;
             }
-            fs.writeFileSync(activeTaskPath, JSON.stringify(state, null, 2), "utf-8");
-            // Write structured JSON audit checkpoint
+            writeActiveTask(sessionId, state);
             if (params.issueId) {
                 try {
                     const checkpointDir = path.join(process.cwd(), "docs", "dev-checkpoints");
@@ -112,32 +87,30 @@ export function registerTeamTools(pi) {
                         updatedBy: state.updatedBy,
                         notes: params.notes || "",
                         reworkCount: currentReworkCount,
-                        timestamp: state.timestamp
+                        timestamp: state.timestamp,
+                        sessionId
                     }, null, 2), "utf-8");
                 }
                 catch {
                     // Ignore checkpoint write error
                 }
             }
-            // Read config.json if available
             const configPath = path.join(process.cwd(), ".squadloop", "config.json");
             if (fs.existsSync(configPath)) {
                 try {
                     const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
                     const rawHitl = config.hitl || config.mode || "loop";
                     const hitlMode = (rawHitl === "loop-hitl" ? "loop" : rawHitl === "step-hitl" ? "step" : rawHitl);
-                    const panes = config.panes;
+                    const panes = state.panes || config.panes || {};
                     if (panes) {
-                        // Strategy-driven tracker closure using TrackerFactory when done
                         if (params.newStatus === "done" && params.issueId) {
                             try {
                                 const trackerAdapter = TrackerFactory.getAdapter();
                                 await trackerAdapter.closeIssue(params.issueId, "Completed and merged to main by SquadLoop");
                             }
                             catch {
-                                // Non-fatal if tracker close fails
+                                // Non-fatal
                             }
-                            // Send end-of-story summary card to Pane 0
                             const summaryCard = `\n==============================================================\n` +
                                 `🎉 STORY #${params.issueId} COMPLETE & MERGED TO MAIN\n` +
                                 `==============================================================\n` +
@@ -156,7 +129,6 @@ export function registerTeamTools(pi) {
                                 // Ignore
                             }
                         }
-                        // Delegate workflow transition steering to dedicated WorkflowEngine
                         await WorkflowEngine.handleTransition(params.issueId, params.newStatus, hitlMode, panes, params.notes, currentReworkCount, circuitBreakerTripped);
                     }
                 }
@@ -170,7 +142,6 @@ export function registerTeamTools(pi) {
             };
         }
     });
-    // Tool 2: send_agent_message (Direct Inter-Agent Messaging)
     pi.registerTool({
         name: "send_agent_message",
         label: "Send Agent Message",
@@ -187,21 +158,29 @@ export function registerTeamTools(pi) {
             clearContext: Type.Optional(Type.Boolean({ description: "Whether to clear target agent conversation context before sending message (default: false)" }))
         }),
         async execute(toolCallId, params, signal, onUpdate, ctx) {
-            const configPath = path.join(process.cwd(), ".squadloop", "config.json");
-            if (!fs.existsSync(configPath)) {
+            const sessionId = getRuntimeSessionId();
+            const activeTask = readActiveTask(sessionId);
+            if (!activeTask) {
                 return {
-                    content: [{ type: "text", text: "Error: config.json not found. Run /team-dev first." }],
+                    content: [{ type: "text", text: "Error: no active session state found. Run squadloop start first." }],
                     details: { success: false }
                 };
             }
             try {
+                const configPath = path.join(process.cwd(), ".squadloop", "config.json");
+                if (!fs.existsSync(configPath)) {
+                    return {
+                        content: [{ type: "text", text: "Error: config.json not found. Run /team-dev first." }],
+                        details: { success: false }
+                    };
+                }
                 const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
                 const driver = DriverFactory.getDriver(config.driver);
-                let targetPane = config.panes?.[params.targetRole] || params.targetRole;
+                const panes = activeTask.panes || config.panes || {};
+                let targetPane = panes?.[params.targetRole] || params.targetRole;
                 const shouldClear = params.clearContext === true;
                 const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
                 await driver.sendPrompt(targetPane, formatted, shouldClear);
-                // Log direct message to .squadloop/events.jsonl with auto-truncation cap
                 appendEventLog({
                     eventId: `evt_${Date.now()}`,
                     type: "direct_message",
@@ -222,45 +201,27 @@ export function registerTeamTools(pi) {
             }
         }
     });
-    // Tool 3: get_team_events (Persistent Event Bus Inspection)
     pi.registerTool({
         name: "get_team_events",
         label: "Get Team Events",
         description: "Read recent status update events and inter-agent messages from the persistent event log (.squadloop/events.jsonl)",
         parameters: Type.Object({
-            limit: Type.Optional(Type.Number({ description: "Number of recent events to return (default: 10)" }))
+            limit: Type.Optional(Type.Number({ description: "Number of recent events to return (default: 10)" })),
+            sessionId: Type.Optional(Type.String({ description: "Optional session id to inspect" }))
         }),
         async execute(toolCallId, params, signal, onUpdate, ctx) {
-            const eventsPath = path.join(process.cwd(), ".squadloop", "events.jsonl");
-            if (!fs.existsSync(eventsPath)) {
+            const sessionId = resolveSessionId(params.sessionId) || getRuntimeSessionId();
+            const events = readSessionEvents(sessionId, params.limit || 10);
+            if (events.length === 0) {
                 return {
-                    content: [{ type: "text", text: "No events logged in .squadloop/events.jsonl yet." }],
+                    content: [{ type: "text", text: `No events logged in .pi/sessions/${sessionId}/events.jsonl yet.` }],
                     details: { events: [] }
                 };
             }
-            try {
-                const lines = fs.readFileSync(eventsPath, "utf-8").trim().split("\n").filter(Boolean);
-                const limit = params.limit || 10;
-                const recentLines = lines.slice(-limit);
-                const events = recentLines.map(line => {
-                    try {
-                        return JSON.parse(line);
-                    }
-                    catch {
-                        return { raw: line };
-                    }
-                });
-                return {
-                    content: [{ type: "text", text: `Retrieved ${events.length} recent team events:\n` + JSON.stringify(events, null, 2) }],
-                    details: { events }
-                };
-            }
-            catch (err) {
-                return {
-                    content: [{ type: "text", text: `Error reading events: ${err.message}` }],
-                    details: { events: [], error: err.message }
-                };
-            }
+            return {
+                content: [{ type: "text", text: `Retrieved ${events.length} recent team events:\n` + JSON.stringify(events, null, 2) }],
+                details: { events }
+            };
         }
     });
 }

@@ -1,13 +1,18 @@
 import { execSync } from "child_process";
 import type { ITerminalDriver, WorkspacePanes } from "./terminal-driver-interface.js";
 import { ModelResolver } from "../models/model-resolver.js";
+import { getSessionName, normalizeSessionId } from "../sessions/session-manager.js";
 
-function getAgentCommand(role: string): string {
+function getAgentCommand(role: string, sessionId?: string): string {
   const model = ModelResolver.getModel(role);
   const agentFile = `.squadloop/agents/${role}.md`;
   const modelFlag = model ? ` --model "${model}"` : "";
-  const agentEnv = `env CONFIG_DIR_NAME=.squadloop PI_CODING_AGENT_DIR="$HOME/.squadloop/agent"`;
+  const agentEnv = `env CONFIG_DIR_NAME=.squadloop PI_CODING_AGENT_DIR="$HOME/.squadloop/agent" SQUADLOOP_SESSION_ID="${normalizeSessionId(sessionId || process.env.SQUADLOOP_SESSION_ID || "default")}"`;
   return `${agentEnv} pi --approve --append-system-prompt "${agentFile}"${modelFlag}`;
+}
+
+function resolveSessionName(sessionId?: string): string {
+  return getSessionName(sessionId || process.env.SQUADLOOP_SESSION_ID || "default");
 }
 
 export class ITerm2Driver implements ITerminalDriver {
@@ -24,12 +29,13 @@ export class ITerm2Driver implements ITerminalDriver {
     }
   }
 
-  public hasActiveSession(): boolean {
+  public hasActiveSession(sessionId?: string): boolean {
+    const sessionName = resolveSessionName(sessionId);
     try {
       const script = `
         tell application "iTerm"
           repeat with w in windows
-            if name of w contains "squadloop" then return true
+            if name of w contains "${sessionName}" then return true
           end repeat
         end tell
         return false
@@ -41,56 +47,57 @@ export class ITerm2Driver implements ITerminalDriver {
     }
   }
 
-  public setupTeamLayout(layout: "panes" | "windows" = "panes"): WorkspacePanes {
+  public setupTeamLayout(layout: "panes" | "windows" = "panes", sessionId?: string): WorkspacePanes {
     const isWindows = layout === "windows";
+    const sessionName = resolveSessionName(sessionId);
     const script = `
       tell application "iTerm"
         activate
         set newWindow to (create window with default profile)
         tell newWindow
-          set name to "squadloop-workspace"
+          set name to "${sessionName}"
           ${isWindows ? `
             tell current tab
               set name to "orchestrator"
               tell current session
                 set name to "orchestrator"
-                write text "${getAgentCommand("orchestrator")}"
+                write text "${getAgentCommand("orchestrator", sessionId)}"
               end tell
             end tell
-            
+
             set baTab to (create tab with default profile)
             tell baTab
               set name to "ba"
               tell current session
                 set name to "ba"
-                write text "${getAgentCommand("ba")}"
+                write text "${getAgentCommand("ba", sessionId)}"
               end tell
             end tell
-            
+
             set devTab to (create tab with default profile)
             tell devTab
               set name to "developer"
               tell current session
                 set name to "developer"
-                write text "${getAgentCommand("developer")}"
+                write text "${getAgentCommand("developer", sessionId)}"
               end tell
             end tell
-            
+
             set qaTab to (create tab with default profile)
             tell qaTab
               set name to "qa"
               tell current session
                 set name to "qa"
-                write text "${getAgentCommand("qa")}"
+                write text "${getAgentCommand("qa", sessionId)}"
               end tell
             end tell
-            
+
             set revTab to (create tab with default profile)
             tell revTab
               set name to "reviewer"
               tell current session
                 set name to "reviewer"
-                write text "${getAgentCommand("reviewer")}"
+                write text "${getAgentCommand("reviewer", sessionId)}"
               end tell
             end tell
           ` : `
@@ -98,12 +105,12 @@ export class ITerm2Driver implements ITerminalDriver {
               set orchSession to current session
               tell orchSession
                 set name to "orchestrator"
-                write text "${getAgentCommand("orchestrator")}"
+                write text "${getAgentCommand("orchestrator", sessionId)}"
                 set baSession to (split horizontally with default profile)
               end tell
               tell baSession
                 set name to "ba"
-                write text "${getAgentCommand("ba")}"
+                write text "${getAgentCommand("ba", sessionId)}"
                 set devSession to (split vertically with default profile)
               end tell
               tell baSession
@@ -111,16 +118,16 @@ export class ITerm2Driver implements ITerminalDriver {
               end tell
               tell devSession
                 set name to "developer"
-                write text "${getAgentCommand("developer")}"
+                write text "${getAgentCommand("developer", sessionId)}"
                 set revSession to (split horizontally with default profile)
               end tell
               tell qaSession
                 set name to "qa"
-                write text "${getAgentCommand("qa")}"
+                write text "${getAgentCommand("qa", sessionId)}"
               end tell
               tell revSession
                 set name to "reviewer"
-                write text "${getAgentCommand("reviewer")}"
+                write text "${getAgentCommand("reviewer", sessionId)}"
               end tell
             end tell
           `}
@@ -149,7 +156,7 @@ export class ITerm2Driver implements ITerminalDriver {
     const script = `
       tell application "iTerm"
         repeat with w in windows
-          if name of w contains "squadloop-workspace" then
+          if name of w contains "${resolveSessionName()}" then
             tell w
               repeat with t in tabs
                 repeat with s in sessions of t
@@ -157,7 +164,7 @@ export class ITerm2Driver implements ITerminalDriver {
                     tell s to write text "${escaped}"
                   end if
                 end repeat
-              end repeat
+              end tell
             end tell
           end if
         end repeat
@@ -170,9 +177,24 @@ export class ITerm2Driver implements ITerminalDriver {
     }
   }
 
-  public attachSession(): void {
+  public attachSession(sessionId?: string): void {
     try {
       execSync(`osascript -e 'tell application "iTerm" to activate'`, { stdio: "ignore" });
+    } catch {
+      // Ignore
+    }
+  }
+
+  public stopSession(sessionId?: string): void {
+    try {
+      const script = `
+        tell application "iTerm"
+          repeat with w in windows
+            if name of w contains "${resolveSessionName(sessionId)}" then close w
+          end repeat
+        end tell
+      `;
+      execSync(`osascript -e '${script}'`, { stdio: "ignore" });
     } catch {
       // Ignore
     }

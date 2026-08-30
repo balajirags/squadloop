@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import type { IWorkspaceAdapter, WorkspacePanes } from "./workspace-interface.js";
 import { ModelResolver } from "../models/model-resolver.js";
+import { appendSessionEvent, getRuntimeSessionId } from "../sessions/session-manager.js";
 
 function resolveRoleModel(role: string): string | null {
   return ModelResolver.getModel(role);
@@ -11,10 +12,10 @@ export class HeadlessWorkspaceAdapter implements IWorkspaceAdapter {
   public readonly name = "Regular Headless Workspace (No Tmux)";
 
   public isAvailable(): boolean {
-    return true; // Always available on any terminal / OS
+    return true;
   }
 
-  public setupLayout(_layout: "panes" | "windows" = "panes"): WorkspacePanes {
+  public setupLayout(_layout: "panes" | "windows" = "panes", _sessionId?: string): WorkspacePanes {
     console.log("ℹ️  Running in Regular Headless Mode (no tmux required).");
     return {
       orchestrator: "orchestrator",
@@ -25,35 +26,26 @@ export class HeadlessWorkspaceAdapter implements IWorkspaceAdapter {
     };
   }
 
-  public recoverMissingPanes(currentPanes: WorkspacePanes): WorkspacePanes {
+  public recoverMissingPanes(currentPanes: WorkspacePanes, _sessionId?: string): WorkspacePanes {
     return currentPanes;
   }
 
   public async sendPrompt(targetRole: string, promptText: string): Promise<void> {
-    // Append headless event to .squadloop/events.jsonl with resolved model
     try {
-      const eventsPath = path.join(process.cwd(), ".squadloop", "events.jsonl");
-      fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
-
+      const sessionId = getRuntimeSessionId();
       const model = resolveRoleModel(targetRole);
 
-      const eventRecord = {
+      appendSessionEvent(sessionId, {
         eventId: `evt_${Date.now()}`,
         type: "headless_prompt",
         targetRole,
         model: model || "default",
         prompt: promptText,
         timestamp: new Date().toISOString()
-      };
+      });
 
-      let lines: string[] = [];
-      if (fs.existsSync(eventsPath)) {
-        lines = fs.readFileSync(eventsPath, "utf-8").trim().split("\n").filter(Boolean);
-      }
-      lines.push(JSON.stringify(eventRecord));
-      if (lines.length > 1000) lines = lines.slice(-1000);
-      fs.writeFileSync(eventsPath, lines.join("\n") + "\n", "utf-8");
-
+      const eventsPath = path.join(process.cwd(), ".squadloop", "events.jsonl");
+      fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
       console.log(`[HEADLESS DISPATCH -> ${targetRole.toUpperCase()}${model ? ` (${model})` : ""}] : ${promptText.slice(0, 100)}...`);
     } catch {
       // Non-fatal

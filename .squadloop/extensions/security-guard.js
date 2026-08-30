@@ -1,6 +1,7 @@
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import { getRuntimeSessionId, readActiveTask } from "./sessions/session-manager.js";
 const DEFAULT_PROTECTED_PATTERNS = [
     /\.env($|\..*)/i,
     /\.bashrc/i,
@@ -39,7 +40,8 @@ function loadSecurityConfig() {
 }
 function logSecurityEvent(eventRecord) {
     try {
-        const eventsPath = path.join(process.cwd(), ".squadloop", "events.jsonl");
+        const sessionId = getRuntimeSessionId();
+        const eventsPath = path.join(process.cwd(), ".pi", "sessions", sessionId, "events.jsonl");
         fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
         let lines = [];
         if (fs.existsSync(eventsPath)) {
@@ -56,14 +58,12 @@ function logSecurityEvent(eventRecord) {
 }
 function notifyOrchestrator(message) {
     try {
-        const configPath = path.join(process.cwd(), ".squadloop", "config.json");
-        if (fs.existsSync(configPath)) {
-            const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-            const orchPane = config.panes?.orchestrator;
-            if (orchPane) {
-                const escaped = message.replace(/"/g, '\\"');
-                execSync(`tmux send-keys -t ${orchPane} "${escaped}" Enter`, { stdio: "ignore" });
-            }
+        const sessionId = getRuntimeSessionId();
+        const activeTask = readActiveTask(sessionId);
+        const orchPane = activeTask?.panes?.orchestrator;
+        if (orchPane) {
+            const escaped = message.replace(/"/g, '\\"');
+            execSync(`tmux send-keys -t ${orchPane} "${escaped}" Enter`, { stdio: "ignore" });
         }
     }
     catch {
@@ -76,10 +76,8 @@ export function registerSecurityGuard(pi) {
             const toolName = event?.toolName || event?.name;
             const params = event?.params || event?.args;
             const config = loadSecurityConfig();
-            // Combine default patterns with custom protected files
             const customPatterns = (config.customProtectedFiles || []).map(file => new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "i"));
             const allProtectedPatterns = [...DEFAULT_PROTECTED_PATTERNS, ...customPatterns];
-            // Check 1: Protected File Reading Check
             let targetText = "";
             if (toolName === "read" && params?.path) {
                 targetText = String(params.path);
@@ -103,7 +101,6 @@ export function registerSecurityGuard(pi) {
                     }
                 }
             }
-            // Check 2: Destructive Command Policy Check for bash tool
             if (toolName === "bash" && params?.command) {
                 const cmd = String(params.command);
                 const isDestructive = DESTRUCTIVE_COMMAND_PATTERNS.some(pat => pat.test(cmd));

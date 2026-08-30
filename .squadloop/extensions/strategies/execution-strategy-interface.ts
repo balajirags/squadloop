@@ -4,6 +4,7 @@ export interface ExecutionContext {
   hitl: "loop" | "step" | "auto";
   layout: "panes" | "windows";
   mode?: string;
+  sessionId?: string;
 }
 
 export interface IExecutionStrategy {

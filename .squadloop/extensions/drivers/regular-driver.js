@@ -4,10 +4,10 @@ export class RegularDriver {
     isAvailable() {
         return true;
     }
-    hasActiveSession() {
+    hasActiveSession(_sessionId) {
         return true;
     }
-    setupTeamLayout(layout = "panes") {
+    setupTeamLayout(layout = "panes", _sessionId) {
         return {
             orchestrator: "orchestrator",
             ba: "ba",
@@ -19,8 +19,11 @@ export class RegularDriver {
     async sendPrompt(paneTarget, promptText, clear = false) {
         console.log(`[${paneTarget.toUpperCase()}] ${promptText}`);
     }
-    attachSession() {
+    attachSession(_sessionId) {
         // Direct terminal session, no attachment required
+    }
+    stopSession(_sessionId) {
+        // No-op in standalone mode
     }
     recoverMissingPanes(currentPanes) {
         return currentPanes;

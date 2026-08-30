@@ -3,9 +3,10 @@ export declare class RegularDriver implements ITerminalDriver {
     readonly id = "regular";
     readonly name = "Regular Standalone Terminal Driver";
     isAvailable(): boolean;
-    hasActiveSession(): boolean;
-    setupTeamLayout(layout?: "panes" | "windows"): WorkspacePanes;
+    hasActiveSession(_sessionId?: string): boolean;
+    setupTeamLayout(layout?: "panes" | "windows", _sessionId?: string): WorkspacePanes;
     sendPrompt(paneTarget: string, promptText: string, clear?: boolean): Promise<void>;
-    attachSession(): void;
+    attachSession(_sessionId?: string): void;
+    stopSession(_sessionId?: string): void;
     recoverMissingPanes(currentPanes: WorkspacePanes): WorkspacePanes;
 }
