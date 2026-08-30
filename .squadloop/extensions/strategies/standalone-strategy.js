@@ -1,16 +1,21 @@
 import { spawnSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import { ModelResolver } from "../models/model-resolver.js";
 export class StandaloneExecutionStrategy {
     async executeStart(ctx) {
         console.log("🚀 Starting SquadLoop in Standalone Mode (Single Interface)...");
-        console.log("  ℹ️  Use persona slash commands (/ba, /dev, /qa, /reviewer, /orchestrator or /*.agent.md) to switch roles.");
+        console.log("  ℹ️  Use persona prompts in .squadloop/prompts or /*.agent.md to switch roles.");
         console.log("  ℹ️  Internal subagents remain fully functional via Agent tool.\n");
         const defaultAgentFile = path.join(process.cwd(), ".squadloop", "agents", "orchestrator.md");
         const agentPrompt = fs.existsSync(defaultAgentFile) ? defaultAgentFile : "";
         const piArgs = ["--approve"];
+        const orchestratorModel = ModelResolver.getModel("orchestrator");
         if (agentPrompt) {
             piArgs.push("--append-system-prompt", agentPrompt);
+        }
+        if (orchestratorModel) {
+            piArgs.push("--model", orchestratorModel);
         }
         spawnSync("pi", piArgs, {
             stdio: "inherit",
