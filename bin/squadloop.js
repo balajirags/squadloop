@@ -215,9 +215,11 @@ function getArgValue(...names) {
   return null;
 }
 
-function getRequestedSessionId({ generateIfMissing = false } = {}) {
+function getRequestedSessionId({ mode = "reuse-last" } = {}) {
   const explicit = getArgValue("name", "session");
   if (explicit) return normalizeSessionId(explicit);
+
+  if (mode === "new") return createSessionId();
 
   const envSession = process.env.SQUADLOOP_SESSION_ID;
   if (envSession) return normalizeSessionId(envSession);
@@ -225,7 +227,6 @@ function getRequestedSessionId({ generateIfMissing = false } = {}) {
   const lastActive = resolveLastActiveSession();
   if (lastActive) return lastActive.sessionId;
 
-  if (generateIfMissing) return createSessionId();
   return null;
 }
 
@@ -252,7 +253,7 @@ function readProjectSettings() {
 
 async function handleStart() {
   const ctx = parseCliContext();
-  const sessionId = getRequestedSessionId({ generateIfMissing: true });
+  const sessionId = getRequestedSessionId({ mode: "new" });
   process.env.SQUADLOOP_SESSION_ID = sessionId;
   printLogo();
   syncRuntimeAssets({ overwrite: false });
@@ -265,7 +266,7 @@ async function handleStart() {
 
 async function handleResume() {
   const ctx = parseCliContext();
-  const sessionId = getRequestedSessionId({ generateIfMissing: false });
+  const sessionId = getRequestedSessionId({ mode: "reuse-last" });
   if (!sessionId) {
     console.log("No active SquadLoop sessions found. Run 'squadloop start' first.");
     return;
@@ -296,7 +297,7 @@ function resolveDriverForSession(sessionId) {
 }
 
 function handleAttach() {
-  const sessionId = getRequestedSessionId({ generateIfMissing: false });
+  const sessionId = getRequestedSessionId({ mode: "reuse-last" });
   if (!sessionId) {
     console.log("No active SquadLoop sessions found.");
     return;
@@ -306,7 +307,7 @@ function handleAttach() {
 }
 
 function handleStop() {
-  const sessionId = getRequestedSessionId({ generateIfMissing: false });
+  const sessionId = getRequestedSessionId({ mode: "reuse-last" });
   if (!sessionId) {
     console.log("No active SquadLoop sessions found.");
     return;
@@ -343,7 +344,7 @@ function handleSessionsCommand() {
 }
 
 function handleStatus() {
-  const sessionId = getRequestedSessionId({ generateIfMissing: false });
+  const sessionId = getRequestedSessionId({ mode: "reuse-last" });
   const summary = sessionId ? readActiveTask(sessionId) : null;
   console.log("📊 SquadLoop Status:");
   console.log(`  • Session          : ${sessionId || (resolveLastActiveSession()?.sessionId || "none")}`);
