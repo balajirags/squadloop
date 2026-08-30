@@ -42,11 +42,12 @@ squadloop start
 squadloop attach
 ```
 
-### Step 5: Manage Packages
+### Step 5: Manage Packages and Sessions
 ```bash
 squadloop install npm:pi-web-access
 squadloop remove npm:pi-web-access
 squadloop list
+squadloop sessions list
 ```
 
 ---
@@ -148,6 +149,7 @@ squadloop resume [--ex-mode=team|standalone] [--hitl=loop|step|auto] [--driver=t
 squadloop config [ex-mode=team|standalone] [hitl=loop|step|auto] [driver=tmux|herdr|iterm2|regular] [layout=panes|windows]
 squadloop attach
 squadloop status
+squadloop sessions list
 squadloop init
 squadloop update
 squadloop doctor
@@ -156,12 +158,13 @@ squadloop doctor
 | Command | Description |
 | :--- | :--- |
 | `squadloop start` | Launches a SquadLoop workspace session using config defaults or CLI flag overrides. |
-| `squadloop resume` | Resumes an active SquadLoop session from `.squadloop/active-task.json` log. |
+| `squadloop resume` | Resumes an active SquadLoop session from `.squadloop/sessions/<id>/active-task.json`. |
 | `squadloop config` | Displays or updates persistent defaults in `.squadloop/config.json` (`exMode`, `hitl`, `driver`, `layout`). |
 | `squadloop attach` | Attaches directly to the active workspace session in the configured terminal driver (`tmux`, `herdr`, `iterm2`). |
 | `squadloop status` | Displays active task state, token usage, and estimated cost directly from terminal. |
 | `squadloop init` | Bootstraps `.squadloop/` config defaults (`config.json`), `AGENTS.md`, `project-context.md`, and docs/story directories into current directory. |
 | `squadloop install` / `remove` / `list` | Adds/removes/lists project-local Pi packages in `.squadloop/settings.json`. |
+| `squadloop sessions list` | Lists saved session state from `.squadloop/sessions/<id>/`. |
 | `squadloop help` | Displays the SquadLoop CLI usage guide and flag options. |
 
 ### Slash Commands (Inside Pi)
@@ -174,7 +177,7 @@ squadloop doctor
 ## 📊 Telemetry, Audit Logs & Event Bus
 
 - **0.9s Instant Workspace Launch**: Workspace creation is constructed locally in Node.js without network/LLM API delays.
-- **100% Reliable Event Bus (`.squadloop/events.jsonl`)**: Persistent append-only event log with automatic 1,000-event log rotation cap.
+- **100% Reliable Event Bus (`.squadloop/sessions/<id>/events.jsonl`)**: Persistent append-only event log with automatic 1,000-event log rotation cap.
 - **`get_team_events` Tool**: Allows Master Orchestrator in Pane 0 to query recent event log entries at any time.
 - **End-of-Story Summary Card**: Displays an end-to-end verification report in Pane 0 upon story completion (`done`) detailing branch name, PR merge commit ID, JaCoCo coverage %, QA HTTP probe result, total tokens used, and estimated USD cost.
 - **Rework Circuit Breaker**: If `reworkCount > 3`, auto-steering halts and emits an alert in Pane 0 for human guidance.

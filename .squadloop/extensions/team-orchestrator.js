@@ -137,7 +137,7 @@ export default function (pi) {
         }
     });
     pi.registerCommand("squadloop-resume", {
-        description: "Resume active SquadLoop session from .squadloop/active-task.json log",
+        description: "Resume active SquadLoop session from .squadloop/sessions/<id>/active-task.json",
         handler: async (_args, ctx) => {
             await handleTeamResume(ctx);
         }

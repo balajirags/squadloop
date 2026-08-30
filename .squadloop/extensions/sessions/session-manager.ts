@@ -61,7 +61,7 @@ export function createSessionId(prefix = "session"): string {
 }
 
 export function getSessionRoot(): string {
-  return path.join(getProjectRoot(), ".pi", "sessions");
+  return path.join(getProjectRoot(), ".squadloop", "sessions");
 }
 
 export function getSessionDir(sessionId = "default"): string {

@@ -251,7 +251,7 @@ export function registerTeamTools(pi: ExtensionAPI) {
   pi.registerTool({
     name: "get_team_events",
     label: "Get Team Events",
-    description: "Read recent status update events and inter-agent messages from the persistent event log (.squadloop/events.jsonl)",
+    description: "Read recent status update events and inter-agent messages from the session event log (.squadloop/sessions/<id>/events.jsonl)",
     parameters: Type.Object({
       limit: Type.Optional(Type.Number({ description: "Number of recent events to return (default: 10)" })),
       sessionId: Type.Optional(Type.String({ description: "Optional session id to inspect" }))
@@ -261,7 +261,7 @@ export function registerTeamTools(pi: ExtensionAPI) {
       const events = readSessionEvents(sessionId, params.limit || 10);
       if (events.length === 0) {
         return {
-          content: [{ type: "text", text: `No events logged in .pi/sessions/${sessionId}/events.jsonl yet.` }],
+          content: [{ type: "text", text: `No events logged in .squadloop/sessions/${sessionId}/events.jsonl yet.` }],
           details: { events: [] }
         };
       }

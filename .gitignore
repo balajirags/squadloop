@@ -4,10 +4,11 @@ dist/
 *.tgz
 *.log
 
-# DevSquad AI Local Session State & Logs
+# SquadLoop Local Session State & Logs
 .squadloop/active-task.json
 .squadloop/events.jsonl
 .squadloop/config.json
+.squadloop/sessions/
 docs/dev-checkpoints/*.json
 
 # OS & IDE Files

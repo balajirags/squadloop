@@ -311,6 +311,15 @@ function handleSessionList() {
   })));
 }
 
+function handleSessionsCommand() {
+  const subcommand = (args[1] || "list").toLowerCase();
+  if (subcommand !== "list") {
+    console.log("Usage: squadloop sessions list");
+    return;
+  }
+  handleSessionList();
+}
+
 function handleStatus() {
   const sessionId = getRequestedSessionId({ generateIfMissing: false });
   const summary = sessionId ? readActiveTask(sessionId) : null;
@@ -506,8 +515,11 @@ switch (command) {
   case "status":
     handleStatus();
     break;
+  case "sessions":
+    handleSessionsCommand();
+    break;
   case "list":
-    handleSessionList();
+    handlePackages();
     break;
   case "init":
     handleInit();
@@ -528,6 +540,6 @@ switch (command) {
     handlePackages();
     break;
   default:
-    console.log("SquadLoop CLI — Run squadloop start|resume|stop|status|list|config|attach|init|update|doctor|packages|install|remove [--ex-mode=team|standalone] [--driver=tmux|herdr|iterm2|regular]");
+    console.log("SquadLoop CLI — Run squadloop start|resume|stop|status|sessions list|list|config|attach|init|update|doctor|packages|install|remove [--ex-mode=team|standalone] [--driver=tmux|herdr|iterm2|regular]");
     break;
 }

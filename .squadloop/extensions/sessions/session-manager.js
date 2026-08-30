@@ -18,7 +18,7 @@ export function createSessionId(prefix = "session") {
     return `${normalizeSessionId(prefix)}-${randomBytes(2).toString("hex")}`;
 }
 export function getSessionRoot() {
-    return path.join(getProjectRoot(), ".pi", "sessions");
+    return path.join(getProjectRoot(), ".squadloop", "sessions");
 }
 export function getSessionDir(sessionId = "default") {
     const dir = path.join(getSessionRoot(), normalizeSessionId(sessionId));
