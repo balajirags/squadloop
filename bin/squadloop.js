@@ -125,6 +125,28 @@ function syncProjectSettingsJson() {
   fs.writeFileSync(targetPath, JSON.stringify(merged, null, 2), "utf-8");
 }
 
+function syncProjectModelsJson() {
+  const modelsExamplePath = projectPath("models.example.json");
+  const modelsJsonPath = projectPath("models.json");
+
+  if (!fs.existsSync(modelsJsonPath) && fs.existsSync(modelsExamplePath)) {
+    try {
+      fs.copyFileSync(modelsExamplePath, modelsJsonPath);
+    } catch {
+      // Ignore
+    }
+  }
+
+  if (fs.existsSync(modelsJsonPath)) {
+    try {
+      fs.mkdirSync(GLOBAL_AGENT_DIR, { recursive: true });
+      fs.copyFileSync(modelsJsonPath, path.join(GLOBAL_AGENT_DIR, "models.json"));
+    } catch {
+      // Non-fatal
+    }
+  }
+}
+
 function parseCliContext() {
   ensureProjectDir();
 

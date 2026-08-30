@@ -129,6 +129,7 @@ The delivery tracker is the source of truth for story requirements, ACs, and lif
 - Keep bundled packages in `.squadloop/settings.json` and treat them as part of the product experience.
 - When changing bootstrap behavior, verify `squadloop init`, `start`, `status`, and `doctor` still work.
 - Run `npm run build` before claiming changes are done.
+- When implementing a backlog item, always cut a git branch, make changes, and once the user approves, always squash-merge to main.
 
 ## Editing Expectations
 - Prefer small, focused changes.
