@@ -6,6 +6,6 @@ export declare class TmuxWorkspaceAdapter implements IWorkspaceAdapter {
     private setup5PaneLayout;
     private setup5WindowLayout;
     recoverMissingPanes(currentPanes: WorkspacePanes, _sessionId?: string): WorkspacePanes;
-    sendPrompt(paneTarget: string, promptText: string, clear?: boolean): Promise<void>;
+    sendPrompt(paneTarget: string, promptText: string, clear?: boolean, targetRole?: string, sessionId?: string): Promise<void>;
     startAppServerWindow(startCommand?: string): string;
 }

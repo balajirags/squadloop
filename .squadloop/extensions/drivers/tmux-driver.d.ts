@@ -7,7 +7,7 @@ export declare class TmuxDriver implements ITerminalDriver {
     setupTeamLayout(layout?: "panes" | "windows", sessionId?: string): WorkspacePanes;
     private setup5PaneLayout;
     private setup5WindowLayout;
-    sendPrompt(paneTarget: string, promptText: string, clear?: boolean): Promise<void>;
+    sendPrompt(paneTarget: string, promptText: string, clear?: boolean, targetRole?: string, sessionId?: string): Promise<void>;
     attachSession(sessionId?: string): void;
     stopSession(sessionId?: string): void;
     recoverMissingPanes(currentPanes: WorkspacePanes): WorkspacePanes;

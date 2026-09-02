@@ -7,10 +7,12 @@ import { TrackerFactory } from "./trackers/tracker-factory.js";
 import { WorkflowEngine } from "./workflow.js";
 import { DriverFactory } from "./drivers/driver-factory.js";
 import {
+  appendAgentMailbox,
   appendSessionEvent,
   getRuntimeSessionId,
   listSessions,
   readActiveTask,
+  readAgentMailbox,
   readSessionEvents,
   resolveSessionId,
   writeActiveTask,
@@ -225,7 +227,13 @@ export function registerTeamTools(pi: ExtensionAPI) {
         const shouldClear = params.clearContext === true;
 
         const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
-        await driver.sendPrompt(targetPane, formatted, shouldClear);
+        await driver.sendPrompt(targetPane, formatted, shouldClear, params.targetRole, sessionId);
+
+        appendAgentMailbox(sessionId, params.targetRole, {
+          type: "direct_message",
+          message: params.message,
+          timestamp: new Date().toISOString()
+        });
 
         appendEventLog({
           eventId: `evt_${Date.now()}`,
@@ -251,24 +259,27 @@ export function registerTeamTools(pi: ExtensionAPI) {
   pi.registerTool({
     name: "get_team_events",
     label: "Get Team Events",
-    description: "Read recent status update events and inter-agent messages from the session event log (.squadloop/sessions/<id>/events.jsonl)",
+    description: "Read recent status update events and inter-agent messages from the session event log",
     parameters: Type.Object({
       limit: Type.Optional(Type.Number({ description: "Number of recent events to return (default: 10)" })),
+      role: Type.Optional(Type.String({ description: "Optional agent role to read specific mailbox messages for" })),
       sessionId: Type.Optional(Type.String({ description: "Optional session id to inspect" }))
     }),
     async execute(toolCallId, params, signal, onUpdate, ctx) {
       const sessionId = resolveSessionId(params.sessionId) || getRuntimeSessionId();
       const events = readSessionEvents(sessionId, params.limit || 10);
-      if (events.length === 0) {
+      const mailboxEvents = params.role ? readAgentMailbox(sessionId, params.role, params.limit || 10) : [];
+
+      if (events.length === 0 && mailboxEvents.length === 0) {
         return {
-          content: [{ type: "text", text: `No events logged in .squadloop/sessions/${sessionId}/events.jsonl yet.` }],
-          details: { events: [] }
+          content: [{ type: "text", text: `No events logged in session ${sessionId} yet.` }],
+          details: { events: [], mailboxEvents: [] }
         };
       }
 
       return {
-        content: [{ type: "text", text: `Retrieved ${events.length} recent team events:\n` + JSON.stringify(events, null, 2) }],
-        details: { events }
+        content: [{ type: "text", text: `Retrieved recent team events:\n` + JSON.stringify({ events, mailboxEvents }, null, 2) }],
+        details: { events, mailboxEvents }
       };
     }
   });

@@ -4,9 +4,13 @@ import { getSessionName, normalizeSessionId } from "../sessions/session-manager.
 function getAgentCommand(role, sessionId) {
     const model = ModelResolver.getModel(role);
     const agentFile = `.squadloop/agents/${role}.md`;
+    const provider = model && model.includes("/") ? model.split("/")[0] : null;
+    const providerFlag = provider ? ` --provider "${provider}"` : "";
     const modelFlag = model ? ` --model "${model}"` : "";
-    const agentEnv = `env CONFIG_DIR_NAME=.squadloop PI_CODING_AGENT_DIR="$HOME/.squadloop/agent" SQUADLOOP_SESSION_ID="${normalizeSessionId(sessionId || process.env.SQUADLOOP_SESSION_ID || "default")}"`;
-    return `${agentEnv} pi --approve --append-system-prompt "${agentFile}"${modelFlag}`;
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
+    const geminiEnv = geminiKey ? ` GEMINI_API_KEY="${geminiKey}"` : "";
+    const agentEnv = `env CONFIG_DIR_NAME=.squadloop PI_CODING_AGENT_DIR="$HOME/.squadloop/agent" SQUADLOOP_SESSION_ID="${normalizeSessionId(sessionId || process.env.SQUADLOOP_SESSION_ID || "default")}"${geminiEnv}`;
+    return `${agentEnv} pi --approve --append-system-prompt "${agentFile}"${providerFlag}${modelFlag}`;
 }
 function resolveSessionName(sessionId) {
     return getSessionName(sessionId || process.env.SQUADLOOP_SESSION_ID || "default");
@@ -43,7 +47,7 @@ export class ITerm2Driver {
             return false;
         }
     }
-    setupTeamLayout(layout = "panes", sessionId) {
+    setupTeamLayout(layout = "windows", sessionId) {
         const isWindows = layout === "windows";
         const sessionName = resolveSessionName(sessionId);
         const script = `

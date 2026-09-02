@@ -15,7 +15,7 @@ export class HeadlessWorkspaceAdapter implements IWorkspaceAdapter {
     return true;
   }
 
-  public setupLayout(_layout: "panes" | "windows" = "panes", _sessionId?: string): WorkspacePanes {
+  public setupLayout(_layout: "panes" | "windows" = "windows", _sessionId?: string): WorkspacePanes {
     console.log("ℹ️  Running in Regular Headless Mode (no tmux required).");
     return {
       orchestrator: "orchestrator",

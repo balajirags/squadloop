@@ -11,7 +11,7 @@ export interface ITerminalDriver {
   readonly name: string;
   isAvailable(): boolean;
   setupTeamLayout(layout: "panes" | "windows", sessionId?: string): WorkspacePanes;
-  sendPrompt(targetPaneId: string, promptText: string, clear?: boolean): Promise<void>;
+  sendPrompt(targetPaneId: string, promptText: string, clear?: boolean, targetRole?: string, sessionId?: string): Promise<void>;
   attachSession(sessionId?: string): void;
   stopSession(sessionId?: string): void;
   hasActiveSession(sessionId?: string): boolean;

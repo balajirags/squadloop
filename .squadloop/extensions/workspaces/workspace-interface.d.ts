@@ -10,6 +10,6 @@ export interface IWorkspaceAdapter {
     isAvailable(): boolean;
     setupLayout(layout: "panes" | "windows", sessionId?: string): WorkspacePanes;
     recoverMissingPanes(currentPanes: WorkspacePanes, sessionId?: string): WorkspacePanes;
-    sendPrompt(targetPane: string, promptText: string, clear?: boolean): Promise<void>;
+    sendPrompt(targetPane: string, promptText: string, clear?: boolean, targetRole?: string, sessionId?: string): Promise<void>;
     startAppServerWindow(startCommand?: string): string;
 }

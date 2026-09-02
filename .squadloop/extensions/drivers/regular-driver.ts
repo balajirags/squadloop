@@ -12,7 +12,7 @@ export class RegularDriver implements ITerminalDriver {
     return true;
   }
 
-  public setupTeamLayout(layout: "panes" | "windows" = "panes", _sessionId?: string): WorkspacePanes {
+  public setupTeamLayout(layout: "panes" | "windows" = "windows", _sessionId?: string): WorkspacePanes {
     return {
       orchestrator: "orchestrator",
       ba: "ba",

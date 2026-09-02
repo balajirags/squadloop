@@ -10,7 +10,7 @@ export class HeadlessWorkspaceAdapter {
     isAvailable() {
         return true;
     }
-    setupLayout(_layout = "panes", _sessionId) {
+    setupLayout(_layout = "windows", _sessionId) {
         console.log("ℹ️  Running in Regular Headless Mode (no tmux required).");
         return {
             orchestrator: "orchestrator",

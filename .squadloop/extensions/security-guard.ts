@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import { getRuntimeSessionId, readActiveTask } from "./sessions/session-manager.js";
+import { appendSessionEvent, getRuntimeSessionId, readActiveTask } from "./sessions/session-manager.js";
 
 const DEFAULT_PROTECTED_PATTERNS = [
   /\.env($|\..*)/i,
@@ -15,7 +15,9 @@ const DEFAULT_PROTECTED_PATTERNS = [
   /\.aws\/credentials/i,
   /\.ssh\//i,
   /\.gnupg\//i,
-  /\.kube\/config/i
+  /\.kube\/config/i,
+  /\.squadloop($|\/)/i,
+  /\.pi($|\/)/i
 ];
 
 const DESTRUCTIVE_COMMAND_PATTERNS = [
@@ -50,15 +52,7 @@ function loadSecurityConfig(): SecurityConfig {
 function logSecurityEvent(eventRecord: any): void {
   try {
     const sessionId = getRuntimeSessionId();
-    const eventsPath = path.join(process.cwd(), ".pi", "sessions", sessionId, "events.jsonl");
-    fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
-    let lines: string[] = [];
-    if (fs.existsSync(eventsPath)) {
-      lines = fs.readFileSync(eventsPath, "utf-8").trim().split("\n").filter(Boolean);
-    }
-    lines.push(JSON.stringify(eventRecord));
-    if (lines.length > 1000) lines = lines.slice(-1000);
-    fs.writeFileSync(eventsPath, lines.join("\n") + "\n", "utf-8");
+    appendSessionEvent(sessionId, eventRecord);
   } catch {
     // Ignore write errors
   }
@@ -98,7 +92,7 @@ export function registerSecurityGuard(pi: ExtensionAPI) {
       if (targetText) {
         for (const pattern of allProtectedPatterns) {
           if (pattern.test(targetText)) {
-            const blockMsg = `🛑 ACCESS DENIED: Reading or modifying sensitive environment files or system credentials (${targetText}) is strictly prohibited by SquadLoop Security Guard.`;
+            const blockMsg = `🛑 ACCESS DENIED: Reading or modifying sensitive environment files, credentials, or internal .squadloop state (${targetText}) is strictly prohibited by SquadLoop Security Guard.`;
             logSecurityEvent({
               eventId: `evt_${Date.now()}`,
               type: "security_blocked",

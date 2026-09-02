@@ -7,7 +7,7 @@ export class RegularDriver {
     hasActiveSession(_sessionId) {
         return true;
     }
-    setupTeamLayout(layout = "panes", _sessionId) {
+    setupTeamLayout(layout = "windows", _sessionId) {
         return {
             orchestrator: "orchestrator",
             ba: "ba",

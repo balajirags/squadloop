@@ -25,7 +25,7 @@ function getOrCreateConfig(): TeamConfig {
   const configPath = path.join(process.cwd(), ".squadloop", "config.json");
   let config: TeamConfig = {
     mode: "loop-hitl",
-    layout: "panes",
+    layout: "windows",
     panes: { orchestrator: "", ba: "", developer: "", qa: "", reviewer: "" }
   };
 
@@ -34,7 +34,7 @@ function getOrCreateConfig(): TeamConfig {
       const loaded = JSON.parse(fs.readFileSync(configPath, "utf-8"));
       config = {
         mode: loaded.mode || "loop-hitl",
-        layout: loaded.layout || "panes",
+        layout: loaded.layout || "windows",
         workspaceMode: loaded.workspaceMode || "tmux",
         destructiveCommandPolicy: loaded.destructiveCommandPolicy || "ask-human",
         customProtectedFiles: loaded.customProtectedFiles || [],

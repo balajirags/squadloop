@@ -78,6 +78,10 @@ export function getEventsPath(sessionId = "default"): string {
   return path.join(getSessionDir(sessionId), "events.jsonl");
 }
 
+export function getMailboxPath(sessionId = "default", role = "all"): string {
+  return path.join(getSessionDir(sessionId), "mailbox", `${normalizeSessionId(role)}.jsonl`);
+}
+
 export function getSessionName(sessionId = "default"): string {
   return `squadloop-${normalizeSessionId(sessionId)}`;
 }
@@ -145,6 +149,47 @@ export function readSessionEvents(sessionId: string, limit = 10): Record<string,
   const eventsPath = getEventsPath(sessionId);
   if (!fs.existsSync(eventsPath)) return [];
   const raw = fs.readFileSync(eventsPath, "utf-8").trim();
+  if (!raw) return [];
+  const lines = raw.split("\n").filter(Boolean).slice(-Math.max(1, limit));
+  return lines.map((line) => {
+    try {
+      return JSON.parse(line) as Record<string, unknown>;
+    } catch {
+      return { raw: line };
+    }
+  });
+}
+
+export function appendAgentMailbox(sessionId: string, role: string, messageRecord: Record<string, unknown>): void {
+  const mbPath = getMailboxPath(sessionId, role);
+  fs.mkdirSync(path.dirname(mbPath), { recursive: true });
+
+  let lines: string[] = [];
+  if (fs.existsSync(mbPath)) {
+    const raw = fs.readFileSync(mbPath, "utf-8").trim();
+    if (raw) {
+      lines = raw.split("\n").filter(Boolean);
+    }
+  }
+
+  lines.push(JSON.stringify({
+    ...messageRecord,
+    targetRole: role,
+    sessionId: normalizeSessionId(sessionId),
+    timestamp: messageRecord.timestamp || new Date().toISOString()
+  }));
+
+  if (lines.length > 500) {
+    lines = lines.slice(-500);
+  }
+
+  fs.writeFileSync(mbPath, lines.join("\n") + "\n", "utf-8");
+}
+
+export function readAgentMailbox(sessionId: string, role: string, limit = 10): Record<string, unknown>[] {
+  const mbPath = getMailboxPath(sessionId, role);
+  if (!fs.existsSync(mbPath)) return [];
+  const raw = fs.readFileSync(mbPath, "utf-8").trim();
   if (!raw) return [];
   const lines = raw.split("\n").filter(Boolean).slice(-Math.max(1, limit));
   return lines.map((line) => {

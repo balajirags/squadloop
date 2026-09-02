@@ -72,7 +72,7 @@ The SquadLoop team configuration is managed directly via `.squadloop/config.json
 
 ## 🛡️ SquadLoop Security Guard
 
-- **Non-Negotiable Protected Files**: Reading `.env`, `.env.*`, `.bashrc`, `.zshrc`, `~/.ssh/` keys, `~/.aws/credentials`, and any files in `customProtectedFiles` is strictly prohibited by default.
+- **Non-Negotiable Protected Files**: Reading `.env`, `.env.*`, `.bashrc`, `.zshrc`, `~/.ssh/` keys, `~/.aws/credentials`, internal `.squadloop/` configuration and session state, and any files in `customProtectedFiles` is strictly prohibited by default.
 - **Destructive Command Interception**: Commands matching `rm`, `git push --force`, or `git reset --hard` trigger human approval requests when `destructiveCommandPolicy` is `ask-human`.
 
 ---

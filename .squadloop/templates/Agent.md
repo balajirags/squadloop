@@ -20,7 +20,7 @@ This file is copied into a target repository to guide agent work in that project
 - Keep documentation in sync with behavior changes.
 
 ## Safety
-- Do not read or expose secrets, credentials, or private keys.
+- Do not read or expose secrets, credentials, private keys, or internal `.squadloop/` configuration and session state files.
 - Avoid destructive commands unless explicitly requested.
 - Confirm before changing files outside the requested scope.
 

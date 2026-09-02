@@ -1,6 +1,19 @@
 import { execSync, spawnSync } from "child_process";
 import type { ITerminalDriver, WorkspacePanes } from "./terminal-driver-interface.js";
-import { getSessionName } from "../sessions/session-manager.js";
+import { ModelResolver } from "../models/model-resolver.js";
+import { getSessionName, normalizeSessionId } from "../sessions/session-manager.js";
+
+function getAgentCommand(role: string, sessionId?: string): string {
+  const model = ModelResolver.getModel(role);
+  const agentFile = `.squadloop/agents/${role}.md`;
+  const provider = model && model.includes("/") ? model.split("/")[0] : null;
+  const providerFlag = provider ? ` --provider "${provider}"` : "";
+  const modelFlag = model ? ` --model "${model}"` : "";
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
+  const geminiEnv = geminiKey ? ` GEMINI_API_KEY="${geminiKey}"` : "";
+  const agentEnv = `env CONFIG_DIR_NAME=.squadloop PI_CODING_AGENT_DIR="$HOME/.squadloop/agent" SQUADLOOP_SESSION_ID="${normalizeSessionId(sessionId || process.env.SQUADLOOP_SESSION_ID || "default")}"${geminiEnv}`;
+  return `${agentEnv} pi --approve --append-system-prompt "${agentFile}"${providerFlag}${modelFlag}`;
+}
 
 function resolveSessionName(sessionId?: string): string {
   return getSessionName(sessionId || process.env.SQUADLOOP_SESSION_ID || "default");
@@ -28,11 +41,13 @@ export class HerdrDriver implements ITerminalDriver {
     }
   }
 
-  public setupTeamLayout(layout: "panes" | "windows" = "panes", sessionId?: string): WorkspacePanes {
+  public setupTeamLayout(layout: "panes" | "windows" = "windows", sessionId?: string): WorkspacePanes {
     const modeFlag = layout === "windows" ? "--tabs" : "--panes";
     const sessionName = resolveSessionName(sessionId);
+    const roles = ["orchestrator", "ba", "developer", "qa", "reviewer"];
+    const cmdFlags = roles.map(role => `--role-${role}-cmd "${getAgentCommand(role, sessionId)}"`).join(" ");
     try {
-      execSync(`herdr spawn ${sessionName} ${modeFlag} --roles orchestrator,ba,developer,qa,reviewer`, { stdio: "ignore" });
+      execSync(`herdr spawn ${sessionName} ${modeFlag} --roles ${roles.join(",")} ${cmdFlags}`, { stdio: "ignore" });
     } catch {
       // Fallback log
     }

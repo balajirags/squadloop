@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+if (process.env.GOOGLE_API_KEY && !process.env.GEMINI_API_KEY) {
+  process.env.GEMINI_API_KEY = process.env.GOOGLE_API_KEY;
+}
+
 import { spawnSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
@@ -125,22 +129,37 @@ function syncProjectSettingsJson() {
   fs.writeFileSync(targetPath, JSON.stringify(merged, null, 2), "utf-8");
 }
 
-function syncProjectModelsJson() {
-  const modelsExamplePath = projectPath("models.example.json");
-  const modelsJsonPath = projectPath("models.json");
+function syncProjectConfigJson() {
+  const templatePath = packagePath("config.json");
+  const targetPath = projectPath("config.json");
 
-  if (!fs.existsSync(modelsJsonPath) && fs.existsSync(modelsExamplePath)) {
+  if (!fs.existsSync(targetPath) && fs.existsSync(templatePath)) {
     try {
-      fs.copyFileSync(modelsExamplePath, modelsJsonPath);
+      fs.copyFileSync(templatePath, targetPath);
+      console.log("  ✅ Copied .squadloop/config.json from SquadLoop package.");
+    } catch {
+      // Ignore
+    }
+  }
+}
+
+function syncProjectModelsJson() {
+  const templatePath = packagePath("models.json");
+  const targetPath = projectPath("models.json");
+
+  if (!fs.existsSync(targetPath) && fs.existsSync(templatePath)) {
+    try {
+      fs.copyFileSync(templatePath, targetPath);
+      console.log("  ✅ Copied .squadloop/models.json from SquadLoop package.");
     } catch {
       // Ignore
     }
   }
 
-  if (fs.existsSync(modelsJsonPath)) {
+  if (fs.existsSync(targetPath)) {
     try {
       fs.mkdirSync(GLOBAL_AGENT_DIR, { recursive: true });
-      fs.copyFileSync(modelsJsonPath, path.join(GLOBAL_AGENT_DIR, "models.json"));
+      fs.copyFileSync(targetPath, path.join(GLOBAL_AGENT_DIR, "models.json"));
     } catch {
       // Non-fatal
     }
@@ -151,7 +170,7 @@ function parseCliContext() {
   ensureProjectDir();
 
   const configPath = projectPath("config.json");
-  let config = { exMode: "team", driver: "tmux", hitl: "loop", layout: "panes" };
+  let config = { exMode: "team", driver: "tmux", hitl: "loop", layout: "windows" };
 
   if (fs.existsSync(configPath)) {
     try {
@@ -165,7 +184,7 @@ function parseCliContext() {
         exMode: loaded.exMode || loaded.executionMode || "team",
         driver: loaded.driver || loaded.workspaceMode || "tmux",
         hitl: rawHitl,
-        layout: loaded.layout || "panes"
+        layout: loaded.layout || "windows"
       };
     } catch {
       // Default
@@ -383,37 +402,8 @@ function handleInit() {
   fs.mkdirSync(path.join(cwd, "docs", "stories"), { recursive: true });
   console.log("  ✅ Created docs/brd/ and docs/stories/ directories.");
 
-  const defaultConfig = {
-    exMode: "team",
-    driver: "tmux",
-    hitl: "loop",
-    layout: "panes",
-    _modelExamples: {
-      anthropic: "anthropic/claude-3-7-sonnet",
-      google: "google/gemini-2.5-flash",
-      openai: "openai/gpt-4o",
-      deepseek: "deepseek/deepseek-reasoner",
-      nvidia: "nvidia/nemotron-3-ultra-550b-a55b",
-      openrouter: "openrouter/anthropic/claude-3.7-sonnet",
-      ollama: "ollama/gemma4"
-    },
-    models: {
-      orchestrator: "",
-      ba: "",
-      developer: "",
-      qa: "",
-      reviewer: ""
-    }
-  };
-
-  const configPath = projectPath("config.json");
-  if (!fs.existsSync(configPath)) {
-    fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), "utf-8");
-    console.log("  ✅ Created .squadloop/config.json with model hints.");
-  }
-
+  syncProjectConfigJson();
   syncProjectModelsJson();
-  console.log("  ✅ Auto-created and synced .squadloop/models.json from template.");
 
   PromptSyncEngine.syncAllPrompts();
   console.log("  ✅ Synced .squadloop/prompts/ persona templates.");

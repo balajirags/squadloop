@@ -58,10 +58,19 @@ export class WorkflowEngine {
       const prompt = `Issue #${issueId} is ready for development. Read project-context.md, checkout main, pull latest main, checkout branch feature/issue-${issueId}, implement code inside backend/ or frontend/, run tests & verify coverage, commit, push, and update status to 'qa-verifying'.`;
       await WorkflowEngine.sendPromptAsync(panes.developer, prompt, true);
     } else if (newStatus === "qa-verifying" && (isLoop || isAuto)) {
-      const prompt = `Issue #${issueId} is ready for QA verification. Checkout feature branch feature/issue-${issueId}, verify app server is running on localhost port, execute live HTTP/UI AC checks, and update status.`;
+      const prompt = `Issue #${issueId} is ready for QA verification.\n` +
+        `1. Read project-context.md and story ACs for Issue #${issueId}.\n` +
+        `2. Checkout feature branch feature/issue-${issueId}.\n` +
+        `3. Verify app server health (e.g. curl -s --connect-timeout 2 http://localhost:<port>/health). If offline, start server in background non-blockingly (e.g. nohup ./gradlew bootRun > /tmp/backend-qa.log 2>&1 &).\n` +
+        `4. Execute live HTTP API probes for each Gherkin AC scenario.\n` +
+        `5. Call team_update_status with 'code-review' (if ALL pass) or 'dev-rework' (if ANY fail).\n` +
+        `6. Call send_agent_message targeting 'orchestrator' with your QA verdict summary and HTTP evidence.`;
       await WorkflowEngine.sendPromptAsync(panes.qa, prompt, true);
     } else if (newStatus === "code-review" && (isLoop || isAuto)) {
-      const prompt = `Issue #${issueId} is ready for Code Review. Inspect git diff feature/issue-${issueId} vs main, verify P1/P2 standards, merge branch to main, push main, close tracker issue, and update status to 'done'.`;
+      const prompt = `Issue #${issueId} is ready for Code Review.\n` +
+        `1. Inspect git diff feature/issue-${issueId} vs main for P1/P2 issues.\n` +
+        `2. If P1/P2 findings found, call team_update_status with 'dev-rework' and send_agent_message to orchestrator.\n` +
+        `3. If approved, merge branch feature/issue-${issueId} to main, push main, update delivery tracker SOT, call team_update_status with 'done', and call send_agent_message targeting 'orchestrator' with completion summary.`;
       await WorkflowEngine.sendPromptAsync(panes.reviewer, prompt, true);
     } else if (newStatus === "dev-rework" && (isLoop || isAuto)) {
       const prompt = `Issue #${issueId} requires rework (attempt ${reworkCount}/3). Read review/QA feedback notes: '${notes || "Check P1/P2 review comments"}', fix issues in backend/ or frontend/, re-run build-verify, commit, push to feature branch feature/issue-${issueId}, and update status to 'code-review' so Code Reviewer can verify the fix.`;

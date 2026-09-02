@@ -15,12 +15,19 @@ export class StandaloneExecutionStrategy {
             piArgs.push("--append-system-prompt", agentPrompt);
         }
         if (orchestratorModel) {
+            if (orchestratorModel.includes("/")) {
+                piArgs.push("--provider", orchestratorModel.split("/")[0]);
+            }
             piArgs.push("--model", orchestratorModel);
+        }
+        const env = { ...process.env };
+        if (env.GOOGLE_API_KEY && !env.GEMINI_API_KEY) {
+            env.GEMINI_API_KEY = env.GOOGLE_API_KEY;
         }
         spawnSync("pi", piArgs, {
             stdio: "inherit",
             env: {
-                ...process.env,
+                ...env,
                 CONFIG_DIR_NAME: ".squadloop",
                 PI_CODING_AGENT_DIR: path.join(process.env.HOME || "", ".squadloop", "agent")
             }

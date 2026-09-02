@@ -8,7 +8,7 @@ function getOrCreateConfig() {
     const configPath = path.join(process.cwd(), ".squadloop", "config.json");
     let config = {
         mode: "loop-hitl",
-        layout: "panes",
+        layout: "windows",
         panes: { orchestrator: "", ba: "", developer: "", qa: "", reviewer: "" }
     };
     if (fs.existsSync(configPath)) {
@@ -16,7 +16,7 @@ function getOrCreateConfig() {
             const loaded = JSON.parse(fs.readFileSync(configPath, "utf-8"));
             config = {
                 mode: loaded.mode || "loop-hitl",
-                layout: loaded.layout || "panes",
+                layout: loaded.layout || "windows",
                 workspaceMode: loaded.workspaceMode || "tmux",
                 destructiveCommandPolicy: loaded.destructiveCommandPolicy || "ask-human",
                 customProtectedFiles: loaded.customProtectedFiles || [],
