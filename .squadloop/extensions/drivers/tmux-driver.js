@@ -11,6 +11,19 @@ function cleanPaneId(raw) {
 function getAgentCommand(role, sessionId) {
     const model = ModelResolver.getModel(role);
     const agentFile = `.squadloop/agents/${role}.md`;
+    let targetPromptPath = agentFile;
+    if (fs.existsSync(agentFile)) {
+        try {
+            const rawContent = fs.readFileSync(agentFile, "utf-8");
+            const stripped = rawContent.replace(/^---[\s\S]*?---\s*/, "");
+            const cleanFile = path.join(os.tmpdir(), `squadloop-system-prompt-${role}.md`);
+            fs.writeFileSync(cleanFile, stripped, "utf-8");
+            targetPromptPath = cleanFile;
+        }
+        catch {
+            // Fallback
+        }
+    }
     const provider = model && model.includes("/") ? model.split("/")[0] : null;
     const providerFlag = provider ? ` --provider "${provider}"` : "";
     const modelFlag = model ? ` --model "${model}"` : "";
@@ -36,7 +49,7 @@ function getAgentCommand(role, sessionId) {
         }
     }
     const agentEnv = `env ${envVars.join(" ")}`;
-    return `${agentEnv} pi -e .squadloop/extensions/index.js --approve --append-system-prompt "${agentFile}"${providerFlag}${modelFlag}; exec bash`;
+    return `${agentEnv} pi -e .squadloop/extensions/index.js --approve --append-system-prompt "${targetPromptPath}"${providerFlag}${modelFlag}; exec bash`;
 }
 function resolvePaneTarget(target, targetRole, sessionId) {
     const currentRuntimeSession = getRuntimeSessionId();

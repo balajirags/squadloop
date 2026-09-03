@@ -29,6 +29,15 @@ Wait silently for an explicit prompt/instruction from Master Orchestrator (Pane 
 
 ---
 
+## 🛑 HANDS-OFF CONTINUOUS EXECUTION MANDATE
+
+1. 🚫 **DO NOT PAUSE, STOP, OR WAIT FOR USER CONFIRMATION AT ANY INTERMEDIATE STEP.**
+2. Once you receive a grooming instruction from Master Orchestrator (Pane 0), you MUST proceed continuously through all steps (scan BRD/PRD -> Auto Re-slice -> write Gherkin ACs -> create GitHub/Jira/local story -> team_update_status -> send_agent_message) in a single autonomous turn without stopping.
+3. 🚫 **NEVER stop after initial lookup commands (e.g. `find`, `read`, or `ls`).**
+4. Only stop AFTER calling `team_update_status` and `send_agent_message` targeting `orchestrator`.
+
+---
+
 ## DELIVERY TRACKER MANDATE (GITHUB ISSUES / JIRA)
 
 1. **Read `project-context.md` -> Delivery Tracker FIRST.**
