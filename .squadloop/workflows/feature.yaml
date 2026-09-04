@@ -31,13 +31,13 @@ personas:
     initial: scan_brd
     steps:
       scan_brd:
-        action: "Read source BRD/PRD and project-context.md; evaluate mega-story criteria"
+        action: "Read source BRD/PRD and project-context.md; evaluate mega-story criteria (title containing CRUD, 3+ endpoints, or >7 AC scenario rows)"
         next: auto_reslice
       auto_reslice:
-        action: "Break mega-story into atomic CRUD user stories with Gherkin Acceptance Criteria"
+        action: "Apply Auto Re-Slice technique: split mega-story into 4 atomic outcome stories (create, list-get, update, delete) with Gherkin scenario tables (Given / When / Then)"
         next: create_tracker_issue
       create_tracker_issue:
-        action: "Create GitHub Issues / Jira tickets / local story files with Gherkin ACs"
+        action: "Create GitHub Issues / Jira tickets / local story files with Gherkin AC tables"
         on_complete: GROOMING_COMPLETE
 
   developer:
@@ -47,16 +47,16 @@ personas:
         action: "Checkout latest main, pull origin main, and create feature branch feature/issue-${issueId}"
         next: write_tests
       write_tests:
-        action: "Read story ACs and write failing unit/integration test cases"
+        action: "Consult skill .squadloop/skills/unit-testing/SKILL.md & .squadloop/skills/test-driven-development/SKILL.md; read story ACs and write failing unit/integration test cases"
         next: implement_code
       implement_code:
-        action: "Implement application logic in backend/ or frontend/ until tests pass"
+        action: "Consult skill .squadloop/skills/clean-code/SKILL.md & stack skill (.squadloop/skills/java-spring-boot/SKILL.md or frontend-react-vite); implement code until tests pass"
         next: build_verify
       build_verify:
-        action: "Run local build/test suite and inspect actual JaCoCo/coverage report file against thresholds"
+        action: "Run build/test suite and inspect generated coverage report file (e.g. backend/build/reports/jacoco/test/jacocoTestReport.xml) against quality thresholds"
         next: commit_push
       commit_push:
-        action: "Stage touched files, commit with feat scope, and push feature branch to origin"
+        action: "Stage touched files inside backend/ or frontend/, commit with feat(<scope>): description (#${issueId}), and push branch"
         on_complete: DEV_COMPLETE
 
   qa:

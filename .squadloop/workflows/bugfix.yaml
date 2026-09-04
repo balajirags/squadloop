@@ -22,16 +22,16 @@ personas:
     initial: reproduce_issue
     steps:
       reproduce_issue:
-        action: "Write a failing regression test replicating the reported bug"
+        action: "Consult skill .squadloop/skills/unit-testing/SKILL.md & .squadloop/skills/systematic-debugging/SKILL.md; write a failing regression test replicating the reported bug"
         next: fix_code
       fix_code:
-        action: "Modify application logic until regression test passes"
+        action: "Consult skill .squadloop/skills/clean-code/SKILL.md; modify application logic inside backend/ or frontend/ until regression test passes"
         next: verify_suite
       verify_suite:
-        action: "Run full test suite to verify no regressions"
+        action: "Run full test suite to verify no regressions and inspect coverage report"
         next: commit_push
       commit_push:
-        action: "Commit fix and push branch to origin"
+        action: "Commit fix with fix(<scope>): description (#${issueId}) and push branch"
         on_complete: DEV_COMPLETE
 
   qa:

@@ -64,6 +64,30 @@ function resolveRoleModel(role) {
 function getSessionNameFor(sessionId) {
     return getSessionName(sessionId || process.env.SQUADLOOP_SESSION_ID || "default");
 }
+function getSkillFlagsForRole(role) {
+    const agentFile = path.join(process.cwd(), ".squadloop", "agents", `${role}.md`);
+    const skillsDir = path.join(process.cwd(), ".squadloop", "skills");
+    let flags = fs.existsSync(skillsDir) ? ` --skill "${skillsDir}"` : "";
+    if (fs.existsSync(agentFile)) {
+        try {
+            const content = fs.readFileSync(agentFile, "utf-8");
+            const match = content.match(/^skills:\s*(.+)$/m);
+            if (match && match[1]) {
+                const skillList = match[1].split(",").map(s => s.trim()).filter(Boolean);
+                for (const skill of skillList) {
+                    const specificPath = path.join(skillsDir, skill);
+                    if (fs.existsSync(specificPath)) {
+                        flags += ` --skill "${specificPath}"`;
+                    }
+                }
+            }
+        }
+        catch {
+            // Non-fatal
+        }
+    }
+    return flags;
+}
 function getAgentCommand(role, sessionId) {
     const model = resolveRoleModel(role);
     const agentFile = `.squadloop/agents/${role}.md`;
@@ -108,8 +132,7 @@ function getAgentCommand(role, sessionId) {
     const agentEnv = `env ${envVars.join(" ")}`;
     const globalMandateFile = path.join(process.cwd(), ".squadloop", "prompts", "global-mandate.md");
     const globalMandateFlag = fs.existsSync(globalMandateFile) ? ` --append-system-prompt "${globalMandateFile}"` : "";
-    const skillsDir = path.join(process.cwd(), ".squadloop", "skills");
-    const skillsFlag = fs.existsSync(skillsDir) ? ` --skill "${skillsDir}"` : "";
+    const skillsFlag = getSkillFlagsForRole(role);
     return `${agentEnv} pi -e .squadloop/extensions/index.js --approve${skillsFlag}${globalMandateFlag} --append-system-prompt "${targetPromptPath}"${providerFlag}${modelFlag}; exec bash`;
 }
 export class TmuxWorkspaceAdapter {
