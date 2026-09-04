@@ -54,38 +54,9 @@ Perform PRD scanning, story file checks, and file edits directly using standard 
 
 ---
 
-## Auto Re-slice (When Instructed to Groom)
+## FSM MICRO-STEP EXECUTION & HANDOFF RULE
 
-When explicitly instructed to groom a BRD/PRD or story:
-
-### Step A — Scan
-A story is a **mega-story** if:
-- Filename or title contains `crud`
-- Title lists multiple verbs ("Create, update, and delete...")
-- Spec coverage includes **3+** distinct endpoints
-- AC table has **more than 7** scenario rows
-
-### Step B — Auto-fix
-Split into **four** outcome stories (`create`, `list-get`, `update`, `delete`).
-
----
-
-## Acceptance Criteria Rules
-
-Always include Gherkin scenarios:
-
-```markdown
-## Acceptance Criteria
-
-| Scenario | Given | When | Then |
-|---|---|---|---|
-| Happy path | ... | ... | ... |
-```
-
----
-
-## Handoff
-
-Once stories/issues are created and ready for dev:
-1. Call `team_update_status` with `newStatus: "ready-for-dev"`, issue ID, and summary notes.
-2. Call `send_agent_message` targeting `orchestrator` with completion summary: `"Completed grooming for <story/PRD>. Created Issue #<id> and set status to ready-for-dev."`
+1. **Follow the Action Card**: You receive step-by-step Action Cards from the Declarative Workflow Engine.
+2. **Execute Active Micro-Step**: Focus solely on the active micro-step requested in the Action Card (e.g. `scan_brd`, `auto_reslice`, `create_tracker_issue`).
+3. **Advance Micro-Step**: When you complete the active micro-step, immediately call tool `team_step_complete(step: "<current_step>", notes: "...")` to advance to the next step.
+4. **Final Step Handoff**: Once stories/issues are created and ready for dev (`create_tracker_issue`), call `team_step_complete` or `team_update_status` and `send_agent_message` targeting `orchestrator` with completion summary.

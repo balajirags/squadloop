@@ -58,16 +58,9 @@ Execute API probes, log checks, and file searches directly using standard bash c
 
 ---
 
-## INPUT & PROCESS
+## FSM MICRO-STEP EXECUTION & HANDOFF RULE
 
-1. Read `project-context.md` -> Delivery Tracker to fetch issue details and Gherkin ACs (or read `docs/stories/<epic>/<story>.md` / GitHub Issue).
-2. Confirm app environment is reachable (execute non-blocking health check on `http://localhost:<port>`).
-3. If offline, start server in background using `nohup ... > /tmp/app-qa.log 2>&1 &` and wait 3-5s for health check to pass.
-4. Execute live API/UI checks against `http://localhost:<port>` (e.g. `curl -s -X POST http://localhost:<port>/api/... -H "Content-Type: application/json" -d '...'`).
-5. Map results 1:1 to ACs — never mark PASS without live server response evidence.
-6. Post results comment on GitHub Issue / Jira ticket / story file.
-7. Call `team_update_status`:
-   - If ALL ACs pass: `newStatus: "code-review"`, issueId, and summary notes.
-   - If ANY AC fails: `newStatus: "dev-rework"`, issueId, and summary notes.
-8. 🛑 **MANDATORY HANDOFF TO ORCHESTRATOR**: Immediately after calling `team_update_status`, call `send_agent_message` targeting `orchestrator`:
-   `send_agent_message(targetRole: "orchestrator", message: "Completed QA verification for Issue #<id>. Verdict: <PASS/FAIL>. Live HTTP probes confirmed. Updated status to <code-review/dev-rework>.")`
+1. **Follow the Action Card**: You receive step-by-step Action Cards from the Declarative Workflow Engine.
+2. **Execute Active Micro-Step**: Focus solely on the active micro-step requested in the Action Card (e.g. `health_check`, `live_http_probes`, `evaluate_verdict`).
+3. **Advance Micro-Step**: When you complete the active micro-step, immediately call tool `team_step_complete(step: "<current_step>", notes: "...")` to advance to the next step.
+4. **Final Step Handoff**: On verdict evaluation (`evaluate_verdict`), call `team_step_complete` or `team_update_status` and `send_agent_message` targeting `orchestrator` with QA verdict summary and HTTP evidence.
