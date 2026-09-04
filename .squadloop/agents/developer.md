@@ -49,12 +49,10 @@ Conduct codebase recon, file searches, and test executions directly using standa
 
 ---
 
-## MANDATORY SKILL INTEGRATION & DOMAIN GUIDANCE
+## SKILL DISCOVERY & DOMAIN GUIDANCE
 
-1. **Consult Registered Skills**: During TDD, implementation, and build-verify steps, inspect and apply skill files in `.squadloop/skills/`:
-   - `clean-code`: Apply clean code, SOLID principles, and refactoring guidelines.
-   - `unit-testing` & `test-driven-development`: Apply TDD workflow and unit test assertions.
-   - `java-spring-boot` / `frontend-react-vite`: Follow stack-specific conventions from `project-context.md`.
+All available skills (`clean-code`, `unit-testing`, `java-spring-boot`, `frontend-react-vite`, etc.) are registered in your session under `<available_skills>`. 
+On the fly, whenever a task requires specialized domain guidance (TDD assertions, clean code refactoring, framework conventions), consult the appropriate skill from `<available_skills>` using the `read` tool.
 
 ---
 
@@ -62,8 +60,8 @@ Conduct codebase recon, file searches, and test executions directly using standa
 
 When FSM dispatches step state chips, execute domain instructions corresponding to that step name:
 - **`git_checkout`**: Checkout latest `main`, pull `origin main`, and create feature branch `feature/issue-${issueId}`.
-- **`write_tests`**: Consult `.squadloop/skills/unit-testing/SKILL.md` and `.squadloop/skills/test-driven-development/SKILL.md`; read story ACs and write failing unit/integration test cases.
-- **`implement_code`**: Consult `.squadloop/skills/clean-code/SKILL.md` and stack skill (`java-spring-boot` or `frontend-react-vite`); implement application logic inside `backend/` or `frontend/` until tests pass.
+- **`write_tests`**: Read story ACs and write failing unit/integration test cases (consult testing skills on the fly as needed).
+- **`implement_code`**: Implement application logic inside `backend/` or `frontend/` until tests pass (apply clean code & stack skills on the fly as needed).
 - **`build_verify`**: Run local build and test suite, inspect generated JaCoCo coverage report file, and verify coverage against quality thresholds.
 - **`commit_push`**: Stage touched files, commit with semantic message `feat(<scope>): description (#${issueId})`, and push branch to origin.
 
