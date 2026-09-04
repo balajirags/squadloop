@@ -145,8 +145,10 @@ export class YamlWorkflowParser {
                         };
                     }
                 }
+                const personaWorkflow = stateObj.persona_workflow ? String(stateObj.persona_workflow) : undefined;
                 states[stateKey] = {
                     ...(agent ? { agent } : {}),
+                    ...(personaWorkflow ? { persona_workflow: personaWorkflow } : {}),
                     ...(type ? { type } : {}),
                     ...(Object.keys(onMap).length > 0 ? { on: onMap } : {})
                 };
@@ -154,6 +156,7 @@ export class YamlWorkflowParser {
         }
         const rawPersonas = parsed.personas || {};
         const personas = {};
+        // First load explicit personas in file
         for (const [personaKey, rawPersona] of Object.entries(rawPersonas)) {
             if (typeof rawPersona === "object" && rawPersona !== null) {
                 const personaObj = rawPersona;
@@ -176,6 +179,44 @@ export class YamlWorkflowParser {
                     initial: pInitial,
                     steps
                 };
+            }
+        }
+        // Next resolve persona_workflow referenced in pipeline states from .squadloop/personas/<name>.yaml
+        for (const stateDef of Object.values(states)) {
+            const roleName = stateDef.agent;
+            const personaRef = stateDef.persona_workflow || roleName;
+            if (roleName && (!personas[roleName] || Object.keys(personas[roleName].steps).length === 0)) {
+                if (personaRef) {
+                    const personaFilePath = path.join(process.cwd(), ".squadloop", "personas", `${personaRef}.yaml`);
+                    if (fs.existsSync(personaFilePath)) {
+                        try {
+                            const personaContent = fs.readFileSync(personaFilePath, "utf-8");
+                            const parsedPersonaObj = parseYamlObject(personaContent);
+                            const pInitial = String(parsedPersonaObj.initial || "");
+                            const rawSteps = parsedPersonaObj.steps || {};
+                            const steps = {};
+                            for (const [stepKey, rawStep] of Object.entries(rawSteps)) {
+                                if (typeof rawStep === "object" && rawStep !== null) {
+                                    const stepObj = rawStep;
+                                    steps[stepKey] = {
+                                        action: String(stepObj.action || ""),
+                                        ...(stepObj.next ? { next: String(stepObj.next) } : {}),
+                                        ...(stepObj.on_complete ? { on_complete: String(stepObj.on_complete) } : {}),
+                                        ...(stepObj.on_pass ? { on_pass: String(stepObj.on_pass) } : {}),
+                                        ...(stepObj.on_fail ? { on_fail: String(stepObj.on_fail) } : {})
+                                    };
+                                }
+                            }
+                            personas[roleName] = {
+                                initial: pInitial,
+                                steps
+                            };
+                        }
+                        catch {
+                            // Non-fatal fallback
+                        }
+                    }
+                }
             }
         }
         return {

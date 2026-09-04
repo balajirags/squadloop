@@ -1,0 +1,19 @@
+version: "1.0"
+name: "Code Reviewer Persona Workflow"
+role: "reviewer"
+prompt_file: ".squadloop/agents/reviewer.md"
+
+initial: find_branch
+steps:
+  find_branch:
+    action: "Find active feature branch matching Issue #${issueId} via git branch --list"
+    next: inspect_diff
+
+  inspect_diff:
+    action: "Inspect git diff main...<branch> for P1 (Security) and P2 (Architecture) violations"
+    next: evaluate_review
+
+  evaluate_review:
+    action: "If P1/P2 violations found, emit REVIEW_REJECT. If approved, merge branch non-interactively to main"
+    on_pass: REVIEW_APPROVE
+    on_fail: REVIEW_REJECT

@@ -1,37 +1,20 @@
 version: "1.0"
 name: "Hotfix Patch Workflow"
-description: "Emergency developer patch and code reviewer merge pipeline"
+description: "Emergency developer patch and code reviewer pipeline"
 
 pipeline:
   initial: dev_implementing
   states:
     dev_implementing:
       agent: developer
+      persona_workflow: developer
       on:
         DEV_COMPLETE: code_reviewing
     code_reviewing:
       agent: reviewer
+      persona_workflow: reviewer
       on:
         REVIEW_APPROVE: done
         REVIEW_REJECT: dev_implementing
     done:
       type: final
-
-personas:
-  developer:
-    initial: apply_patch
-    steps:
-      apply_patch:
-        action: "Apply emergency fix and verify build"
-        next: commit_push
-      commit_push:
-        action: "Commit and push patch branch"
-        on_complete: DEV_COMPLETE
-
-  reviewer:
-    initial: audit_patch
-    steps:
-      audit_patch:
-        action: "Audit P1 security and architectural safety of patch"
-        on_pass: REVIEW_APPROVE
-        on_fail: REVIEW_REJECT

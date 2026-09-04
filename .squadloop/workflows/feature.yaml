@@ -7,82 +7,25 @@ pipeline:
   states:
     ba_grooming:
       agent: ba
+      persona_workflow: ba
       on:
         GROOMING_COMPLETE: dev_implementing
     dev_implementing:
       agent: developer
+      persona_workflow: developer
       on:
         DEV_COMPLETE: qa_verifying
     qa_verifying:
       agent: qa
+      persona_workflow: qa
       on:
         QA_PASS: code_reviewing
         QA_FAIL: dev_implementing
     code_reviewing:
       agent: reviewer
+      persona_workflow: reviewer
       on:
         REVIEW_APPROVE: done
         REVIEW_REJECT: dev_implementing
     done:
       type: final
-
-personas:
-  ba:
-    initial: scan_brd
-    steps:
-      scan_brd:
-        action: "Read source BRD/PRD and project-context.md; evaluate mega-story criteria (title containing CRUD, 3+ endpoints, or >7 AC scenario rows)"
-        next: auto_reslice
-      auto_reslice:
-        action: "Apply Auto Re-Slice technique: split mega-story into 4 atomic outcome stories (create, list-get, update, delete) with Gherkin scenario tables (Given / When / Then)"
-        next: create_tracker_issue
-      create_tracker_issue:
-        action: "Create GitHub Issues / Jira tickets / local story files with Gherkin AC tables"
-        on_complete: GROOMING_COMPLETE
-
-  developer:
-    initial: git_checkout
-    steps:
-      git_checkout:
-        action: "Checkout latest main, pull origin main, and create feature branch feature/issue-${issueId}"
-        next: write_tests
-      write_tests:
-        action: "Consult skill .squadloop/skills/unit-testing/SKILL.md & .squadloop/skills/test-driven-development/SKILL.md; read story ACs and write failing unit/integration test cases"
-        next: implement_code
-      implement_code:
-        action: "Consult skill .squadloop/skills/clean-code/SKILL.md & stack skill (.squadloop/skills/java-spring-boot/SKILL.md or frontend-react-vite); implement code until tests pass"
-        next: build_verify
-      build_verify:
-        action: "Run build/test suite and inspect generated coverage report file (e.g. backend/build/reports/jacoco/test/jacocoTestReport.xml) against quality thresholds"
-        next: commit_push
-      commit_push:
-        action: "Stage touched files inside backend/ or frontend/, commit with feat(<scope>): description (#${issueId}), and push branch"
-        on_complete: DEV_COMPLETE
-
-  qa:
-    initial: health_check
-    steps:
-      health_check:
-        action: "Execute non-blocking health check on http://localhost:<port>; start app in background if offline"
-        next: live_http_probes
-      live_http_probes:
-        action: "Execute live HTTP API probes matching each Gherkin AC scenario and collect response payloads"
-        next: evaluate_verdict
-      evaluate_verdict:
-        action: "Compare live response evidence 1:1 against ACs and update tracker story comment"
-        on_pass: QA_PASS
-        on_fail: QA_FAIL
-
-  reviewer:
-    initial: find_branch
-    steps:
-      find_branch:
-        action: "Find active feature branch matching Issue #${issueId} via git branch --list"
-        next: inspect_diff
-      inspect_diff:
-        action: "Inspect git diff main...<branch> for P1 (Security) and P2 (Architecture) violations"
-        next: evaluate_review
-      evaluate_review:
-        action: "If P1/P2 violations found, emit REVIEW_REJECT. If approved, merge branch non-interactively to main"
-        on_pass: REVIEW_APPROVE
-        on_fail: REVIEW_REJECT

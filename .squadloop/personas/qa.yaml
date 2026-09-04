@@ -1,0 +1,19 @@
+version: "1.0"
+name: "Quality Analyst Persona Workflow"
+role: "qa"
+prompt_file: ".squadloop/agents/qa.md"
+
+initial: health_check
+steps:
+  health_check:
+    action: "Execute non-blocking health check on http://localhost:<port>; start app in background if offline (nohup ... > /tmp/backend-qa.log 2>&1 &)"
+    next: live_http_probes
+
+  live_http_probes:
+    action: "Execute live HTTP API probes matching each Gherkin AC scenario and collect response payloads"
+    next: evaluate_verdict
+
+  evaluate_verdict:
+    action: "Compare live response evidence 1:1 against ACs and update tracker story comment"
+    on_pass: QA_PASS
+    on_fail: QA_FAIL

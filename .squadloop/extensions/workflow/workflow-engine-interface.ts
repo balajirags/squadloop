@@ -13,6 +13,7 @@ export interface PersonaWorkflowDefinition {
 
 export interface PipelineStateDefinition {
   agent?: string;
+  persona_workflow?: string;
   type?: string;
   on?: Record<string, string | { target: string; guard?: string }>;
 }

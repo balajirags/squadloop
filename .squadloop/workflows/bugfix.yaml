@@ -7,43 +7,14 @@ pipeline:
   states:
     dev_implementing:
       agent: developer
+      persona_workflow: developer
       on:
         DEV_COMPLETE: qa_verifying
     qa_verifying:
       agent: qa
+      persona_workflow: qa
       on:
         QA_PASS: done
         QA_FAIL: dev_implementing
     done:
       type: final
-
-personas:
-  developer:
-    initial: reproduce_issue
-    steps:
-      reproduce_issue:
-        action: "Consult skill .squadloop/skills/unit-testing/SKILL.md & .squadloop/skills/systematic-debugging/SKILL.md; write a failing regression test replicating the reported bug"
-        next: fix_code
-      fix_code:
-        action: "Consult skill .squadloop/skills/clean-code/SKILL.md; modify application logic inside backend/ or frontend/ until regression test passes"
-        next: verify_suite
-      verify_suite:
-        action: "Run full test suite to verify no regressions and inspect coverage report"
-        next: commit_push
-      commit_push:
-        action: "Commit fix with fix(<scope>): description (#${issueId}) and push branch"
-        on_complete: DEV_COMPLETE
-
-  qa:
-    initial: health_check
-    steps:
-      health_check:
-        action: "Execute health check on local port"
-        next: live_probes
-      live_probes:
-        action: "Execute live HTTP probes verifying bug fix"
-        next: evaluate_verdict
-      evaluate_verdict:
-        action: "Compare live evidence against report"
-        on_pass: QA_PASS
-        on_fail: QA_FAIL
