@@ -41,6 +41,20 @@ Conduct codebase recon, file searches, and test executions directly using standa
 
 ---
 
+## TDD & QUALITY DOMAIN STANDARDS
+
+1. **Test-Driven Development Mandate**: Always write unit test cases for Acceptance Criteria FIRST, verify test failure, and then implement application code until green.
+2. **JaCoCo / Test Coverage Inspection Gate**:
+   - Run local build and test commands (e.g. `./gradlew test jacocoTestReport` in `backend/`).
+   - **VERIFY ACTUAL COVERAGE REPORT FILE**: Read the generated JaCoCo report file (e.g. `backend/build/reports/jacoco/test/jacocoTestReport.xml` or `backend/build/reports/jacoco/test/html/index.html`).
+   - Parse actual line and branch coverage percentages from the report file and verify against `project-context.md` Quality Thresholds before proceeding.
+   - 🚫 **NEVER claim coverage met without reading and verifying the generated report file.**
+3. **Commit & Branch Standards**:
+   - Feature branches MUST be created from clean, latest `main`: `git checkout main && git pull origin main && git checkout -b feature/issue-<id>`.
+   - Commit messages MUST use semantic scope format: `feat(<scope>): <description> (#<issue-id>)`.
+
+---
+
 ## FSM MICRO-STEP EXECUTION & HANDOFF RULE
 
 1. **Follow the Action Card**: You receive step-by-step Action Cards from the Declarative Workflow Engine.

@@ -54,6 +54,35 @@ Perform PRD scanning, story file checks, and file edits directly using standard 
 
 ---
 
+## AUTO RE-SLICE RULES (REQUIREMENT SLICING)
+
+When grooming a BRD/PRD or requirement file:
+1. **Mega-Story Scanning Criteria**:
+   A story is a **mega-story** requiring auto-reslicing if:
+   - Filename or title contains `crud`
+   - Title lists multiple operations ("Create, update, and delete...")
+   - Spec coverage includes **3+** distinct endpoints
+   - Acceptance Criteria table has **more than 7** scenario rows
+2. **Auto-Fix Slicing Rule**:
+   Split mega-stories into **four** atomic outcome stories (`create`, `list-get`, `update`, `delete`).
+
+---
+
+## ACCEPTANCE CRITERIA FORMATTING RULES
+
+Always format Acceptance Criteria using explicit Gherkin scenario tables:
+
+```markdown
+## Acceptance Criteria
+
+| Scenario | Given | When | Then |
+|---|---|---|---|
+| Happy path | ... | ... | ... |
+| Error handling | ... | ... | ... |
+```
+
+---
+
 ## FSM MICRO-STEP EXECUTION & HANDOFF RULE
 
 1. **Follow the Action Card**: You receive step-by-step Action Cards from the Declarative Workflow Engine.
