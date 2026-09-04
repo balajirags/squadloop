@@ -15,7 +15,7 @@ function getAgentCommand(role, sessionId) {
     if (fs.existsSync(agentFile)) {
         try {
             const rawContent = fs.readFileSync(agentFile, "utf-8");
-            const stripped = rawContent.replace(/^---[\s\S]*?---\s*/, "");
+            const stripped = rawContent.replace(/^\s*---[\s\S]*?---\s*/, "");
             const cleanFile = path.join(os.tmpdir(), `squadloop-system-prompt-${role}.md`);
             fs.writeFileSync(cleanFile, stripped, "utf-8");
             targetPromptPath = cleanFile;

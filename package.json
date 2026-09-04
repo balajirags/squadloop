@@ -36,13 +36,18 @@
     "@earendil-works/pi-coding-agent": "*"
   },
   "dependencies": {
-    "@earendil-works/pi-coding-agent": "1.0.0",
+    "@earendil-works/pi-coding-agent": "*",
     "@sinclair/typebox": "0.34.0",
     "pi-subagents": "0.56.0",
-    "pi-web-access": "0.25.0"
+    "pi-web-access": "0.25.0",
+    "xstate": "^5.32.6"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
-  }
+  },
+  "bundleDependencies": [
+    "pi-subagents",
+    "pi-web-access"
+  ]
 }

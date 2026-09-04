@@ -35,10 +35,10 @@ export function registerTeamTools(pi) {
         async execute(toolCallId, params, signal, onUpdate, ctx) {
             const sessionId = getRuntimeSessionId();
             const existing = readActiveTask(sessionId);
-            let previousReworkCount = existing?.activeIssueId === params.issueId ? existing.reworkCount || 0 : 0;
+            let previousReworkCount = existing?.activeIssueId === params.issueId ? existing?.reworkCount || 0 : 0;
             let promptTokens = params.tokens?.promptTokens || 0;
             let completionTokens = params.tokens?.completionTokens || 0;
-            if (existing?.activeIssueId === params.issueId && existing.tokenStats) {
+            if (existing?.activeIssueId === params.issueId && existing?.tokenStats) {
                 promptTokens += existing.tokenStats.promptTokens || 0;
                 completionTokens += existing.tokenStats.completionTokens || 0;
             }
@@ -60,8 +60,8 @@ export function registerTeamTools(pi) {
                 currentReworkCount += 1;
             }
             const state = {
-                activeIssueId: params.issueId,
-                status: params.newStatus,
+                activeIssueId: params.issueId || "",
+                status: params.newStatus || "ready-for-dev",
                 updatedBy: ctx.cwd || "agent",
                 notes: params.notes,
                 reworkCount: currentReworkCount,
@@ -129,7 +129,7 @@ export function registerTeamTools(pi) {
                                 // Ignore
                             }
                         }
-                        await WorkflowEngine.handleTransition(params.issueId, params.newStatus, hitlMode, panes, params.notes, currentReworkCount, circuitBreakerTripped);
+                        await WorkflowEngine.handleTransition(params.issueId || "", params.newStatus || "ready-for-dev", hitlMode, panes, params.notes, currentReworkCount, circuitBreakerTripped);
                     }
                 }
                 catch {
@@ -177,11 +177,12 @@ export function registerTeamTools(pi) {
                 const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
                 const driver = DriverFactory.getDriver(config.driver);
                 const panes = activeTask.panes || config.panes || {};
-                let targetPane = panes?.[params.targetRole] || params.targetRole;
+                const targetRole = params.targetRole || "developer";
+                let targetPane = panes?.[targetRole] || targetRole;
                 const shouldClear = params.clearContext === true;
-                const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
-                await driver.sendPrompt(targetPane, formatted, shouldClear, params.targetRole, sessionId);
-                appendAgentMailbox(sessionId, params.targetRole, {
+                const formatted = `[DIRECT MESSAGE to ${targetRole.toUpperCase()}]: ${params.message}`;
+                await driver.sendPrompt(targetPane, formatted, shouldClear, targetRole, sessionId);
+                appendAgentMailbox(sessionId, targetRole, {
                     type: "direct_message",
                     message: params.message,
                     timestamp: new Date().toISOString()
@@ -189,12 +190,12 @@ export function registerTeamTools(pi) {
                 appendEventLog({
                     eventId: `evt_${Date.now()}`,
                     type: "direct_message",
-                    targetRole: params.targetRole,
+                    targetRole: targetRole,
                     message: params.message,
                     timestamp: new Date().toISOString()
                 });
                 return {
-                    content: [{ type: "text", text: `Sent direct message to ${params.targetRole.toUpperCase()} (${targetPane})${shouldClear ? " [context cleared]" : ""}.` }],
+                    content: [{ type: "text", text: `Sent direct message to ${targetRole.toUpperCase()} (${targetPane})${shouldClear ? " [context cleared]" : ""}.` }],
                     details: { success: true, targetPane, message: params.message, clearedContext: shouldClear }
                 };
             }
@@ -202,6 +203,53 @@ export function registerTeamTools(pi) {
                 return {
                     content: [{ type: "text", text: `Error sending message: ${err.message}` }],
                     details: { success: false, error: err.message }
+                };
+            }
+        }
+    });
+    pi.registerTool({
+        name: "team_step_complete",
+        label: "Team Step Complete",
+        description: "Signal completion of the current persona micro-workflow step",
+        parameters: Type.Object({
+            step: Type.String({ description: "Current micro-step key (e.g. 'reproduce_issue')" }),
+            notes: Type.Optional(Type.String({ description: "Summary notes for step completion" })),
+            payload: Type.Optional(Type.Record(Type.String(), Type.Any(), { description: "Structured step outputs" }))
+        }),
+        async execute(toolCallId, params, signal, onUpdate, ctx) {
+            const sessionId = getRuntimeSessionId();
+            const activeTask = readActiveTask(sessionId);
+            if (!activeTask) {
+                return {
+                    content: [{ type: "text", text: "Error: No active task found." }],
+                    details: { error: "No active task found." }
+                };
+            }
+            try {
+                const stepKey = params.step || "start";
+                const updatedState = await WorkflowEngine.processStepComplete(stepKey, params.notes, params.payload);
+                appendEventLog({
+                    eventId: `evt_${Date.now()}`,
+                    type: "team_step_complete",
+                    targetRole: updatedState.targetRole,
+                    message: `Completed micro-step '${params.step}'. Advanced to '${updatedState.microStep}'.`,
+                    timestamp: new Date().toISOString(),
+                    payload: params.payload
+                });
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Completed micro-step '${params.step}'. Advanced to micro-step '${updatedState.microStep}' in stage '${updatedState.pipelineStage}' (${updatedState.targetRole.toUpperCase()}).`
+                        }
+                    ],
+                    details: updatedState
+                };
+            }
+            catch (err) {
+                return {
+                    content: [{ type: "text", text: `Error processing step complete: ${err.message}` }],
+                    details: { error: err.message }
                 };
             }
         }

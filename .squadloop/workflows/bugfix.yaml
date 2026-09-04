@@ -1,0 +1,49 @@
+version: "1.0"
+name: "Bug Fix Workflow"
+description: "Lightweight bug reproduction and verification pipeline"
+
+pipeline:
+  initial: dev_implementing
+  states:
+    dev_implementing:
+      agent: developer
+      on:
+        DEV_COMPLETE: qa_verifying
+    qa_verifying:
+      agent: qa
+      on:
+        QA_PASS: done
+        QA_FAIL: dev_implementing
+    done:
+      type: final
+
+personas:
+  developer:
+    initial: reproduce_issue
+    steps:
+      reproduce_issue:
+        action: "Write a failing regression test replicating the reported bug"
+        next: fix_code
+      fix_code:
+        action: "Modify application logic until regression test passes"
+        next: verify_suite
+      verify_suite:
+        action: "Run full test suite to verify no regressions"
+        next: commit_push
+      commit_push:
+        action: "Commit fix and push branch to origin"
+        on_complete: DEV_COMPLETE
+
+  qa:
+    initial: health_check
+    steps:
+      health_check:
+        action: "Execute health check on local port"
+        next: live_probes
+      live_probes:
+        action: "Execute live HTTP probes verifying bug fix"
+        next: evaluate_verdict
+      evaluate_verdict:
+        action: "Compare live evidence against report"
+        on_pass: QA_PASS
+        on_fail: QA_FAIL
