@@ -51,7 +51,9 @@ function getAgentCommand(role, sessionId) {
     const agentEnv = `env ${envVars.join(" ")}`;
     const globalMandateFile = path.join(process.cwd(), ".squadloop", "prompts", "global-mandate.md");
     const globalMandateFlag = fs.existsSync(globalMandateFile) ? ` --append-system-prompt "${globalMandateFile}"` : "";
-    return `${agentEnv} pi -e .squadloop/extensions/index.js --approve${globalMandateFlag} --append-system-prompt "${targetPromptPath}"${providerFlag}${modelFlag}; exec bash`;
+    const skillsDir = path.join(process.cwd(), ".squadloop", "skills");
+    const skillsFlag = fs.existsSync(skillsDir) ? ` --skill "${skillsDir}"` : "";
+    return `${agentEnv} pi -e .squadloop/extensions/index.js --approve${skillsFlag}${globalMandateFlag} --append-system-prompt "${targetPromptPath}"${providerFlag}${modelFlag}; exec bash`;
 }
 function resolvePaneTarget(target, targetRole, sessionId) {
     const currentRuntimeSession = getRuntimeSessionId();

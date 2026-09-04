@@ -3206,7 +3206,10 @@ var XStateWorkflowEngine = class {
 \u{1F4CB} ACTION REQUIRED:
 ${formattedAction}
 
-\u{1F6D1} WHEN STEP COMPLETE: Call team_step_complete(step: "${step}", notes: "...") or team_update_status
+\u{1F6D1} MANDATORY STEP COMPLETION TOOL CALL:
+Execute required commands/edits, and THEN IMMEDIATELY invoke tool:
+team_step_complete(step: "${step}", notes: "Summary of actions completed in this step")
+\u{1F6AB} DO NOT stop or output text without calling team_step_complete.
 ==============================================================
 `;
   }

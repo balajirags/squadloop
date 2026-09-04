@@ -360,7 +360,10 @@ export class XStateWorkflowEngine implements IWorkflowEngine {
       `• Micro-Step   : ${step}\n` +
       `--------------------------------------------------------------\n` +
       `📋 ACTION REQUIRED:\n${formattedAction}\n\n` +
-      `🛑 WHEN STEP COMPLETE: Call team_step_complete(step: "${step}", notes: "...") or team_update_status\n` +
+      `🛑 MANDATORY STEP COMPLETION TOOL CALL:\n` +
+      `Execute required commands/edits, and THEN IMMEDIATELY invoke tool:\n` +
+      `team_step_complete(step: "${step}", notes: "Summary of actions completed in this step")\n` +
+      `🚫 DO NOT stop or output text without calling team_step_complete.\n` +
       `==============================================================\n`
     );
   }

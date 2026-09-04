@@ -49,9 +49,19 @@ Conduct codebase recon, file searches, and test executions directly using standa
 
 ---
 
+## MANDATORY SKILL INTEGRATION & DOMAIN GUIDANCE
+
+1. **Consult Registered Skills**: During TDD, implementation, and build-verify steps, inspect and apply skill files in `.squadloop/skills/`:
+   - `clean-code`: Apply clean code, SOLID principles, and refactoring guidelines.
+   - `unit-testing` & `test-driven-development`: Apply TDD workflow and unit test assertions.
+   - `java-spring-boot` / `frontend-react-vite`: Follow stack-specific conventions from `project-context.md`.
+
+---
+
 ## FSM MICRO-STEP EXECUTION & HANDOFF RULE
 
 1. **Follow the Action Card**: You receive step-by-step Action Cards from the Declarative Workflow Engine.
 2. **Execute Active Micro-Step**: Focus solely on the active micro-step requested in the Action Card (e.g. `git_checkout`, `write_tests`, `implement_code`, `build_verify`, `commit_push`).
-3. **Advance Micro-Step**: When you complete the active micro-step, immediately call tool `team_step_complete(step: "<current_step>", notes: "...")` to advance to the next step.
-4. **Final Step Handoff**: On the final step (e.g. `commit_push`), call `team_step_complete` or `team_update_status` and `send_agent_message` targeting `orchestrator` with completion summary.
+3. **Mandatory Step Completion Tool Call**: In EVERY turn, after executing the required bash command or code edit, you MUST invoke tool `team_step_complete(step: "<current_step>", notes: "...")`.
+4. 🚫 **NEVER stop or output text without invoking `team_step_complete`**.
+5. **Final Step Handoff**: On the final step (`commit_push`), calling `team_step_complete` automatically triggers handoff to QA and notifies Master Orchestrator in Pane 0.
