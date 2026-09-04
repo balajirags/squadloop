@@ -111,6 +111,7 @@ function getAgentCommand(role: string, sessionId?: string): string {
 
   const envVars = [
     "CONFIG_DIR_NAME=.squadloop",
+    "PI_QUIET_STARTUP=1",
     `PI_CODING_AGENT_DIR="$HOME/.squadloop/agent"`,
     `SQUADLOOP_SESSION_ID="${normalizeSessionId(sessionId || process.env.SQUADLOOP_SESSION_ID || "default")}"`
   ];

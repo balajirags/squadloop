@@ -351,20 +351,9 @@ export class XStateWorkflowEngine implements IWorkflowEngine {
   ): string {
     const formattedAction = action.replace(/\$\{issueId\}/g, issueId);
     return (
-      `[HANDS-OFF MANDATE: EXECUTE IMMEDIATELY IN A SINGLE CONTINUOUS TURN WITHOUT STOPPING]\n` +
-      `==============================================================\n` +
-      `🎯 [SQUADLOOP FSM :: STEP ${stepNum}/${totalSteps} - ${step.toUpperCase()}]\n` +
-      `==============================================================\n` +
-      `• Issue ID     : #${issueId}\n` +
-      `• Role         : ${role.toUpperCase()}\n` +
-      `• Micro-Step   : ${step}\n` +
-      `--------------------------------------------------------------\n` +
-      `📋 ACTION REQUIRED:\n${formattedAction}\n\n` +
-      `🛑 MANDATORY STEP COMPLETION TOOL CALL:\n` +
-      `Execute required commands/edits, and THEN IMMEDIATELY invoke tool:\n` +
-      `team_step_complete(step: "${step}", notes: "Summary of actions completed in this step")\n` +
-      `🚫 DO NOT stop or output text without calling team_step_complete.\n` +
-      `==============================================================\n`
+      `🚀 [SQUADLOOP :: ${role.toUpperCase()}] Step ${stepNum}/${totalSteps} - ${step} (Issue #${issueId})\n` +
+      `• Action: ${formattedAction}\n` +
+      `👉 Tool: team_step_complete(step: "${step}", notes: "...")\n`
     );
   }
 

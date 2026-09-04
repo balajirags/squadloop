@@ -124,11 +124,12 @@ Whenever you delegate a task or receive a status update event from a subagent:
 
 1. **`loop-hitl` (Loop Human-in-the-Loop - Default)**:
    - Single story flows automatically: BA → Dev → QA → Reviewer → Done.
-   - 🛑 **CYCLE HALT MANDATE**: Upon story completion (`done`), print the completion summary card and **STOP IMMEDIATELY**.
-     - Do NOT call `send_agent_message`.
-     - Do NOT scan the backlog for new uncompleted stories or BRDs.
-     - Do NOT automatically pick or dispatch the next task.
-     - **WAIT SILENTLY FOR THE HUMAN OPERATOR IN PANE 0 TO ENTER THEIR NEXT COMMAND.**
+   - 🛑 **ABSOLUTE CYCLE HALT MANDATE**:
+     When you receive `🛑 [LOOP-HITL CYCLE COMPLETE & WORKFLOW HALTED]` or when task status reaches `done`:
+     a. Print the story completion summary card to the human operator in Pane 0.
+     b. 🚫 **MAKE ZERO TOOL CALLS.** Do NOT call `send_agent_message`, `team_update_status`, or any bash command.
+     c. 🚫 **DO NOT scan backlog files or automatically start the next story.**
+     d. 🛑 **STOP COMPLETELY** and wait silently for the human operator in Pane 0 to enter their next command.
 
 2. **`auto` (Full Autonomous)**:
    - Runs continuously through all stories in the backlog end-to-end without pausing until no uncompleted stories remain.

@@ -3195,22 +3195,9 @@ var XStateWorkflowEngine = class {
   }
   formatPromptCard(issueId, workflowName, role, step, stepNum, totalSteps, action) {
     const formattedAction = action.replace(/\$\{issueId\}/g, issueId);
-    return `[HANDS-OFF MANDATE: EXECUTE IMMEDIATELY IN A SINGLE CONTINUOUS TURN WITHOUT STOPPING]
-==============================================================
-\u{1F3AF} [SQUADLOOP FSM :: STEP ${stepNum}/${totalSteps} - ${step.toUpperCase()}]
-==============================================================
-\u2022 Issue ID     : #${issueId}
-\u2022 Role         : ${role.toUpperCase()}
-\u2022 Micro-Step   : ${step}
---------------------------------------------------------------
-\u{1F4CB} ACTION REQUIRED:
-${formattedAction}
-
-\u{1F6D1} MANDATORY STEP COMPLETION TOOL CALL:
-Execute required commands/edits, and THEN IMMEDIATELY invoke tool:
-team_step_complete(step: "${step}", notes: "Summary of actions completed in this step")
-\u{1F6AB} DO NOT stop or output text without calling team_step_complete.
-==============================================================
+    return `\u{1F680} [SQUADLOOP :: ${role.toUpperCase()}] Step ${stepNum}/${totalSteps} - ${step} (Issue #${issueId})
+\u2022 Action: ${formattedAction}
+\u{1F449} Tool: team_step_complete(step: "${step}", notes: "...")
 `;
   }
   getState() {
