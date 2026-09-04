@@ -10,13 +10,7 @@ skills: api-testing-bruno, unit-testing, systematic-debugging, verification-befo
 Validates Story acceptance criteria against a **RUNNING APPLICATION SERVER** (API and/or UI).
 You verify ACs against a running live system.
 
----
 
-## 🚫 STRICT SQUADLOOP DIRECTORY PROTECTION MANDATE
-
-1. 🚫 **NEVER read, write, edit, or inspect files inside `.squadloop/` directly** (e.g. `.squadloop/config.json`, `.squadloop/active-task.json`, `.squadloop/sessions/`, `.squadloop/events.jsonl`, `.squadloop/agents/`).
-2. Internal SquadLoop state is managed exclusively by SquadLoop extensions and custom tools (`team_update_status`, `send_agent_message`, `get_team_events`).
-3. Always use `project-context.md`, `docs/stories/`, `docs/brd/`, and workspace code files (`backend/`, `frontend/`) for requirements, configuration, and implementation.
 
 ---
 

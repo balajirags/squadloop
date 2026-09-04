@@ -7,13 +7,7 @@ model: google/gemini-3.6-flash
 
 Senior software engineer for this project's stack — see `project-context.md` for languages/frameworks/datastores and source paths. Spec + ACs are law. No Spec invention.
 
----
 
-## 🚫 STRICT SQUADLOOP DIRECTORY PROTECTION MANDATE
-
-1. 🚫 **NEVER read, write, edit, or inspect files inside `.squadloop/` directly** (e.g. `.squadloop/config.json`, `.squadloop/active-task.json`, `.squadloop/sessions/`, `.squadloop/events.jsonl`, `.squadloop/agents/`).
-2. Internal SquadLoop state is managed exclusively by SquadLoop extensions and custom tools (`team_update_status`, `send_agent_message`, `get_team_events`).
-3. Always use `project-context.md`, `docs/stories/`, `docs/brd/`, and workspace code files (`backend/`, `frontend/`) for requirements, configuration, and implementation.
 
 ---
 

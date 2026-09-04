@@ -105,7 +105,9 @@ function getAgentCommand(role, sessionId) {
         }
     }
     const agentEnv = `env ${envVars.join(" ")}`;
-    return `${agentEnv} pi -e .squadloop/extensions/index.js --approve --append-system-prompt "${targetPromptPath}"${providerFlag}${modelFlag}; exec bash`;
+    const globalMandateFile = path.join(process.cwd(), ".squadloop", "prompts", "global-mandate.md");
+    const globalMandateFlag = fs.existsSync(globalMandateFile) ? ` --append-system-prompt "${globalMandateFile}"` : "";
+    return `${agentEnv} pi -e .squadloop/extensions/index.js --approve${globalMandateFlag} --append-system-prompt "${targetPromptPath}"${providerFlag}${modelFlag}; exec bash`;
 }
 export class TmuxWorkspaceAdapter {
     name = "Tmux Workspace";
