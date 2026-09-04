@@ -3193,15 +3193,9 @@ var XStateWorkflowEngine = class {
     this.currentTaskState = state;
     return state;
   }
-  formatPromptCard(issueId, workflowName, role, step, stepNum, totalSteps, action) {
-    const formattedAction = action.replace(/\$\{issueId\}/g, issueId);
+  formatPromptCard(issueId, workflowName, role, step, stepNum, totalSteps, _action) {
     return `\u{1F680} [SQUADLOOP FSM :: ${role.toUpperCase()} | Step ${stepNum}/${totalSteps}: ${step.toUpperCase()} | Issue #${issueId}]
-==============================================================
-\u{1F4CB} STEP INSTRUCTIONS:
-${formattedAction}
-
 \u{1F449} Tool Required: team_step_complete(step: "${step}", notes: "Summary of completed actions")
-==============================================================
 `;
   }
   getState() {

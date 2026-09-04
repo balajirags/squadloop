@@ -347,15 +347,11 @@ export class XStateWorkflowEngine implements IWorkflowEngine {
     step: string,
     stepNum: number,
     totalSteps: number,
-    action: string
+    _action?: string
   ): string {
-    const formattedAction = action.replace(/\$\{issueId\}/g, issueId);
     return (
       `🚀 [SQUADLOOP FSM :: ${role.toUpperCase()} | Step ${stepNum}/${totalSteps}: ${step.toUpperCase()} | Issue #${issueId}]\n` +
-      `==============================================================\n` +
-      `📋 STEP INSTRUCTIONS:\n${formattedAction}\n\n` +
-      `👉 Tool Required: team_step_complete(step: "${step}", notes: "Summary of completed actions")\n` +
-      `==============================================================\n`
+      `👉 Tool Required: team_step_complete(step: "${step}", notes: "Summary of completed actions")\n`
     );
   }
 

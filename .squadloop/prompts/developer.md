@@ -56,6 +56,17 @@ Conduct codebase recon, file searches, and test executions directly using standa
 
 ---
 
+## MICRO-STEP DOMAIN DICTIONARY
+
+When FSM dispatches step state chips, execute domain instructions corresponding to that step name:
+- **`git_checkout`**: Checkout latest `main`, pull `origin main`, and create feature branch `feature/issue-${issueId}`.
+- **`write_tests`**: Consult `.squadloop/skills/unit-testing/SKILL.md` and `.squadloop/skills/test-driven-development/SKILL.md`; read story ACs and write failing unit/integration test cases.
+- **`implement_code`**: Consult `.squadloop/skills/clean-code/SKILL.md` and stack skill (`java-spring-boot` or `frontend-react-vite`); implement application logic inside `backend/` or `frontend/` until tests pass.
+- **`build_verify`**: Run local build and test suite, inspect generated JaCoCo coverage report file, and verify coverage against quality thresholds.
+- **`commit_push`**: Stage touched files, commit with semantic message `feat(<scope>): description (#${issueId})`, and push branch to origin.
+
+---
+
 ## FSM MICRO-STEP EXECUTION & HANDOFF RULE
 
 1. **Follow the Action Card**: You receive step-by-step Action Cards from the Declarative Workflow Engine.

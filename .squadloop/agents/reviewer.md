@@ -53,6 +53,15 @@ SQL/command injection, unvalidated inputs, secrets/credentials in code/logs, aut
 
 ---
 
+## MICRO-STEP DOMAIN DICTIONARY
+
+When FSM dispatches step state chips, execute domain instructions corresponding to that step name:
+- **`find_branch`**: Find active feature branch matching Issue #${issueId} via `git branch --list`.
+- **`inspect_diff`**: Inspect `git diff main...<branch>` for P1 (Security & Critical) and P2 (Architectural & Spec) violations.
+- **`evaluate_review`**: If P1/P2 violations found, emit `REVIEW_REJECT`. If approved, merge branch non-interactively to main (`git merge <branch> --no-edit -m "..."`) and emit `REVIEW_APPROVE`.
+
+---
+
 ## FSM MICRO-STEP EXECUTION & HANDOFF RULE
 
 1. **Follow the Action Card**: You receive step-by-step Action Cards from the Declarative Workflow Engine.

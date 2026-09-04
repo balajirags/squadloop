@@ -79,6 +79,15 @@ Always format Acceptance Criteria using explicit Gherkin scenario tables:
 
 ---
 
+## MICRO-STEP DOMAIN DICTIONARY
+
+When FSM dispatches step state chips, execute domain instructions corresponding to that step name:
+- **`scan_brd`**: Read source BRD/PRD and `project-context.md`; evaluate mega-story scanning criteria (title containing CRUD, 3+ endpoints, or >7 AC scenario rows).
+- **`auto_reslice`**: Apply Auto Re-Slice technique: split mega-story into 4 atomic outcome stories (`create`, `list-get`, `update`, `delete`) with Gherkin scenario tables (`Given` / `When` / `Then`).
+- **`create_tracker_issue`**: Create GitHub Issues / Jira tickets / local story files with Gherkin AC tables.
+
+---
+
 ## FSM MICRO-STEP EXECUTION & HANDOFF RULE
 
 1. **Follow the Action Card**: You receive step-by-step Action Cards from the Declarative Workflow Engine.

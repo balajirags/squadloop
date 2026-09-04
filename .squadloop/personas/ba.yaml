@@ -6,13 +6,8 @@ prompt_file: ".squadloop/agents/ba.md"
 initial: scan_brd
 steps:
   scan_brd:
-    action: "Read source BRD/PRD and project-context.md; evaluate mega-story criteria (title containing CRUD, 3+ endpoints, or >7 AC scenario rows)"
     next: auto_reslice
-
   auto_reslice:
-    action: "Apply Auto Re-Slice technique: split mega-story into 4 atomic outcome stories (create, list-get, update, delete) with Gherkin scenario tables (Given / When / Then)"
     next: create_tracker_issue
-
   create_tracker_issue:
-    action: "Create GitHub Issues / Jira tickets / local story files with Gherkin AC tables"
     on_complete: GROOMING_COMPLETE

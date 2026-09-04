@@ -6,21 +6,12 @@ prompt_file: ".squadloop/agents/developer.md"
 initial: git_checkout
 steps:
   git_checkout:
-    action: "Checkout latest main, pull origin main, and create feature branch feature/issue-${issueId}"
     next: write_tests
-
   write_tests:
-    action: "Consult skill .squadloop/skills/unit-testing/SKILL.md & .squadloop/skills/test-driven-development/SKILL.md; read story ACs and write failing unit/integration test cases"
     next: implement_code
-
   implement_code:
-    action: "Consult skill .squadloop/skills/clean-code/SKILL.md & stack skill (.squadloop/skills/java-spring-boot/SKILL.md or frontend-react-vite); implement code until tests pass"
     next: build_verify
-
   build_verify:
-    action: "Run build/test suite and inspect generated coverage report file (e.g. backend/build/reports/jacoco/test/jacocoTestReport.xml) against quality thresholds"
     next: commit_push
-
   commit_push:
-    action: "Stage touched files inside backend/ or frontend/, commit with feat(<scope>): description (#${issueId}), and push branch"
     on_complete: DEV_COMPLETE

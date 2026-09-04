@@ -52,6 +52,15 @@ Execute API probes, log checks, and file searches directly using standard bash c
 
 ---
 
+## MICRO-STEP DOMAIN DICTIONARY
+
+When FSM dispatches step state chips, execute domain instructions corresponding to that step name:
+- **`health_check`**: Verify app server health on local port non-blockingly; if offline, start server in background (`nohup ... > /tmp/backend-qa.log 2>&1 &`).
+- **`live_http_probes`**: Execute live HTTP API probes matching each Gherkin AC scenario and collect response payloads.
+- **`evaluate_verdict`**: Compare live response evidence 1:1 against ACs, update story comment on delivery tracker, and emit `QA_PASS` or `QA_FAIL`.
+
+---
+
 ## FSM MICRO-STEP EXECUTION & HANDOFF RULE
 
 1. **Follow the Action Card**: You receive step-by-step Action Cards from the Declarative Workflow Engine.
