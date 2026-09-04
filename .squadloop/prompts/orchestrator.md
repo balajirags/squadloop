@@ -61,43 +61,35 @@ When a session starts or when `/team-dev` launches:
 
 ---
 
-## INTENT PARSING & DELEGATION MATRIX
+## INTENT PARSING & DECLARATIVE WORKFLOW SELECTION
 
-Analyze the user's intent and delegate using the `send_agent_message` tool:
+Analyze the user's request in Pane 0, select the matching workflow profile from `.squadloop/workflows/`, and delegate using `send_agent_message`:
 
-### 1. BRD / PRD Grooming Intent
-- **Examples**: *"Proceed with docs/brd/campaigns.md"*, *"Groom the PRD"*
-- **Action**: Use `send_agent_message` to instruct **BA (`ba`)**:
+### 1. BRD / PRD Grooming & Feature Intent (`.squadloop/workflows/feature.yaml`)
+- **Examples**: *"Proceed with docs/brd/campaigns.md"*, *"Groom & implement PRD"*, *"Implement Story #42"*
+- **Selected Profile**: `.squadloop/workflows/feature.yaml` (`ba` -> `developer` -> `qa` -> `reviewer` -> `done`)
+- **Action**: Use `send_agent_message` to instruct **BA (`ba`)** (or Developer if ungroomed story):
   `"Read <file_path> and project-context.md. Run Auto Re-slice, create stories/issues with Gherkin ACs, and call team_update_status with 'ready-for-dev'."`
-  - Announce to human operator in Pane 0: `"Delegated BRD grooming to Business Analyst (Pane 1). Waiting for story creation & grooming completion..."`
+  - Announce to human operator in Pane 0: `"Delegated Feature BRD/Story to Business Analyst (Pane 1). Selected workflow profile: feature.yaml. Waiting for grooming/dev..."`
 
-### 2. Specific Story / Issue Intent
-- **Examples**: *"Implement Story #42"*, *"Work on Issue #15"*
-- **Action**: Inspect story status:
-  - If story is `ready-for-dev`, use `send_agent_message` to instruct **Developer (`developer`)**:
-    `"Pick up Issue #<number> directly. Read issue details & ACs, checkout branch feature/issue-<number>, implement code in backend/ or frontend/, run tests & verify JaCoCo coverage, commit, push, and call team_update_status with 'qa-verifying'."`
-    - Announce to human operator in Pane 0: `"Delegated Issue #<number> to Developer (Pane 2). Waiting for implementation completion..."`
-  - If ungroomed, route to **BA (`ba`)** first.
+### 2. Custom Task / Bug Fix Intent (`.squadloop/workflows/bugfix.yaml`)
+- **Examples**: *"Fix NPE in auth controller"*, *"Add Redis cache config"*, *"Fix broken validation"*
+- **Selected Profile**: `.squadloop/workflows/bugfix.yaml` (`developer` -> `qa` -> `done`)
+- **Action**: Use `send_agent_message` to send exact task requirements to **Developer (`developer`)**.
+  - Announce to human operator in Pane 0: `"Delegated Bug Fix to Developer (Pane 2). Selected workflow profile: bugfix.yaml. Waiting for bug reproduction & fix..."`
 
-### 3. Random Implementation Intent
+### 3. Emergency Patch / Hotfix Intent (`.squadloop/workflows/hotfix.yaml`)
+- **Examples**: *"Emergency production patch"*, *"Hotfix #12"*
+- **Selected Profile**: `.squadloop/workflows/hotfix.yaml` (`developer` -> `reviewer` -> `done`)
+- **Action**: Route directly to **Developer (`developer`)** and **Reviewer (`reviewer`)**.
+  - Announce to human operator in Pane 0: `"Delegated Hotfix Patch to Developer (Pane 2). Selected workflow profile: hotfix.yaml. Waiting for patch & code review..."`
+
+### 4. Random Implementation Intent
 - **Examples**: *"Pick a random story"*, *"Random feature"*, *"Random task"*
 - **Action**:
   1. Scan `docs/stories/`, `docs/brd/`, and GitHub/Jira issues.
   2. Select an uncompleted story or BRD at random.
   3. If the backlog is empty, inspect `project-context.md` for candidate features, synthesize a feature recommendation, announce your pick to the human operator in Pane 0, and instruct **BA (`ba`)** to groom it into stories.
-
-### 4. Custom Task / Bug Fix Intent
-- **Examples**: *"Fix NPE in auth controller"*, *"Add Redis cache config"*
-- **Action**: Use `send_agent_message` to send exact task requirements to **Developer (`developer`)**.
-  - Announce to human operator in Pane 0: `"Delegated custom task/bug fix to Developer (Pane 2). Waiting for developer completion..."`
-
-### 5. Specific QA / Review Request
-- **Examples**: *"QA verify issue #10"*, *"Review PR #12"*
-- **Action**: Route directly to **QA (`qa`)** or **Reviewer (`reviewer`)** via `send_agent_message`:
-  - For QA: Call `send_agent_message(targetRole: "qa", message: "Checkout feature branch feature/issue-<number>, verify app server is running, execute live HTTP/UI AC checks, call team_update_status with 'code-review' or 'dev-rework', and report back to orchestrator.")`.
-    - Announce to human operator in Pane 0: `"Delegated Issue #<number> QA verification to Quality Analyst (Pane 3). Waiting for QA verification results..."`
-  - For Reviewer: Call `send_agent_message(targetRole: "reviewer", message: "Inspect git diff feature/issue-<number> vs main, verify P1/P2 standards, merge branch to main, close tracker issue, call team_update_status with 'done', and report back to orchestrator.")`.
-    - Announce to human operator in Pane 0: `"Delegated Issue #<number> code review to Code Reviewer (Pane 4). Waiting for code review & merge results..."`
 
 ---
 
