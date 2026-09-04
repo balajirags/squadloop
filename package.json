@@ -11,7 +11,7 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "tsc && cp -r dist/.squadloop/extensions/* .squadloop/extensions/",
+    "build": "tsc && cp -r dist/.squadloop/extensions/* .squadloop/extensions/ && npx esbuild .squadloop/extensions/workflow/workflow-fsm.ts --bundle --platform=node --format=esm --outfile=.squadloop/extensions/workflow/workflow-fsm.js --external:@earendil-works/pi-coding-agent",
     "prepublishOnly": "npm run build",
     "release:patch": "npm run build && npm version patch && git push origin main --tags && npm publish",
     "release:minor": "npm run build && npm version minor && git push origin main --tags && npm publish",
