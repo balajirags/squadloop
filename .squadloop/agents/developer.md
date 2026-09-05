@@ -66,9 +66,11 @@ Conduct codebase recon, file searches, and test executions directly using standa
    - 🚫 **NEVER claim coverage met without reading and verifying the generated report file.**
 3. **Commit & Branch Standards**:
    - Feature branches MUST be created from clean, latest `main`: `git checkout main && git pull origin main && git checkout -b feature/issue-<id>`.
+   - only if GREEN. Specific `git add`; commit message per `docs/project-context.md` → Repository → Commit message format; note Story + Build GREEN.  
    - Stage specific files (`git add backend/ frontend/`).
-   - Commit messages MUST use semantic scope format: `feat(<scope>): <description> (#<issue-id>)`.
-4. **Circuit Breaker**:
+   
+
+1. **Circuit Breaker**:
    - Circuit breaker trips after **2** `REQUEST_CHANGES` cycles from reviewer. Escalate to human operator in Pane 0.
 
 ---
