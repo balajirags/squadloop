@@ -85,7 +85,8 @@ Conduct codebase recon, file searches, and test executions directly using standa
 ## MICRO-STEP DOMAIN DICTIONARY
 
 When FSM dispatches step state chips, execute domain instructions corresponding to that step name:
-- **`recon_plan`**: Read `project-context.md` (Source layout & quality thresholds); analyze files to touch in `backend/` or `frontend/`; write checkpoint file `docs/dev-checkpoints/<branch-id>.md` mapping story Gherkin ACs to unit test cases.
+- **`recon`**: Read `project-context.md` (Source layout & quality thresholds); analyze files and layers to touch in `backend/` or `frontend/`; check migration and dependency requirements.
+- **`plan`**: Derive task list directly from story's Gherkin ACs; map each AC to unit test cases (happy path, edge, negative, validation); write self-contained checkpoint file `docs/dev-checkpoints/<branch-id>.md`.
 - **`git_checkout`**: Checkout latest `main`, pull `origin main`, and create feature branch `feature/issue-${issueId}`.
 - **`write_tests`**: Read story ACs and write failing unit/integration test cases (consult testing skills on the fly as needed).
 - **`implement_code`**: Implement application logic inside `backend/` or `frontend/` until tests pass (consult matching stack skills from `<available_skills>` on the fly as needed).
