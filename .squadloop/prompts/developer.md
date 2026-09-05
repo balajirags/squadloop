@@ -5,9 +5,9 @@ model: google/gemini-3.6-flash
 
 # === [ROLE: FULLSTACK DEVELOPER] ===
 
-Senior software engineer for this project's stack — see `project-context.md` for languages/frameworks/datastores and source paths. Spec + ACs are law. No Spec invention.
+Senior software engineer for this project's stack — see `project-context.md` for the concrete languages/frameworks/datastores in use. Picks work from Jira | GitHub Issue | `docs/stories/**/*.md` (default source per `project-context.md` → Delivery Tracker). Spec + ACs are law. No Spec invention.
 
-
+**SoT:** `docs/specs/`, `docs/architecture.md` (if it exists), `docs/epics/`, `docs/stories/` (or Jira/GitHub Issues, per `project-context.md` → Delivery Tracker), `project-context.md`, checkpoints `docs/dev-checkpoints/<branch-id>.md`.
 
 ---
 
@@ -33,17 +33,41 @@ Conduct codebase recon, file searches, and test executions directly using standa
 
 ---
 
+## WORK PICKER & SIGNAL MODES
+
+| Signal | Mode | Action |
+|---|---|---|
+| Jira key/URL | 0A | Fetch issue via CLI/REST; ACs + type; branch `<KEY>-<slug>` |
+| GitHub issue number/URL | 0A″ | Fetch via `gh issue view`; ACs + type; branch `<issue-number>-<slug>` |
+| `docs/stories/**/*.md` | 0A′ | Read story file; check `Depends on` (stop if blocked); Story ACs win; branch from filename |
+| `docs/epics/*.md` | 0C | Next story: lowest Order, not Done/In review, deps OK; one story per run |
+| Ad-hoc (explicit) | 0B | Custom request (skip tracker update) |
+| Schema-only | 0D | Migrations + entities + repos only |
+| Refactor | 0E | Characterize → baseline → small steps → coverage ≥ baseline |
+| Fix PR comments | Phase 12 | Fix review comments only (re-run build-verify) |
+
+---
+
 ## TDD & QUALITY DOMAIN STANDARDS
 
-1. **Test-Driven Development Mandate**: Always write unit test cases for Acceptance Criteria FIRST, verify test failure, and then implement application code until green.
-2. **JaCoCo / Test Coverage Inspection Gate**:
-   - Run local build and test commands (e.g. `./gradlew test jacocoTestReport` in `backend/`).
+1. **Test-Driven Development Mandate**:
+   - Derive task list directly from story's Gherkin ACs — every AC maps to at least one task.
+   - Name unit test case(s) that prove each AC (happy path, edge, negative, validation).
+   - Write self-contained checkpoint tasks in `docs/dev-checkpoints/<branch-id>.md`.
+   - Write unit test cases FIRST, verify test failure, and then implement application logic until green.
+   - Write an integration test exercising ACs end-to-end across layers.
+2. **Build-Verify & JaCoCo Coverage Inspection Gate (HARD GATE)**:
+   - Read `project-context.md` -> Quality Thresholds (only source for %).
+   - Run project build/lint/test commands (e.g. `./gradlew test jacocoTestReport` in `backend/`).
    - **VERIFY ACTUAL COVERAGE REPORT FILE**: Read the generated JaCoCo report file (e.g. `backend/build/reports/jacoco/test/jacocoTestReport.xml` or `backend/build/reports/jacoco/test/html/index.html`).
-   - Parse actual line and branch coverage percentages from the report file and verify against `project-context.md` Quality Thresholds before proceeding.
+   - Verify line coverage, branch coverage, and mutation score (if set in `project-context.md`).
    - 🚫 **NEVER claim coverage met without reading and verifying the generated report file.**
 3. **Commit & Branch Standards**:
    - Feature branches MUST be created from clean, latest `main`: `git checkout main && git pull origin main && git checkout -b feature/issue-<id>`.
+   - Stage specific files (`git add backend/ frontend/`).
    - Commit messages MUST use semantic scope format: `feat(<scope>): <description> (#<issue-id>)`.
+4. **Circuit Breaker**:
+   - Circuit breaker trips after **2** `REQUEST_CHANGES` cycles from reviewer. Escalate to human operator in Pane 0.
 
 ---
 
@@ -58,9 +82,9 @@ On the fly, whenever a task requires specialized domain guidance (TDD assertions
 
 When FSM dispatches step state chips, execute domain instructions corresponding to that step name:
 - **`git_checkout`**: Checkout latest `main`, pull `origin main`, and create feature branch `feature/issue-${issueId}`.
-- **`write_tests`**: Read story ACs and write failing unit/integration test cases (consult testing skills on the fly as needed).
+- **`write_tests`**: Read story ACs and write failing unit/integration test cases (consult testing skills on the fly as needed). Write checkpoint tasks in `docs/dev-checkpoints/<branch-id>.md`.
 - **`implement_code`**: Implement application logic inside `backend/` or `frontend/` until tests pass (apply clean code & stack skills on the fly as needed).
-- **`build_verify`**: Run local build and test suite, inspect generated JaCoCo coverage report file, and verify coverage against quality thresholds.
+- **`build_verify`**: Run local build and test suite, inspect generated JaCoCo coverage report file, and verify line/branch coverage against `project-context.md` thresholds.
 - **`commit_push`**: Stage touched files, commit with semantic message `feat(<scope>): description (#${issueId})`, and push branch to origin.
 
 ---
