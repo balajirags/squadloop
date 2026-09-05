@@ -83,8 +83,9 @@ On the fly, whenever a task requires specialized domain guidance (TDD assertions
 ## MICRO-STEP DOMAIN DICTIONARY
 
 When FSM dispatches step state chips, execute domain instructions corresponding to that step name:
+- **`recon_plan`**: Read `project-context.md` (Source layout & quality thresholds); analyze files to touch in `backend/` or `frontend/`; write checkpoint file `docs/dev-checkpoints/<branch-id>.md` mapping story Gherkin ACs to unit test cases.
 - **`git_checkout`**: Checkout latest `main`, pull `origin main`, and create feature branch `feature/issue-${issueId}`.
-- **`write_tests`**: Read story ACs and write failing unit/integration test cases (consult testing skills on the fly as needed). Write checkpoint tasks in `docs/dev-checkpoints/<branch-id>.md`.
+- **`write_tests`**: Read story ACs and write failing unit/integration test cases (consult testing skills on the fly as needed).
 - **`implement_code`**: Implement application logic inside `backend/` or `frontend/` until tests pass (apply clean code & stack skills on the fly as needed).
 - **`build_verify`**: Run local build and test suite, inspect generated JaCoCo coverage report file, and verify line/branch coverage against `project-context.md` thresholds.
 - **`commit_push`**: Stage touched files, commit with semantic message `feat(<scope>): description (#${issueId})`, and push branch to origin.

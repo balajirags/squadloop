@@ -3,8 +3,10 @@ name: "Developer Persona Workflow"
 role: "developer"
 prompt_file: ".squadloop/agents/developer.md"
 
-initial: git_checkout
+initial: recon_plan
 steps:
+  recon_plan:
+    next: git_checkout
   git_checkout:
     next: write_tests
   write_tests:
