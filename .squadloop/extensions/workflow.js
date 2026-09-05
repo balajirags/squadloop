@@ -95,6 +95,11 @@ export class WorkflowEngine {
             }
         }
         const driver = DriverFactory.getDriver(driverName);
+        // Send real-time progress notification to Master Orchestrator (Pane 0)
+        if (panes?.orchestrator) {
+            const progressMsg = `[FSM PROGRESS :: ${updatedState.targetRole.toUpperCase()}] Completed '${step}' -> Active: '${updatedState.microStep}' (Issue #${updatedState.issueId}).`;
+            await driver.sendPrompt(panes.orchestrator, progressMsg, false, "orchestrator", sessionId);
+        }
         const targetPane = panes[updatedState.targetRole] || updatedState.targetRole;
         if (targetPane && updatedState.promptCard && !updatedState.isDone) {
             await driver.sendPrompt(targetPane, updatedState.promptCard, true, updatedState.targetRole, sessionId);

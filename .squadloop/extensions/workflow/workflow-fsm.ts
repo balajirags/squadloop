@@ -351,7 +351,9 @@ export class XStateWorkflowEngine implements IWorkflowEngine {
   ): string {
     return (
       `🚀 [SQUADLOOP FSM :: ${role.toUpperCase()} | Step ${stepNum}/${totalSteps}: ${step.toUpperCase()} | Issue #${issueId}]\n` +
-      `👉 Tool Required: team_step_complete(step: "${step}", notes: "Summary of completed actions")\n`
+      `⚡ MANDATORY ACTION: Execute required commands/edits, and THEN IMMEDIATELY invoke tool:\n` +
+      `team_step_complete(step: "${step}", notes: "Summary of completed actions")\n` +
+      `🚫 DO NOT stop or output text without calling team_step_complete.\n`
     );
   }
 

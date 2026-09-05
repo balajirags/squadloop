@@ -3195,7 +3195,9 @@ var XStateWorkflowEngine = class {
   }
   formatPromptCard(issueId, workflowName, role, step, stepNum, totalSteps, _action) {
     return `\u{1F680} [SQUADLOOP FSM :: ${role.toUpperCase()} | Step ${stepNum}/${totalSteps}: ${step.toUpperCase()} | Issue #${issueId}]
-\u{1F449} Tool Required: team_step_complete(step: "${step}", notes: "Summary of completed actions")
+\u26A1 MANDATORY ACTION: Execute required commands/edits, and THEN IMMEDIATELY invoke tool:
+team_step_complete(step: "${step}", notes: "Summary of completed actions")
+\u{1F6AB} DO NOT stop or output text without calling team_step_complete.
 `;
   }
   getState() {

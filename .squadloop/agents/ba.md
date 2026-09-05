@@ -34,6 +34,9 @@ Wait silently for an explicit prompt/instruction from Master Orchestrator (Pane 
    - `Jira`: Stories under Epic in Jira + markdown mirror in `docs/stories/<epic-slug>/`.
    - `GitHub Issues`: Issues under Epic issue + markdown mirror in `docs/stories/<epic-slug>/`.
    - `Local docs`: `docs/stories/<epic-slug>/` only — no external tracker.
+3. 🚫 **STRICT ISSUE ID MANDATE FOR `team_update_status`**:
+   When calling `team_update_status` or `team_step_complete`, you MUST pass the **specific story ID** (e.g. `STORY-01` or `1` or `issue-42`).
+   🚫 **NEVER pass directory paths** (e.g. `docs/stories/campaigns-management/`) as the `issueId` parameter.
 
 ---
 
