@@ -2960,40 +2960,11 @@ function createPipelineMachine(workflowDef) {
     states: statesConfig
   });
 }
-function createPersonaMachine(role, personaDef) {
-  const statesConfig = {};
-  for (const [stepKey, stepDef] of Object.entries(personaDef.steps)) {
-    const onConfig = {};
-    if (stepDef.next) {
-      onConfig["STEP_COMPLETE"] = { target: stepDef.next };
-      onConfig["team_step_complete"] = { target: stepDef.next };
-      onConfig["NEXT"] = { target: stepDef.next };
-    }
-    for (const otherStepKey of Object.keys(personaDef.steps)) {
-      if (otherStepKey !== stepKey) {
-        onConfig[otherStepKey] = { target: otherStepKey };
-      }
-    }
-    statesConfig[stepKey] = {
-      on: onConfig
-    };
-  }
-  const initialStep = personaDef.initial && personaDef.steps[personaDef.initial] ? personaDef.initial : Object.keys(personaDef.steps)[0] || "start";
-  if (!statesConfig[initialStep]) {
-    statesConfig[initialStep] = {};
-  }
-  return createMachine({
-    id: `persona_${role}`,
-    initial: initialStep,
-    states: statesConfig
-  });
-}
 var XStateWorkflowEngine = class {
   id = "xstate";
   currentTaskState = null;
   workflowDef = null;
   pipelineActor = null;
-  personaActor = null;
   async start(workflowDef, issueId, initialState) {
     this.workflowDef = workflowDef;
     const pipelineMachine = createPipelineMachine(workflowDef);
@@ -3001,45 +2972,18 @@ var XStateWorkflowEngine = class {
     this.pipelineActor.start();
     if (initialState) {
       this.currentTaskState = { ...initialState };
-      const role = initialState.targetRole;
-      const personaDef2 = workflowDef.personas[role];
-      if (personaDef2) {
-        const personaMachine = createPersonaMachine(role, personaDef2);
-        this.personaActor = createActor(personaMachine);
-        this.personaActor.start();
-      }
       return this.currentTaskState;
     }
     const initialStageKey = workflowDef.pipeline.initial;
     const initialStageDef = workflowDef.pipeline.states[initialStageKey];
     const initialRole = initialStageDef?.agent || "developer";
-    const personaDef = workflowDef.personas[initialRole];
-    const initialMicroStep = personaDef?.initial || "start";
-    const stepDef = personaDef?.steps?.[initialMicroStep];
-    const actionText = stepDef?.action || "Perform step action";
-    if (personaDef) {
-      const personaMachine = createPersonaMachine(initialRole, personaDef);
-      this.personaActor = createActor(personaMachine);
-      this.personaActor.start();
-    }
-    const totalSteps = personaDef?.steps ? Object.keys(personaDef.steps).length : 1;
-    const stepIndex = personaDef?.steps ? Object.keys(personaDef.steps).indexOf(initialMicroStep) : 0;
-    const stepNum = stepIndex >= 0 ? stepIndex + 1 : 1;
-    const promptCard = this.formatPromptCard(
-      issueId,
-      workflowDef.name,
-      initialRole,
-      initialMicroStep,
-      stepNum,
-      totalSteps,
-      actionText
-    );
+    const promptCard = this.formatTaskPrompt(issueId, workflowDef.name, initialStageKey, initialRole);
     this.currentTaskState = {
       issueId,
       workflowName: workflowDef.name,
       pipelineStage: initialStageKey,
       targetRole: initialRole,
-      microStep: initialMicroStep,
+      microStep: "active",
       promptCard,
       isDone: false,
       reworkCount: 0,
@@ -3057,77 +3001,9 @@ var XStateWorkflowEngine = class {
       context: { ...this.currentTaskState.context, ...payload },
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
     };
-    const normalizedEvent = event.trim().toUpperCase();
-    const isStepCompleteEvent = normalizedEvent === "STEP_COMPLETE" || normalizedEvent === "TEAM_STEP_COMPLETE" || event === "team_step_complete" || event === "STEP_COMPLETE";
-    const personaDef = this.workflowDef.personas[currentState.targetRole];
-    const currentStepDef = personaDef?.steps?.[currentState.microStep];
-    let pipelineTriggerEvent = null;
-    if (isStepCompleteEvent && currentStepDef) {
-      const verdict = payload?.verdict ? String(payload.verdict).toUpperCase() : null;
-      const passBool = payload?.pass === true;
-      const failBool = payload?.pass === false;
-      if ((verdict === "FAIL" || failBool) && currentStepDef.on_fail) {
-        pipelineTriggerEvent = currentStepDef.on_fail;
-      } else if ((verdict === "PASS" || passBool) && currentStepDef.on_pass) {
-        pipelineTriggerEvent = currentStepDef.on_pass;
-      } else if (currentStepDef.on_complete) {
-        pipelineTriggerEvent = currentStepDef.on_complete;
-      } else if (currentStepDef.next && personaDef.steps[currentStepDef.next]) {
-        const nextStepKey = currentStepDef.next;
-        if (this.personaActor) {
-          this.personaActor.send({ type: "STEP_COMPLETE" });
-        }
-        currentState.microStep = nextStepKey;
-        const nextStepDef = personaDef.steps[nextStepKey];
-        const nextAction = nextStepDef?.action || "Perform step action";
-        const totalSteps = Object.keys(personaDef.steps).length;
-        const stepIndex = Object.keys(personaDef.steps).indexOf(nextStepKey);
-        const stepNum = stepIndex >= 0 ? stepIndex + 1 : 1;
-        currentState.promptCard = this.formatPromptCard(
-          currentState.issueId,
-          currentState.workflowName,
-          currentState.targetRole,
-          nextStepKey,
-          stepNum,
-          totalSteps,
-          nextAction
-        );
-        this.currentTaskState = currentState;
-        return currentState;
-      } else if (currentStepDef.on_pass) {
-        pipelineTriggerEvent = currentStepDef.on_pass;
-      } else if (currentStepDef.on_fail) {
-        pipelineTriggerEvent = currentStepDef.on_fail;
-      }
-    } else if (!isStepCompleteEvent && personaDef?.steps?.[event]) {
-      const nextStepKey = event;
-      currentState.microStep = nextStepKey;
-      const nextStepDef = personaDef.steps[nextStepKey];
-      const nextAction = nextStepDef?.action || "Perform step action";
-      const totalSteps = Object.keys(personaDef.steps).length;
-      const stepIndex = Object.keys(personaDef.steps).indexOf(nextStepKey);
-      const stepNum = stepIndex >= 0 ? stepIndex + 1 : 1;
-      currentState.promptCard = this.formatPromptCard(
-        currentState.issueId,
-        currentState.workflowName,
-        currentState.targetRole,
-        nextStepKey,
-        stepNum,
-        totalSteps,
-        nextAction
-      );
-      this.currentTaskState = currentState;
-      return currentState;
-    } else if (!isStepCompleteEvent) {
-      pipelineTriggerEvent = event;
-    }
-    if (pipelineTriggerEvent) {
-      return this.handlePipelineTransition(pipelineTriggerEvent, currentState);
-    }
-    this.currentTaskState = currentState;
-    return currentState;
+    return this.handlePipelineTransition(event, currentState, payload?.notes);
   }
-  handlePipelineTransition(event, state) {
+  handlePipelineTransition(event, state, notes) {
     if (!this.workflowDef) return state;
     const currentStageDef = this.workflowDef.pipeline.states[state.pipelineStage];
     const transitionTarget = currentStageDef?.on?.[event];
@@ -3166,38 +3042,37 @@ var XStateWorkflowEngine = class {
     }
     const nextStageDef = this.workflowDef.pipeline.states[nextStageKey];
     const nextRole = nextStageDef.agent || "developer";
-    const nextPersonaDef = this.workflowDef.personas[nextRole];
-    const nextMicroStep = nextPersonaDef?.initial || "start";
-    const stepDef = nextPersonaDef?.steps?.[nextMicroStep];
-    const actionText = stepDef?.action || "Proceed with task";
-    if (nextPersonaDef) {
-      const personaMachine = createPersonaMachine(nextRole, nextPersonaDef);
-      this.personaActor = createActor(personaMachine);
-      this.personaActor.start();
-    }
-    const totalSteps = nextPersonaDef?.steps ? Object.keys(nextPersonaDef.steps).length : 1;
-    const stepIndex = nextPersonaDef?.steps ? Object.keys(nextPersonaDef.steps).indexOf(nextMicroStep) : 0;
-    const stepNum = stepIndex >= 0 ? stepIndex + 1 : 1;
     state.pipelineStage = nextStageKey;
     state.targetRole = nextRole;
-    state.microStep = nextMicroStep;
-    state.promptCard = this.formatPromptCard(
-      state.issueId,
-      this.workflowDef.name,
-      nextRole,
-      nextMicroStep,
-      stepNum,
-      totalSteps,
-      actionText
-    );
+    state.microStep = "active";
+    state.promptCard = this.formatTaskPrompt(state.issueId, this.workflowDef.name, nextStageKey, nextRole, notes);
     this.currentTaskState = state;
     return state;
   }
-  formatPromptCard(issueId, workflowName, role, step, stepNum, totalSteps, _action) {
-    return `\u{1F680} [SQUADLOOP FSM :: ${role.toUpperCase()} | Step ${stepNum}/${totalSteps}: ${step.toUpperCase()} | Issue #${issueId}]
-\u26A1 MANDATORY ACTION: Execute required commands/edits, and THEN IMMEDIATELY invoke tool:
-team_step_complete(step: "${step}", notes: "Summary of completed actions")
-\u{1F6AB} DO NOT stop or output text without calling team_step_complete.
+  formatTaskPrompt(issueId, workflowName, stage, role, notes) {
+    const roleUpper = role.toUpperCase();
+    let actionInstruction = "";
+    switch (role) {
+      case "ba":
+        actionInstruction = `Groom BRD/PRD or Story for Issue #${issueId}. Follow ba.md rules (Scan -> Auto Re-Slice mega-stories into 4 outcome stories -> Gherkin AC scenario tables). Call team_update_status with 'ready-for-dev' when complete.`;
+        break;
+      case "developer":
+        actionInstruction = `Implement Issue #${issueId}${notes ? ` (Rework notes: ${notes})` : ""}. Follow developer.md rules (Recon -> Plan checkpoint in docs/dev-checkpoints/ -> Feature branch -> TDD tests -> Code implementation -> JaCoCo build-verify -> Commit & Push). Call team_update_status with 'qa-verifying' when complete.`;
+        break;
+      case "qa":
+        actionInstruction = `Verify Issue #${issueId}. Follow qa.md rules (Health check -> Non-blocking app startup -> Live HTTP API probes -> 1:1 AC evidence mapping). Call team_update_status with 'code-review' (if PASS) or 'dev-rework' (if FAIL).`;
+        break;
+      case "reviewer":
+        actionInstruction = `Review Issue #${issueId}${notes ? ` (Notes: ${notes})` : ""}. Follow reviewer.md rules (Find branch -> Inspect git diff vs main -> P1 Security & P2 Spec/AC drift audit -> Non-interactive PR merge). Call team_update_status with 'done' (if APPROVE) or 'dev-rework' (if REQUEST_CHANGES).`;
+        break;
+      default:
+        actionInstruction = `Execute task for Issue #${issueId}. Follow persona instructions and update team status when complete.`;
+    }
+    return `\u{1F680} [SQUADLOOP FSM :: ${roleUpper} | Stage: ${stage.toUpperCase()} | Issue #${issueId}]
+==============================================================
+\u{1F4CB} TASK HANDOFF:
+${actionInstruction}
+==============================================================
 `;
   }
   getState() {

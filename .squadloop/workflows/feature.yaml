@@ -7,23 +7,19 @@ pipeline:
   states:
     ba_grooming:
       agent: ba
-      persona_workflow: ba
       on:
         GROOMING_COMPLETE: dev_implementing
     dev_implementing:
       agent: developer
-      persona_workflow: developer
       on:
         DEV_COMPLETE: qa_verifying
     qa_verifying:
       agent: qa
-      persona_workflow: qa
       on:
         QA_PASS: code_reviewing
         QA_FAIL: dev_implementing
     code_reviewing:
       agent: reviewer
-      persona_workflow: reviewer
       on:
         REVIEW_APPROVE: done
         REVIEW_REJECT: dev_implementing

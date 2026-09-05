@@ -7,12 +7,10 @@ pipeline:
   states:
     dev_implementing:
       agent: developer
-      persona_workflow: developer
       on:
         DEV_COMPLETE: qa_verifying
     qa_verifying:
       agent: qa
-      persona_workflow: qa
       on:
         QA_PASS: done
         QA_FAIL: dev_implementing

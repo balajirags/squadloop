@@ -7,12 +7,10 @@ pipeline:
   states:
     dev_implementing:
       agent: developer
-      persona_workflow: developer
       on:
         DEV_COMPLETE: code_reviewing
     code_reviewing:
       agent: reviewer
-      persona_workflow: reviewer
       on:
         REVIEW_APPROVE: done
         REVIEW_REJECT: dev_implementing

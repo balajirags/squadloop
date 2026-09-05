@@ -258,61 +258,6 @@ export function registerTeamTools(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
-    name: "team_step_complete",
-    label: "Team Step Complete",
-    description: "Signal completion of the current persona micro-workflow step",
-    parameters: Type.Object({
-      step: Type.String({ description: "Current micro-step key (e.g. 'reproduce_issue')" }),
-      notes: Type.Optional(Type.String({ description: "Summary notes for step completion" })),
-      payload: Type.Optional(Type.Record(Type.String(), Type.Any(), { description: "Structured step outputs" }))
-    }),
-    async execute(toolCallId, params, signal, onUpdate, ctx) {
-      const sessionId = getRuntimeSessionId();
-      const activeTask = readActiveTask(sessionId);
-
-      if (!activeTask) {
-        return {
-          content: [{ type: "text", text: "Error: No active task found." }],
-          details: { error: "No active task found." }
-        };
-      }
-
-      try {
-        const stepKey = params.step || "start";
-        const updatedState = await WorkflowEngine.processStepComplete(
-          stepKey,
-          params.notes,
-          params.payload
-        );
-
-        appendEventLog({
-          eventId: `evt_${Date.now()}`,
-          type: "team_step_complete",
-          targetRole: updatedState.targetRole,
-          message: `Completed micro-step '${params.step}'. Advanced to '${updatedState.microStep}'.`,
-          timestamp: new Date().toISOString(),
-          payload: params.payload
-        });
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Completed micro-step '${params.step}'. Advanced to micro-step '${updatedState.microStep}' in stage '${updatedState.pipelineStage}' (${updatedState.targetRole.toUpperCase()}).`
-            }
-          ],
-          details: updatedState
-        };
-      } catch (err: any) {
-        return {
-          content: [{ type: "text", text: `Error processing step complete: ${err.message}` }],
-          details: { error: err.message }
-        };
-      }
-    }
-  });
-
-  pi.registerTool({
     name: "get_team_events",
     label: "Get Team Events",
     description: "Read recent status update events and inter-agent messages from the session event log",
