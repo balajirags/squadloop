@@ -241,30 +241,19 @@ export class TmuxWorkspaceAdapter {
     recoverMissingPanes(currentPanes, _sessionId) {
         return currentPanes;
     }
-    async sendPrompt(paneTarget, promptText, clear = true, targetRole, sessionId) {
+    async sendPrompt(paneTarget, promptText, clear = false, targetRole, sessionId) {
         try {
             const resolved = resolvePaneTarget(paneTarget, targetRole, sessionId);
             if (!resolved)
                 return;
             if (clear) {
                 spawnSync("tmux", ["send-keys", "-t", resolved, "/clear", "Enter"]);
-                await new Promise(r => setTimeout(r, 600));
             }
-            const tmpFile = path.join(os.tmpdir(), `squadloop-prompt-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`);
-            fs.writeFileSync(tmpFile, promptText, "utf-8");
-            spawnSync("tmux", ["load-buffer", tmpFile]);
-            spawnSync("tmux", ["paste-buffer", "-t", resolved]);
-            await new Promise(r => setTimeout(r, 150));
+            spawnSync("tmux", ["send-keys", "-t", resolved, "-l", promptText]);
             spawnSync("tmux", ["send-keys", "-t", resolved, "Enter"]);
-            try {
-                fs.unlinkSync(tmpFile);
-            }
-            catch {
-                // Non-fatal
-            }
         }
         catch {
-            // Ignore if tmux session not attached
+            // Ignore
         }
     }
     startAppServerWindow(startCommand) {
