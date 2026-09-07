@@ -154,7 +154,7 @@ export class WorkflowEngine {
     let currentState = await WorkflowEngine.store.readActiveTask(sessionId);
     if (!currentState || currentState.issueId !== issueId) {
       currentState = await WorkflowEngine.engine.start(def, issueId);
-      if (newStatus && newStatus !== "ready-for-dev") {
+      if (newStatus) {
         const event = mapStatusToEvent(newStatus);
         currentState = await WorkflowEngine.engine.transition(event, { notes, reworkCount });
       }
