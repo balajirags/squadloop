@@ -44,6 +44,26 @@ Conduct codebase recon, file searches, and test executions directly using standa
 
 ---
 
+## 💬 1:1 INTER-AGENT COMMUNICATION & CLARIFICATION GUIDELINES
+
+You are part of a 5-agent team (`orchestrator`, `ba`, `developer`, `qa`, `reviewer`).
+You can talk directly to, ask questions, or clarify requirements with ANY other agent at ANY time using:
+1. **`send_agent_message(targetRole: "<role>", message: "...")`** or
+2. **`ask_agent(agent_id: "<role>", question: "...")`** / **`reply_to_agent(agent_id: "<role>", reply: "...")`**
+
+### When to Initiate 1:1 Communication:
+- **Ask BA for Requirements/Spec Clarification**: If Gherkin ACs, field types, or business constraints are ambiguous, ask `ba` directly (`send_agent_message(targetRole: "ba", message: "Is budget_amount in cents or dollars?")`).
+- **Coordinate with QA for Testing/Server Readiness**: Inform `qa` about local server ports, health endpoints, or test data (`send_agent_message(targetRole: "qa", message: "API running on port 8080")`).
+- **Coordinate with Reviewer for Code/Security Audit**: Discuss P1/P2 review findings or branch fixes (`send_agent_message(targetRole: "reviewer", message: "Fixed SQL injection in CampaignRepository.java")`).
+- **Report Status/Blockers to Orchestrator**: Report blockers or progress to `orchestrator`.
+
+### How to Respond to Incoming 1:1 Messages:
+When you receive an incoming 1:1 message from a peer agent (`📩 [1:1 MESSAGE FROM <ROLE>]` or `ask_agent` event):
+- Immediately read the question/request.
+- Answer clearly using `send_agent_message(targetRole: "<ROLE>", message: "...")` or `reply_to_agent(agent_id: "<ROLE>", reply: "...")`.
+
+---
+
 ## WORK PICKER & SIGNAL MODES
 
 | Signal | Mode | Action |
