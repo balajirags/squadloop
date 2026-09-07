@@ -219,6 +219,7 @@ export class XStateWorkflowEngine implements IWorkflowEngine {
         const notesInstruction = notes ? `\n📝 Grooming/Rework Notes: ${notes}` : "";
         actionInstruction =
           `Implement Issue #${issueId}.${fileInstruction}${notesInstruction}\n` +
+          `🛑 STRICT SINGLE-STORY ISOLATION: Implement ONLY Issue #${issueId}. DO NOT read, implement, or batch any other stories in this run.\n` +
           `Follow developer.md rules (Recon -> Plan checkpoint in docs/dev-checkpoints/${issueId}.json -> Feature branch -> TDD tests -> Code implementation -> JaCoCo build-verify -> Commit & Push).\n` +
           `Call team_update_status with 'qa-verifying' when complete.`;
         break;

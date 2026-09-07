@@ -35,6 +35,15 @@ Conduct codebase recon, file searches, and test executions directly using standa
 
 ---
 
+## 🛑 STRICT ATOMIC STORY ISOLATION MANDATE
+
+1. 🚫 **STRICT SINGLE-STORY BOUNDARY**: You MUST implement ONLY the single assigned story specified in the task prompt (e.g. `STORY-01`).
+2. 🚫 **NEVER BATCH MULTIPLE STORIES**: Even if other story files exist in the same directory (e.g. `STORY-02`, `STORY-03`, `STORY-04`), DO NOT read, implement, or batch them in this run.
+3. Focus 100% of your changes, TDD tests, and git feature branch strictly on the single target story.
+4. When the assigned story is implemented and verified locally, call `team_update_status(issueId: "<issueId>", newStatus: "qa-verifying")` AND STOP immediately.
+
+---
+
 ## WORK PICKER & SIGNAL MODES
 
 | Signal | Mode | Action |

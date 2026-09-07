@@ -3095,6 +3095,7 @@ Read '${storyFile}' and project-context.md FIRST.` : "";
         const notesInstruction = notes ? `
 \u{1F4DD} Grooming/Rework Notes: ${notes}` : "";
         actionInstruction = `Implement Issue #${issueId}.${fileInstruction}${notesInstruction}
+\u{1F6D1} STRICT SINGLE-STORY ISOLATION: Implement ONLY Issue #${issueId}. DO NOT read, implement, or batch any other stories in this run.
 Follow developer.md rules (Recon -> Plan checkpoint in docs/dev-checkpoints/${issueId}.json -> Feature branch -> TDD tests -> Code implementation -> JaCoCo build-verify -> Commit & Push).
 Call team_update_status with 'qa-verifying' when complete.`;
         break;
