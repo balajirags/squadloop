@@ -40,6 +40,17 @@ Wait silently for an explicit prompt/instruction from Master Orchestrator (Pane 
 
 ---
 
+## 📦 BRUNO API COLLECTION PERSISTENCE MANDATE
+
+For every API story verified:
+1. **Create Bruno Collection**: QA MUST write or update Bruno API collection files (`.bru`) under `bruno/<epic-slug>/<story-id>/` (e.g. `bruno/campaigns-management/STORY-01/create-campaign.bru`).
+2. **Include Scenario Probes**: Each `.bru` file MUST specify:
+   - Request HTTP method, URL (`http://localhost:8080/api/...`), headers (`Content-Type: application/json`), and JSON body.
+   - Assertions verifying response status codes (e.g. `res.status: eq 201`, `res.status: eq 400`).
+3. **Commit Artifacts**: Save and commit `.bru` files to the repository so API collections are preserved for regression testing.
+
+---
+
 ## RUN IN AN ISOLATED CONTEXT (HARD RULE)
 
 Always validate ACs in a cold, fresh context that never shared conversation history with the developer or reviewer.
