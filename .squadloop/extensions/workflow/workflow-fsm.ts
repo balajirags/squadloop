@@ -1,9 +1,46 @@
 import { createMachine, createActor } from "xstate";
+import * as fs from "fs";
+import * as path from "path";
 import type {
   IWorkflowEngine,
   TaskState,
   WorkflowDefinition
 } from "./workflow-engine-interface.js";
+
+function resolveStoryFilePath(issueId: string): string | null {
+  if (!issueId) return null;
+
+  if (fs.existsSync(issueId)) {
+    return issueId;
+  }
+
+  const storiesDir = path.join(process.cwd(), "docs", "stories");
+  if (!fs.existsSync(storiesDir)) return null;
+
+  const searchDir = (dir: string): string | null => {
+    try {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          const found = searchDir(fullPath);
+          if (found) return found;
+        } else if (entry.isFile() && entry.name.endsWith(".md")) {
+          const cleanIssue = issueId.toUpperCase().replace(/^#/, "");
+          const cleanName = entry.name.toUpperCase();
+          if (cleanName.includes(cleanIssue)) {
+            return path.relative(process.cwd(), fullPath);
+          }
+        }
+      }
+    } catch {
+      // Non-fatal
+    }
+    return null;
+  };
+
+  return searchDir(storiesDir);
+}
 
 function createPipelineMachine(workflowDef: WorkflowDefinition) {
   const statesConfig: Record<string, any> = {};
@@ -110,7 +147,6 @@ export class XStateWorkflowEngine implements IWorkflowEngine {
     }
 
     if (!nextStageKey || !this.workflowDef.pipeline.states[nextStageKey]) {
-      // Event not matched on current stage; check all states for matching transition
       for (const [stKey, stDef] of Object.entries(this.workflowDef.pipeline.states)) {
         if (stDef.on?.[event]) {
           const targetVal = stDef.on[event];
@@ -138,7 +174,6 @@ export class XStateWorkflowEngine implements IWorkflowEngine {
       return state;
     }
 
-    // Check rework increment
     const upperEvent = event.toUpperCase();
     if (
       upperEvent === "QA_FAIL" ||
@@ -171,20 +206,33 @@ export class XStateWorkflowEngine implements IWorkflowEngine {
   ): string {
     const roleUpper = role.toUpperCase();
     let actionInstruction = "";
+    const storyFile = resolveStoryFilePath(issueId);
 
     switch (role) {
       case "ba":
         actionInstruction = `Groom BRD/PRD or Story for Issue #${issueId}. Follow ba.md rules (Scan -> Auto Re-Slice mega-stories into 4 outcome stories -> Gherkin AC scenario tables). Call team_update_status with 'ready-for-dev' when complete.`;
         break;
-      case "developer":
-        actionInstruction = `Implement Issue #${issueId}${notes ? ` (Rework notes: ${notes})` : ""}. Follow developer.md rules (Recon -> Plan checkpoint in docs/dev-checkpoints/ -> Feature branch -> TDD tests -> Code implementation -> JaCoCo build-verify -> Commit & Push). Call team_update_status with 'qa-verifying' when complete.`;
+      case "developer": {
+        const fileInstruction = storyFile
+          ? `\n📖 Story File: ${storyFile}\nRead '${storyFile}' and project-context.md FIRST.`
+          : "";
+        const notesInstruction = notes ? `\n📝 Grooming/Rework Notes: ${notes}` : "";
+        actionInstruction =
+          `Implement Issue #${issueId}.${fileInstruction}${notesInstruction}\n` +
+          `Follow developer.md rules (Recon -> Plan checkpoint in docs/dev-checkpoints/${issueId}.json -> Feature branch -> TDD tests -> Code implementation -> JaCoCo build-verify -> Commit & Push).\n` +
+          `Call team_update_status with 'qa-verifying' when complete.`;
         break;
-      case "qa":
-        actionInstruction = `Verify Issue #${issueId}. Follow qa.md rules (Health check -> Non-blocking app startup -> Live HTTP API probes -> 1:1 AC evidence mapping). Call team_update_status with 'code-review' (if PASS) or 'dev-rework' (if FAIL).`;
+      }
+      case "qa": {
+        const fileInstruction = storyFile ? `\n📖 Story File: ${storyFile}\nRead '${storyFile}' for Acceptance Criteria.` : "";
+        actionInstruction = `Verify Issue #${issueId}.${fileInstruction}\nFollow qa.md rules (Health check -> Non-blocking app startup -> Live HTTP API probes -> 1:1 AC evidence mapping). Call team_update_status with 'code-review' (if PASS) or 'dev-rework' (if FAIL).`;
         break;
-      case "reviewer":
-        actionInstruction = `Review Issue #${issueId}${notes ? ` (Notes: ${notes})` : ""}. Follow reviewer.md rules (Find branch -> Inspect git diff vs main -> P1 Security & P2 Spec/AC drift audit -> Non-interactive PR merge). Call team_update_status with 'done' (if APPROVE) or 'dev-rework' (if REQUEST_CHANGES).`;
+      }
+      case "reviewer": {
+        const fileInstruction = storyFile ? `\n📖 Story File: ${storyFile}` : "";
+        actionInstruction = `Review Issue #${issueId}.${fileInstruction}${notes ? ` (Notes: ${notes})` : ""}\nFollow reviewer.md rules (Find branch -> Inspect git diff vs main -> P1 Security & P2 Spec/AC drift audit -> Non-interactive PR merge). Call team_update_status with 'done' (if APPROVE) or 'dev-rework' (if REQUEST_CHANGES).`;
         break;
+      }
       default:
         actionInstruction = `Execute task for Issue #${issueId}. Follow persona instructions and update team status when complete.`;
     }
