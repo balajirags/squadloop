@@ -3,9 +3,82 @@ import { Type } from "@sinclair/typebox";
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import * as net from "net";
+import * as os from "os";
 import { TrackerFactory } from "./trackers/tracker-factory.js";
 import { WorkflowEngine } from "./workflow.js";
 import { DriverFactory } from "./drivers/driver-factory.js";
+
+function sockRequest(sockPath: string, payload: unknown, timeoutMs = 2000): Promise<any> {
+  return new Promise((resolve, reject) => {
+    if (!fs.existsSync(sockPath)) {
+      reject(new Error(`Socket file ${path.basename(sockPath)} not found`));
+      return;
+    }
+    const conn = net.createConnection(sockPath);
+    let buf = "";
+    const timer = setTimeout(() => {
+      conn.destroy();
+      reject(new Error(`Timeout connecting to ${path.basename(sockPath)}`));
+    }, timeoutMs);
+
+    conn.on("connect", () => conn.write(JSON.stringify(payload) + "\n"));
+    conn.on("data", (d) => {
+      buf += d.toString();
+      const nl = buf.indexOf("\n");
+      if (nl >= 0) {
+        clearTimeout(timer);
+        conn.end();
+        try {
+          resolve(JSON.parse(buf.slice(0, nl)));
+        } catch (e) {
+          reject(e as Error);
+        }
+      }
+    });
+
+    conn.on("error", (e) => {
+      clearTimeout(timer);
+      reject(e);
+    });
+  });
+}
+
+interface PiAgentRegistryEntry {
+  id: string;
+  name: string;
+  pid: number;
+  cwd: string;
+  socket: string;
+  busy?: boolean;
+}
+
+function findPeerByRole(targetRole: string): PiAgentRegistryEntry | null {
+  const regDir = path.join(os.homedir(), ".pi", "agent-comm", "registry");
+  if (!fs.existsSync(regDir)) return null;
+
+  const files = fs.readdirSync(regDir);
+  const targetLower = targetRole.toLowerCase();
+
+  for (const file of files) {
+    if (!file.endsWith(".json")) continue;
+    try {
+      const content = fs.readFileSync(path.join(regDir, file), "utf8");
+      const entry: PiAgentRegistryEntry = JSON.parse(content);
+      const nameLower = (entry.name || "").toLowerCase();
+
+      if (nameLower.includes(targetLower) || file.toLowerCase().includes(targetLower)) {
+        if (entry.socket && fs.existsSync(entry.socket)) {
+          return entry;
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  return null;
+}
 import {
   appendAgentMailbox,
   appendSessionEvent,
@@ -204,34 +277,44 @@ export function registerTeamTools(pi: ExtensionAPI) {
     async execute(toolCallId, params, signal, onUpdate, ctx) {
       const sessionId = getRuntimeSessionId();
       const activeTask = readActiveTask(sessionId);
-      if (!activeTask) {
-        return {
-          content: [{ type: "text", text: "Error: no active session state found. Run squadloop start first." }],
-          details: { success: false }
-        };
-      }
+      const targetRole = params.targetRole || "developer";
+      const senderRole = process.env.SQUADLOOP_ROLE || activeTask?.updatedBy || "agent";
 
       try {
-        const configPath = path.join(process.cwd(), ".squadloop", "config.json");
-        if (!fs.existsSync(configPath)) {
+        const peer = findPeerByRole(targetRole);
+
+        if (peer && peer.socket && fs.existsSync(peer.socket)) {
+          const thread = `thread_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+          await sockRequest(peer.socket, {
+            type: "ask",
+            from: { id: senderRole, name: senderRole },
+            question: params.message,
+            thread
+          });
+
+          appendEventLog({
+            eventId: `evt_${Date.now()}`,
+            type: "direct_message",
+            senderRole,
+            targetRole,
+            message: params.message,
+            timestamp: new Date().toISOString()
+          });
+
           return {
-            content: [{ type: "text", text: "Error: config.json not found. Run /team-dev first." }],
-            details: { success: false }
+            content: [
+              {
+                type: "text",
+                text: `📩 Delivered 1:1 message directly to ${targetRole.toUpperCase()} via pi-agent-comm socket (${path.basename(peer.socket)}) [No Tmux/Driver Buffer used].`
+              }
+            ],
+            details: { success: true, targetRole, senderRole, peerId: peer.id, socket: peer.socket }
           };
         }
 
-        const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-        const driver = DriverFactory.getDriver(config.driver);
-        const panes = activeTask.panes || config.panes || {};
-        const targetRole = params.targetRole || "developer";
-        let targetPane = panes?.[targetRole] || targetRole;
-        const shouldClear = params.clearContext === true;
-
-        const formatted = `[DIRECT MESSAGE to ${targetRole.toUpperCase()}]: ${params.message}`;
-        await driver.sendPrompt(targetPane, formatted, shouldClear, targetRole, sessionId);
-
         appendAgentMailbox(sessionId, targetRole, {
           type: "direct_message",
+          senderRole,
           message: params.message,
           timestamp: new Date().toISOString()
         });
@@ -239,14 +322,20 @@ export function registerTeamTools(pi: ExtensionAPI) {
         appendEventLog({
           eventId: `evt_${Date.now()}`,
           type: "direct_message",
-          targetRole: targetRole,
+          senderRole,
+          targetRole,
           message: params.message,
           timestamp: new Date().toISOString()
         });
 
         return {
-          content: [{ type: "text", text: `Sent direct message to ${targetRole.toUpperCase()} (${targetPane})${shouldClear ? " [context cleared]" : ""}.` }],
-          details: { success: true, targetPane, message: params.message, clearedContext: shouldClear }
+          content: [
+            {
+              type: "text",
+              text: `📩 Queued 1:1 message for ${targetRole.toUpperCase()} via pi-agent-comm event stream [No Tmux/Driver Buffer used].`
+            }
+          ],
+          details: { success: true, targetRole, senderRole, message: params.message }
         };
       } catch (err: any) {
         return {
