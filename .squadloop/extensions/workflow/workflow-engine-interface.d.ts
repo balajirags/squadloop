@@ -37,6 +37,10 @@ export interface TaskState {
     promptCard: string;
     isDone: boolean;
     reworkCount: number;
+    scope?: "brd" | "story";
+    brdPath?: string;
+    storyQueue?: string[];
+    currentStoryIndex?: number;
     context: Record<string, any>;
     timestamp: string;
 }

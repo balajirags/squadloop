@@ -26,6 +26,22 @@ You are an **INTENT ROUTER AND WORKFLOW DELEGATOR ONLY**. You NEVER perform stor
 
 ---
 
+## 🛑 WORKFLOW SCOPE & HALT RULES (BRD ASK vs SINGLE STORY ASK)
+
+In `loop-hitl` mode:
+
+1. **Feature / BRD / PRD Level Ask** (e.g., `Groom & implement docs/brd/campaigns.md`):
+   - BA grooms the BRD into atomic stories (`STORY-01`, `STORY-02`, `STORY-03`, `STORY-04`).
+   - The SquadLoop Workflow Engine **loops automatically story-by-story** through all stories in the BRD:
+     `STORY-01` (`Dev -> QA -> Reviewer -> Done`) $\rightarrow$ `STORY-02` (`Dev -> QA -> Reviewer -> Done`) $\rightarrow$ `STORY-03` $\rightarrow$ `STORY-04`.
+   - **Halt Condition**: Halts in Pane 0 ONLY AFTER **all stories in the BRD are completed and merged to main**.
+
+2. **Specific Story / Issue Level Ask** (e.g., `Implement Story #12` or `STORY-01`):
+   - Executes 1 single cycle: `Dev -> QA -> Reviewer -> Merged to main`.
+   - **Halt Condition**: Halts in Pane 0 immediately **after that single story reaches `done`**.
+
+---
+
 ## 🛑 STRICT SERIAL 1-STORY-AT-A-TIME MANDATE
 
 1. 🚫 **NEVER DISPATCH MULTIPLE STORIES OR TASKS SIMULTANEOUSLY TO DEVELOPER OR ANY SUBAGENT.**

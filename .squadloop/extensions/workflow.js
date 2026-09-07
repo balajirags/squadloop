@@ -22,6 +22,37 @@ function mapStatusToEvent(status) {
             return status.toUpperCase();
     }
 }
+function discoverStoryQueue() {
+    const storiesDir = path.join(process.cwd(), "docs", "stories");
+    if (!fs.existsSync(storiesDir))
+        return [];
+    const stories = [];
+    const search = (d) => {
+        try {
+            const entries = fs.readdirSync(d, { withFileTypes: true });
+            for (const entry of entries) {
+                const full = path.join(d, entry.name);
+                if (entry.isDirectory()) {
+                    search(full);
+                }
+                else if (entry.isFile() && entry.name.endsWith(".md") && !entry.name.startsWith("index")) {
+                    const match = entry.name.match(/^(STORY-[0-9]+)/i) || entry.name.match(/^([A-Z0-9]+-[0-9]+)/i);
+                    if (match) {
+                        stories.push(match[1].toUpperCase());
+                    }
+                    else {
+                        stories.push(entry.name.replace(/\.md$/, ""));
+                    }
+                }
+            }
+        }
+        catch {
+            // Ignore
+        }
+    };
+    search(storiesDir);
+    return Array.from(new Set(stories)).sort();
+}
 export class WorkflowEngine {
     static engine = new XStateWorkflowEngine();
     static store = new JsonFileStateStore();
@@ -95,7 +126,6 @@ export class WorkflowEngine {
             }
         }
         const driver = DriverFactory.getDriver(driverName);
-        // Send real-time progress notification to Master Orchestrator (Pane 0)
         if (panes?.orchestrator) {
             const progressMsg = `[FSM PROGRESS :: ${updatedState.targetRole.toUpperCase()}] Completed '${step}' -> Active: '${updatedState.microStep}' (Issue #${updatedState.issueId}).`;
             await driver.sendPrompt(panes.orchestrator, progressMsg, false, "orchestrator", sessionId);
@@ -125,6 +155,16 @@ export class WorkflowEngine {
         if (reworkCount > 0) {
             currentState.reworkCount = reworkCount;
         }
+        // Auto-discover story queue if grooming BRD
+        const discoveredQueue = discoverStoryQueue();
+        if (discoveredQueue.length > 0) {
+            currentState.storyQueue = discoveredQueue;
+            if (!currentState.scope) {
+                currentState.scope = discoveredQueue.length > 1 ? "brd" : "story";
+            }
+            const idx = discoveredQueue.indexOf(issueId);
+            currentState.currentStoryIndex = idx >= 0 ? idx : 0;
+        }
         await WorkflowEngine.store.writeActiveTask(sessionId, currentState);
         const configPath = path.join(process.cwd(), ".squadloop", "config.json");
         let driverName = "tmux";
@@ -138,12 +178,10 @@ export class WorkflowEngine {
             }
         }
         const driver = DriverFactory.getDriver(driverName);
-        // Send system event notification to Master Orchestrator (Pane 0)
         if (panes?.orchestrator) {
             const notifyMsg = `[SYSTEM EVENT]: Task #${issueId} status updated to '${newStatus}' (Notes: ${notes ? notes : "subagent update"}).`;
             await driver.sendPrompt(panes.orchestrator, notifyMsg, false, "orchestrator", sessionId);
         }
-        // Handle circuit breaker alert
         if (circuitBreakerTripped || currentState.reworkCount > 3) {
             if (panes?.orchestrator) {
                 const alertMsg = `⚠️ ALERT: Issue #${issueId} has exceeded 3 rework attempts! REWORK_CIRCUIT_BREAKER_TRIPPED. Workflow is PAUSED. Please intervene in Pane 0 to guide Developer or review changes.`;
@@ -153,9 +191,35 @@ export class WorkflowEngine {
         }
         const isLoop = hitlMode === "loop" || hitlMode === "loop-hitl";
         if (currentState.isDone || newStatus === "done" || currentState.pipelineStage === "done") {
+            const queue = currentState.storyQueue || [];
+            const currIdx = currentState.currentStoryIndex ?? (queue.indexOf(issueId) >= 0 ? queue.indexOf(issueId) : 0);
+            const isBrdScope = currentState.scope === "brd" || (queue.length > 1 && currIdx < queue.length - 1);
+            if (isBrdScope && queue.length > 0 && currIdx < queue.length - 1) {
+                const nextIdx = currIdx + 1;
+                const nextIssueId = queue[nextIdx];
+                let nextState = await WorkflowEngine.engine.start(def, nextIssueId);
+                nextState = await WorkflowEngine.engine.transition("GROOMING_COMPLETE", {
+                    notes: `Auto-advancing to BRD story ${nextIdx + 1}/${queue.length}: ${nextIssueId}`
+                });
+                nextState.scope = "brd";
+                nextState.storyQueue = queue;
+                nextState.currentStoryIndex = nextIdx;
+                await WorkflowEngine.store.writeActiveTask(sessionId, nextState);
+                if (panes?.orchestrator) {
+                    const progressMsg = `🔄 [BRD LOOP PROGRESS]: Story #${issueId} completed & merged to main!\n` +
+                        `Automatically advancing to next BRD story #${nextIssueId} (${nextIdx + 1}/${queue.length} stories).`;
+                    await driver.sendPrompt(panes.orchestrator, progressMsg, false, "orchestrator", sessionId);
+                }
+                const devPane = (panes && panes[nextState.targetRole]) || nextState.targetRole;
+                if (devPane && nextState.promptCard) {
+                    await driver.sendPrompt(devPane, nextState.promptCard, true, nextState.targetRole, sessionId);
+                }
+                return;
+            }
             if (isLoop && panes?.orchestrator) {
+                const totalStoriesText = currentState.scope === "brd" && queue.length > 0 ? `All ${queue.length} BRD stories completed` : `Issue #${issueId} completed`;
                 const haltPrompt = `🛑 [LOOP-HITL CYCLE COMPLETE & WORKFLOW HALTED]\n` +
-                    `The 1-cycle task for Issue #${issueId} has completed end-to-end (BA -> Dev -> QA -> Reviewer -> Merged).\n\n` +
+                    `${totalStoriesText} end-to-end (BA -> Dev -> QA -> Reviewer -> Merged).\n\n` +
                     `Master Orchestrator MUST STOP IMMEDIATELY and wait for human operator input.\n` +
                     `DO NOT call send_agent_message or pick up new work automatically.\n` +
                     `Display the completion message to the human operator in Pane 0 and WAIT for their next command.`;
