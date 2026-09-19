@@ -16,6 +16,10 @@ export interface ActiveTaskState {
   updatedBy: string;
   notes?: string;
   reworkCount?: number;
+  scope?: "brd" | "story";
+  brdPath?: string;
+  storyQueue?: string[];
+  currentStoryIndex?: number;
   tokenStats?: {
     promptTokens?: number;
     completionTokens?: number;

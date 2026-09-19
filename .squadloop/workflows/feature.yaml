@@ -1,0 +1,27 @@
+version: "1.0"
+name: "Feature Development Workflow"
+description: "Standard end-to-end agile feature development pipeline"
+
+pipeline:
+  initial: ba_grooming
+  states:
+    ba_grooming:
+      agent: ba
+      on:
+        GROOMING_COMPLETE: dev_implementing
+    dev_implementing:
+      agent: developer
+      on:
+        DEV_COMPLETE: qa_verifying
+    qa_verifying:
+      agent: qa
+      on:
+        QA_PASS: code_reviewing
+        QA_FAIL: dev_implementing
+    code_reviewing:
+      agent: reviewer
+      on:
+        REVIEW_APPROVE: done
+        REVIEW_REJECT: dev_implementing
+    done:
+      type: final

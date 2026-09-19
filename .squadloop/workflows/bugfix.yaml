@@ -1,0 +1,18 @@
+version: "1.0"
+name: "Bug Fix Workflow"
+description: "Lightweight bug reproduction and verification pipeline"
+
+pipeline:
+  initial: dev_implementing
+  states:
+    dev_implementing:
+      agent: developer
+      on:
+        DEV_COMPLETE: qa_verifying
+    qa_verifying:
+      agent: qa
+      on:
+        QA_PASS: done
+        QA_FAIL: dev_implementing
+    done:
+      type: final

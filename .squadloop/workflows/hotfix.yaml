@@ -1,0 +1,18 @@
+version: "1.0"
+name: "Hotfix Patch Workflow"
+description: "Emergency developer patch and code reviewer pipeline"
+
+pipeline:
+  initial: dev_implementing
+  states:
+    dev_implementing:
+      agent: developer
+      on:
+        DEV_COMPLETE: code_reviewing
+    code_reviewing:
+      agent: reviewer
+      on:
+        REVIEW_APPROVE: done
+        REVIEW_REJECT: dev_implementing
+    done:
+      type: final

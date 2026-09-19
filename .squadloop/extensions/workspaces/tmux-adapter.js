@@ -64,6 +64,30 @@ function resolveRoleModel(role) {
 function getSessionNameFor(sessionId) {
     return getSessionName(sessionId || process.env.SQUADLOOP_SESSION_ID || "default");
 }
+function getSkillFlagsForRole(role) {
+    const agentFile = path.join(process.cwd(), ".squadloop", "agents", `${role}.md`);
+    const skillsDir = path.join(process.cwd(), ".squadloop", "skills");
+    let flags = fs.existsSync(skillsDir) ? ` --skill "${skillsDir}"` : "";
+    if (fs.existsSync(agentFile)) {
+        try {
+            const content = fs.readFileSync(agentFile, "utf-8");
+            const match = content.match(/^skills:\s*(.+)$/m);
+            if (match && match[1]) {
+                const skillList = match[1].split(",").map(s => s.trim()).filter(Boolean);
+                for (const skill of skillList) {
+                    const specificPath = path.join(skillsDir, skill);
+                    if (fs.existsSync(specificPath)) {
+                        flags += ` --skill "${specificPath}"`;
+                    }
+                }
+            }
+        }
+        catch {
+            // Non-fatal
+        }
+    }
+    return flags;
+}
 function getAgentCommand(role, sessionId) {
     const model = resolveRoleModel(role);
     const agentFile = `.squadloop/agents/${role}.md`;
@@ -71,7 +95,7 @@ function getAgentCommand(role, sessionId) {
     if (fs.existsSync(agentFile)) {
         try {
             const rawContent = fs.readFileSync(agentFile, "utf-8");
-            const stripped = rawContent.replace(/^---[\s\S]*?---\s*/, "");
+            const stripped = rawContent.replace(/^\s*---[\s\S]*?---\s*/, "");
             const cleanFile = path.join(os.tmpdir(), `squadloop-system-prompt-${role}.md`);
             fs.writeFileSync(cleanFile, stripped, "utf-8");
             targetPromptPath = cleanFile;
@@ -96,6 +120,7 @@ function getAgentCommand(role, sessionId) {
     ];
     const envVars = [
         "CONFIG_DIR_NAME=.squadloop",
+        "PI_QUIET_STARTUP=1",
         `PI_CODING_AGENT_DIR="$HOME/.squadloop/agent"`,
         `SQUADLOOP_SESSION_ID="${normalizeSessionId(sessionId || process.env.SQUADLOOP_SESSION_ID || "default")}"`
     ];
@@ -105,7 +130,10 @@ function getAgentCommand(role, sessionId) {
         }
     }
     const agentEnv = `env ${envVars.join(" ")}`;
-    return `${agentEnv} pi -e .squadloop/extensions/index.js --approve --append-system-prompt "${targetPromptPath}"${providerFlag}${modelFlag}; exec bash`;
+    const globalMandateFile = path.join(process.cwd(), ".squadloop", "prompts", "global-mandate.md");
+    const globalMandateFlag = fs.existsSync(globalMandateFile) ? ` --append-system-prompt "${globalMandateFile}"` : "";
+    const skillsFlag = getSkillFlagsForRole(role);
+    return `${agentEnv} pi -e .squadloop/extensions/index.js --approve${skillsFlag}${globalMandateFlag} --append-system-prompt "${targetPromptPath}"${providerFlag}${modelFlag}; exec bash`;
 }
 export class TmuxWorkspaceAdapter {
     name = "Tmux Workspace";
@@ -213,30 +241,19 @@ export class TmuxWorkspaceAdapter {
     recoverMissingPanes(currentPanes, _sessionId) {
         return currentPanes;
     }
-    async sendPrompt(paneTarget, promptText, clear = true, targetRole, sessionId) {
+    async sendPrompt(paneTarget, promptText, clear = false, targetRole, sessionId) {
         try {
             const resolved = resolvePaneTarget(paneTarget, targetRole, sessionId);
             if (!resolved)
                 return;
             if (clear) {
                 spawnSync("tmux", ["send-keys", "-t", resolved, "/clear", "Enter"]);
-                await new Promise(r => setTimeout(r, 600));
             }
-            const tmpFile = path.join(os.tmpdir(), `squadloop-prompt-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`);
-            fs.writeFileSync(tmpFile, promptText, "utf-8");
-            spawnSync("tmux", ["load-buffer", tmpFile]);
-            spawnSync("tmux", ["paste-buffer", "-t", resolved]);
-            await new Promise(r => setTimeout(r, 150));
+            spawnSync("tmux", ["send-keys", "-t", resolved, "-l", promptText]);
             spawnSync("tmux", ["send-keys", "-t", resolved, "Enter"]);
-            try {
-                fs.unlinkSync(tmpFile);
-            }
-            catch {
-                // Non-fatal
-            }
         }
         catch {
-            // Ignore if tmux session not attached
+            // Ignore
         }
     }
     startAppServerWindow(startCommand) {

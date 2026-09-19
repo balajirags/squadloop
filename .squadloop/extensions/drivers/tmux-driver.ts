@@ -11,6 +11,32 @@ function cleanPaneId(raw: string): string {
   return match ? match[0] : String(raw).trim().split("\n")[0];
 }
 
+function getSkillFlagsForRole(role: string): string {
+  const agentFile = path.join(process.cwd(), ".squadloop", "agents", `${role}.md`);
+  const skillsDir = path.join(process.cwd(), ".squadloop", "skills");
+  let flags = fs.existsSync(skillsDir) ? ` --skill "${skillsDir}"` : "";
+
+  if (fs.existsSync(agentFile)) {
+    try {
+      const content = fs.readFileSync(agentFile, "utf-8");
+      const match = content.match(/^skills:\s*(.+)$/m);
+      if (match && match[1]) {
+        const skillList = match[1].split(",").map(s => s.trim()).filter(Boolean);
+        for (const skill of skillList) {
+          const specificPath = path.join(skillsDir, skill);
+          if (fs.existsSync(specificPath)) {
+            flags += ` --skill "${specificPath}"`;
+          }
+        }
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  return flags;
+}
+
 function getAgentCommand(role: string, sessionId?: string): string {
   const model = ModelResolver.getModel(role);
   const agentFile = `.squadloop/agents/${role}.md`;
@@ -19,7 +45,7 @@ function getAgentCommand(role: string, sessionId?: string): string {
   if (fs.existsSync(agentFile)) {
     try {
       const rawContent = fs.readFileSync(agentFile, "utf-8");
-      const stripped = rawContent.replace(/^---[\s\S]*?---\s*/, "");
+      const stripped = rawContent.replace(/^\s*---[\s\S]*?---\s*/, "");
       const cleanFile = path.join(os.tmpdir(), `squadloop-system-prompt-${role}.md`);
       fs.writeFileSync(cleanFile, stripped, "utf-8");
       targetPromptPath = cleanFile;
@@ -46,6 +72,7 @@ function getAgentCommand(role: string, sessionId?: string): string {
 
   const envVars = [
     "CONFIG_DIR_NAME=.squadloop",
+    "PI_QUIET_STARTUP=1",
     `PI_CODING_AGENT_DIR="$HOME/.squadloop/agent"`,
     `SQUADLOOP_SESSION_ID="${normalizeSessionId(sessionId || process.env.SQUADLOOP_SESSION_ID || "default")}"`
   ];
@@ -57,7 +84,10 @@ function getAgentCommand(role: string, sessionId?: string): string {
   }
 
   const agentEnv = `env ${envVars.join(" ")}`;
-  return `${agentEnv} pi -e .squadloop/extensions/index.js --approve --append-system-prompt "${targetPromptPath}"${providerFlag}${modelFlag}; exec bash`;
+  const globalMandateFile = path.join(process.cwd(), ".squadloop", "prompts", "global-mandate.md");
+  const globalMandateFlag = fs.existsSync(globalMandateFile) ? ` --append-system-prompt "${globalMandateFile}"` : "";
+  const skillsFlag = getSkillFlagsForRole(role);
+  return `${agentEnv} pi -e .squadloop/extensions/index.js --approve${skillsFlag}${globalMandateFlag} --append-system-prompt "${targetPromptPath}"${providerFlag}${modelFlag}; exec bash`;
 }
 
 function resolvePaneTarget(target: string, targetRole?: string, sessionId?: string): string {
@@ -231,29 +261,17 @@ export class TmuxDriver implements ITerminalDriver {
     return { orchestrator: orchestratorPane, ba: baPane, developer: devPane, qa: qaPane, reviewer: reviewerPane };
   }
 
-  public async sendPrompt(paneTarget: string, promptText: string, clear = true, targetRole?: string, sessionId?: string): Promise<void> {
+  public async sendPrompt(paneTarget: string, promptText: string, clear = false, targetRole?: string, sessionId?: string): Promise<void> {
     try {
       const resolved = resolvePaneTarget(paneTarget, targetRole, sessionId);
       if (!resolved) return;
 
       if (clear) {
         spawnSync("tmux", ["send-keys", "-t", resolved, "/clear", "Enter"]);
-        await new Promise(r => setTimeout(r, 600));
       }
 
-      const tmpFile = path.join(os.tmpdir(), `squadloop-prompt-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`);
-      fs.writeFileSync(tmpFile, promptText, "utf-8");
-
-      spawnSync("tmux", ["load-buffer", tmpFile]);
-      spawnSync("tmux", ["paste-buffer", "-t", resolved]);
-      await new Promise(r => setTimeout(r, 150));
+      spawnSync("tmux", ["send-keys", "-t", resolved, "-l", promptText]);
       spawnSync("tmux", ["send-keys", "-t", resolved, "Enter"]);
-
-      try {
-        fs.unlinkSync(tmpFile);
-      } catch {
-        // Non-fatal
-      }
     } catch {
       // Ignore
     }

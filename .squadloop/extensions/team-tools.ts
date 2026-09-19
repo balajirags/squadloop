@@ -59,11 +59,11 @@ export function registerTeamTools(pi: ExtensionAPI) {
       const sessionId = getRuntimeSessionId();
       const existing = readActiveTask(sessionId);
 
-      let previousReworkCount = existing?.activeIssueId === params.issueId ? existing.reworkCount || 0 : 0;
+      let previousReworkCount = existing?.activeIssueId === params.issueId ? existing?.reworkCount || 0 : 0;
       let promptTokens = params.tokens?.promptTokens || 0;
       let completionTokens = params.tokens?.completionTokens || 0;
 
-      if (existing?.activeIssueId === params.issueId && existing.tokenStats) {
+      if (existing?.activeIssueId === params.issueId && existing?.tokenStats) {
         promptTokens += existing.tokenStats.promptTokens || 0;
         completionTokens += existing.tokenStats.completionTokens || 0;
       }
@@ -90,8 +90,8 @@ export function registerTeamTools(pi: ExtensionAPI) {
       }
 
       const state: ActiveTaskState = {
-        activeIssueId: params.issueId,
-        status: params.newStatus,
+        activeIssueId: params.issueId || "",
+        status: params.newStatus || "ready-for-dev",
         updatedBy: ctx.cwd || "agent",
         notes: params.notes,
         reworkCount: currentReworkCount,
@@ -165,8 +165,8 @@ export function registerTeamTools(pi: ExtensionAPI) {
             }
 
             await WorkflowEngine.handleTransition(
-              params.issueId,
-              params.newStatus,
+              params.issueId || "",
+              params.newStatus || "ready-for-dev",
               hitlMode,
               panes,
               params.notes,
@@ -213,23 +213,17 @@ export function registerTeamTools(pi: ExtensionAPI) {
 
       try {
         const configPath = path.join(process.cwd(), ".squadloop", "config.json");
-        if (!fs.existsSync(configPath)) {
-          return {
-            content: [{ type: "text", text: "Error: config.json not found. Run /team-dev first." }],
-            details: { success: false }
-          };
-        }
-
-        const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-        const driver = DriverFactory.getDriver(config.driver);
+        const config = fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath, "utf-8")) : {};
+        const driver = DriverFactory.getDriver(config.driver || activeTask.driver || "tmux");
         const panes = activeTask.panes || config.panes || {};
-        let targetPane = panes?.[params.targetRole] || params.targetRole;
+        const targetRole = params.targetRole || "developer";
+        let targetPane = panes?.[targetRole] || targetRole;
         const shouldClear = params.clearContext === true;
 
-        const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
-        await driver.sendPrompt(targetPane, formatted, shouldClear, params.targetRole, sessionId);
+        const formatted = `[DIRECT MESSAGE to ${targetRole.toUpperCase()}]: ${params.message}`;
+        await driver.sendPrompt(targetPane, formatted, shouldClear, targetRole, sessionId);
 
-        appendAgentMailbox(sessionId, params.targetRole, {
+        appendAgentMailbox(sessionId, targetRole, {
           type: "direct_message",
           message: params.message,
           timestamp: new Date().toISOString()
@@ -238,13 +232,13 @@ export function registerTeamTools(pi: ExtensionAPI) {
         appendEventLog({
           eventId: `evt_${Date.now()}`,
           type: "direct_message",
-          targetRole: params.targetRole,
+          targetRole: targetRole,
           message: params.message,
           timestamp: new Date().toISOString()
         });
 
         return {
-          content: [{ type: "text", text: `Sent direct message to ${params.targetRole.toUpperCase()} (${targetPane})${shouldClear ? " [context cleared]" : ""}.` }],
+          content: [{ type: "text", text: `Sent direct message to ${targetRole.toUpperCase()} (${targetPane})${shouldClear ? " [context cleared]" : ""}.` }],
           details: { success: true, targetPane, message: params.message, clearedContext: shouldClear }
         };
       } catch (err: any) {
