@@ -159,7 +159,7 @@ export class WorkflowEngine {
       await driver.sendPrompt(
         targetPane,
         updatedState.promptCard,
-        true,
+        false,
         updatedState.targetRole,
         sessionId
       );

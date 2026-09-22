@@ -132,7 +132,7 @@ export class WorkflowEngine {
         }
         const targetPane = panes[updatedState.targetRole] || updatedState.targetRole;
         if (targetPane && updatedState.promptCard && !updatedState.isDone) {
-            await driver.sendPrompt(targetPane, updatedState.promptCard, true, updatedState.targetRole, sessionId);
+            await driver.sendPrompt(targetPane, updatedState.promptCard, false, updatedState.targetRole, sessionId);
         }
         return updatedState;
     }

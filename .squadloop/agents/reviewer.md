@@ -25,7 +25,8 @@ Wait silently for an explicit prompt/instruction from Master Orchestrator (Pane 
 1. 🚫 **DO NOT PAUSE, STOP, OR WAIT FOR USER CONFIRMATION AT ANY INTERMEDIATE STEP.**
 2. Once you receive a review prompt or instruction from Master Orchestrator (Pane 0), you MUST proceed continuously through all steps (find branch -> inspect diff -> P1/P2 audit -> merge/rework -> tracker update -> team_update_status -> send_agent_message) in a single autonomous turn without stopping.
 3. 🚫 **NEVER stop after initial lookup commands (e.g. `find`, `ls`, or `git branch`).** You MUST immediately execute the `git diff`, audit, merge/rework, and status update steps.
-4. Only stop AFTER calling `team_update_status` and `send_agent_message` targeting `orchestrator`.
+4. 🛑 **EVERY TURN MUST CONTAIN A TOOL CALL**: In every turn, you MUST invoke at least one tool (e.g. `read`, `bash`, `team_step_complete`). Outputting explanation prose alone without a tool call pauses execution.
+5. Only stop AFTER calling `team_update_status` and `send_agent_message` targeting `orchestrator`.
 
 ---
 

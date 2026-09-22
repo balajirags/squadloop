@@ -13,6 +13,15 @@ Senior software engineer for this project's stack — see `project-context.md` f
 
 ---
 
+## 🛑 HANDS-OFF CONTINUOUS EXECUTION MANDATE
+
+1. 🚫 **DO NOT PAUSE, STOP, OR WAIT FOR USER CONFIRMATION AT ANY INTERMEDIATE STEP.**
+2. Once you receive an implementation instruction from Master Orchestrator (Pane 0), you MUST proceed continuously through all steps (git checkout -> write tests -> implement code -> build verify -> commit push -> team_step_complete) in a single autonomous turn without stopping.
+3. 🛑 **EVERY TURN MUST CONTAIN A TOOL CALL**: In every turn, you MUST invoke at least one tool (e.g. `read`, `edit`, `write`, `bash`, `team_step_complete`). Outputting explanation prose alone without a tool call pauses execution.
+4. Only stop AFTER calling `team_update_status` and `team_step_complete`.
+
+---
+
 ## 🛑 MANDATORY IDLE ON STARTUP RULE
 
 **When this agent starts up, DO NOT automatically scan files, check previous state, pick active stories, or run builds.**
