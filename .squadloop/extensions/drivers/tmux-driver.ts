@@ -280,11 +280,7 @@ export class TmuxDriver implements ITerminalDriver {
   public attachSession(sessionId?: string): void {
     const sessionName = resolveSessionName(sessionId);
     try {
-      if (spawnSync("tmux", ["has-session", "-t", `${sessionName}:orchestrator`], { stdio: "ignore" }).status === 0) {
-        spawnSync("tmux", ["select-window", "-t", `${sessionName}:orchestrator`]);
-      } else {
-        spawnSync("tmux", ["select-window", "-t", `${sessionName}:1`]);
-      }
+      spawnSync("tmux", ["select-window", "-t", `${sessionName}:0`], { stdio: "ignore" });
     } catch {
       // Non-fatal
     }
@@ -292,20 +288,15 @@ export class TmuxDriver implements ITerminalDriver {
     const inTmux = Boolean(process.env.TMUX) || spawnSync("tmux", ["display-message"], { stdio: "ignore" }).status === 0;
     if (inTmux) {
       try {
-        spawnSync("tmux", ["switch-client", "-t", `${sessionName}:orchestrator`], { stdio: "inherit" });
+        spawnSync("tmux", ["switch-client", "-t", sessionName], { stdio: "inherit" });
         return;
       } catch {
-        try {
-          spawnSync("tmux", ["switch-client", "-t", sessionName], { stdio: "inherit" });
-          return;
-        } catch {
-          // Fallback
-        }
+        // Fallback
       }
     }
     const env = { ...process.env };
     delete env.TMUX;
-    spawnSync("tmux", ["attach", "-t", `${sessionName}:orchestrator`], { stdio: "inherit", env });
+    spawnSync("tmux", ["attach", "-t", sessionName], { stdio: "inherit", env });
   }
 
   public stopSession(sessionId?: string): void {
