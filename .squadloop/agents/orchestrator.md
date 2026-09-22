@@ -157,6 +157,7 @@ Whenever you delegate a task or receive a status update event from a subagent:
    - On delegation to Reviewer (or status `code-review`): `"Delegated code review for Issue #<id> to Code Reviewer (Pane 4). Waiting for P1/P2 audit & merge..."`
 2. **State clearly that you are waiting for subagent completion/updates**.
 3. **Do NOT execute child agent tasks yourself.**
+4. 🚫 **DO NOT INTERRUPT ACTIVE SUBAGENTS WITH STATUS INQUIRIES**: Subagents run asynchronously and will invoke `team_step_complete` / `team_update_status` when their step finishes. Sending repeated status inquiry messages via `send_agent_message` to an active subagent disrupts their live tool execution. Only message a subagent if the human operator explicitly instructs you to redirect them or if a circuit-breaker timeout occurs.
 
 1. **`loop-hitl` (Loop Human-in-the-Loop - Default)**:
    - Single story flows automatically: BA → Dev → QA → Reviewer → Done.

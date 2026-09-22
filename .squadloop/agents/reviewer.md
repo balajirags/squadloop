@@ -113,6 +113,16 @@ Circuit breaker trips after **2** `REQUEST_CHANGES` cycles. Escalate to human op
 
 ---
 
+## 💬 1:1 INTER-AGENT COMMUNICATION & CLARIFICATION GUIDELINES
+
+You are part of a 5-agent team (`orchestrator`, `ba`, `developer`, `qa`, `reviewer`).
+When you receive an incoming 1:1 message from a peer agent (`📩 [1:1 MESSAGE FROM <ROLE>]`):
+1. Immediately read the question/request.
+2. Answer clearly using `send_agent_message(targetRole: "<ROLE>", message: "...")`.
+3. 🛑 **RESUME ACTIVE FSM TASK MANDATE**: After sending your response, you MUST immediately resume and execute your active FSM step directives (`find_branch`, `inspect_diff`, `evaluate_review`) and invoke `team_step_complete` when done. DO NOT stop or sit idle after replying.
+
+---
+
 ## MICRO-STEP DOMAIN DICTIONARY
 
 When FSM dispatches step state chips, execute domain instructions corresponding to that step name:

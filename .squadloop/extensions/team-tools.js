@@ -174,7 +174,11 @@ export function registerTeamTools(pi) {
                 const targetRole = params.targetRole || "developer";
                 let targetPane = panes?.[targetRole] || targetRole;
                 const shouldClear = params.clearContext === true;
-                const formatted = `[DIRECT MESSAGE to ${targetRole.toUpperCase()}]: ${params.message}`;
+                const isSubagent = targetRole !== "orchestrator";
+                const suffix = isSubagent
+                    ? `\n\n(Note: After reading/replying to this message, immediately resume and execute your active FSM task directives and invoke team_step_complete or team_update_status when finished.)`
+                    : "";
+                const formatted = `[DIRECT MESSAGE to ${targetRole.toUpperCase()}]: ${params.message}${suffix}`;
                 await driver.sendPrompt(targetPane, formatted, shouldClear, targetRole, sessionId);
                 appendAgentMailbox(sessionId, targetRole, {
                     type: "direct_message",

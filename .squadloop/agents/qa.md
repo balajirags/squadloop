@@ -89,8 +89,9 @@ You can talk directly to, ask questions, or coordinate testing with ANY other ag
 
 ### How to Respond to Incoming 1:1 Messages:
 When you receive an incoming 1:1 message from a peer agent (`📩 [1:1 MESSAGE FROM <ROLE>]` or `ask_agent` event):
-- Immediately read the question/request.
-- Answer clearly using `send_agent_message(targetRole: "<ROLE>", message: "...")` or `reply_to_agent(agent_id: "<ROLE>", reply: "...")`.
+1. Immediately read the question/request.
+2. Answer clearly using `send_agent_message(targetRole: "<ROLE>", message: "...")` or `reply_to_agent(agent_id: "<ROLE>", reply: "...")`.
+3. 🛑 **RESUME ACTIVE FSM TASK MANDATE**: After sending your response, you MUST immediately resume and execute your active FSM step directives (`health_check`, `live_http_probes`, `evaluate_verdict`) and invoke `team_step_complete` when done. DO NOT stop or sit idle after replying.
 
 ---
 
