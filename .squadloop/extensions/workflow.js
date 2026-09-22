@@ -212,7 +212,7 @@ export class WorkflowEngine {
                 }
                 const devPane = (panes && panes[nextState.targetRole]) || nextState.targetRole;
                 if (devPane && nextState.promptCard) {
-                    await driver.sendPrompt(devPane, nextState.promptCard, true, nextState.targetRole, sessionId);
+                    await driver.sendPrompt(devPane, nextState.promptCard, false, nextState.targetRole, sessionId);
                 }
                 return;
             }
@@ -229,7 +229,7 @@ export class WorkflowEngine {
         }
         const targetPane = (panes && panes[currentState.targetRole]) || currentState.targetRole;
         if (targetPane && currentState.promptCard) {
-            await driver.sendPrompt(targetPane, currentState.promptCard, true, currentState.targetRole, sessionId);
+            await driver.sendPrompt(targetPane, currentState.promptCard, false, currentState.targetRole, sessionId);
         }
     }
 }
