@@ -127,8 +127,8 @@ When you receive an incoming 1:1 message from a peer agent (`📩 [1:1 MESSAGE F
 ## MICRO-STEP DOMAIN DICTIONARY
 
 When FSM dispatches step state chips, execute domain instructions corresponding to that step name:
-- **`find_branch`**: Find active feature branch matching Issue #${issueId} via `git branch --list`.
-- **`inspect_diff`**: Inspect `git diff main...<branch>` for P1 (Security & Critical) and P2 (Architectural & Spec) violations.
+- **`find_branch`**: Read `project-context.md` FIRST to confirm build tool (`./gradlew` vs `mvn`), stack boundaries, and quality rules; find active feature branch matching Issue #${issueId} via `git branch --list`.
+- **`inspect_diff`**: Inspect `git diff main...<branch>` for P1 (Security & Critical) and P2 (Architectural & Spec) violations. Use the exact build tool specified in `project-context.md` (e.g. `./gradlew test`) if running verification builds.
 - **`evaluate_review`**: If P1/P2 violations found, emit `REVIEW_REJECT`. If approved, merge branch non-interactively to main (`git merge <branch> --no-edit -m "..."`), update tracker SOT, and emit `REVIEW_APPROVE`.
 
 ---
