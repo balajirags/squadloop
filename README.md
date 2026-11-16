@@ -182,7 +182,7 @@ squadloop doctor
 - **End-of-Story Summary Card**: Displays an end-to-end verification report in Pane 0 upon story completion (`done`) detailing branch name, PR merge commit ID, JaCoCo coverage %, QA HTTP probe result, total tokens used, and estimated USD cost.
 - **Rework Circuit Breaker**: If `reworkCount > 3`, auto-steering halts and emits an alert in Pane 0 for human guidance.
 - **JSON Audit Checkpoints**: Writes audit logs for every story at `docs/dev-checkpoints/<story-id>.json`.
-- **Targeted Context Clearing (`/clear`)**: Automatically issues `/clear` (with a 1.5s delay buffer) to target child agent panes ONLY when assigned a new story.
+- **Context Preservation**: Preserves conversation context when sending messages or assigning tasks to agent persona panes without clearing history.
 - **Immune Persona Headers**: Custom `@persona` tmux properties lock titles on top of every pane, immune to terminal OSC title overrides.
 
 ---

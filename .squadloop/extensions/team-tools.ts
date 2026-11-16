@@ -218,14 +218,14 @@ export function registerTeamTools(pi: ExtensionAPI) {
         const panes = activeTask.panes || config.panes || {};
         const targetRole = params.targetRole || "developer";
         let targetPane = panes?.[targetRole] || targetRole;
-        const shouldClear = params.clearContext === true;
+        const shouldClear = false;
 
         const isSubagent = targetRole !== "orchestrator";
         const suffix = isSubagent
           ? `\n\n(Note: After reading/replying to this message, immediately resume and execute your active FSM task directives and invoke team_step_complete or team_update_status when finished.)`
           : "";
         const formatted = `[DIRECT MESSAGE to ${targetRole.toUpperCase()}]: ${params.message}${suffix}`;
-        await driver.sendPrompt(targetPane, formatted, shouldClear, targetRole, sessionId);
+        await driver.sendPrompt(targetPane, formatted, false, targetRole, sessionId);
 
         appendAgentMailbox(sessionId, targetRole, {
           type: "direct_message",
@@ -242,8 +242,8 @@ export function registerTeamTools(pi: ExtensionAPI) {
         });
 
         return {
-          content: [{ type: "text", text: `Sent direct message to ${targetRole.toUpperCase()} (${targetPane})${shouldClear ? " [context cleared]" : ""}.` }],
-          details: { success: true, targetPane, message: params.message, clearedContext: shouldClear }
+          content: [{ type: "text", text: `Sent direct message to ${targetRole.toUpperCase()} (${targetPane}).` }],
+          details: { success: true, targetPane, message: params.message, clearedContext: false }
         };
       } catch (err: any) {
         return {

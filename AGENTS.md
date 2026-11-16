@@ -77,18 +77,14 @@ The SquadLoop team configuration is managed directly via `.squadloop/config.json
 
 ---
 
-## 🎛️ Workflow Modes & Automated Context Clearing
+## 🎛️ Workflow Modes & Context Preservation
 
 - **`loop-hitl`**: Runs a story end-to-end (BA → Dev → QA → Reviewer → Done), then pauses for human approval.
 - **`auto`**: Processes backlog stories sequentially without pausing.
 - **`step-hitl`**: Pauses for human approval at every stage transition.
 
-### 🧹 Automatic Context Clearing (`/clear`)
-When a task or message is assigned, target panes should be cleared before reuse:
-- **Developer Pane**: before `ready-for-dev` / `dev-rework`
-- **QA Pane**: before `qa-verifying`
-- **Reviewer Pane**: before `code-review`
-- **BA Pane**: before new story/BRD grooming assignment
+### 💬 Context Preservation
+When sending messages or assigning tasks to persona panes, do NOT clear context (`/clear`). Conversation context is preserved across messages and stage transitions so agents retain full history and context.
 
 ---
 

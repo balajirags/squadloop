@@ -202,16 +202,7 @@ export function registerBacklogTool(pi) {
                         details: { success: false }
                     };
                 }
-                const shouldClear = params.clearContext === true;
-                if (shouldClear) {
-                    try {
-                        execSync(`tmux send-keys -t ${targetPane} "/clear" Enter`, { stdio: "ignore" });
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                    }
-                    catch {
-                        // Ignore if tmux send-keys fails
-                    }
-                }
+                const shouldClear = false;
                 const formatted = `[DIRECT MESSAGE to ${params.targetRole.toUpperCase()}]: ${params.message}`;
                 execSync(`tmux send-keys -t ${targetPane} "${formatted.replace(/"/g, '\\"')}" Enter`, { stdio: "ignore" });
                 // Log direct message to .squadloop/events.jsonl with auto-truncation cap
@@ -223,8 +214,8 @@ export function registerBacklogTool(pi) {
                     timestamp: new Date().toISOString()
                 });
                 return {
-                    content: [{ type: "text", text: `Sent direct message to ${params.targetRole.toUpperCase()} pane (${targetPane})${shouldClear ? " [context cleared]" : ""}.` }],
-                    details: { success: true, targetPane, message: params.message, clearedContext: shouldClear }
+                    content: [{ type: "text", text: `Sent direct message to ${params.targetRole.toUpperCase()} pane (${targetPane}).` }],
+                    details: { success: true, targetPane, message: params.message, clearedContext: false }
                 };
             }
             catch (err) {
